@@ -531,6 +531,9 @@ function PremiumView({ boost, selectedPack, setSelectedPack, stage, setStage, st
         </div>
       </div>
 
+      {/* ── Resultados Reais ── */}
+      <ResultadosReaisSection />
+
       {/* ── Como funciona ── */}
       <section className="mt-10 rounded-2xl border border-gray-100 bg-white p-8 shadow-sm">
         <div className="mb-8 text-center">
@@ -753,6 +756,57 @@ function PremiumPackCard({ pack, onActivate, onHover, onLeave }: {
         </Button>
       )}
     </article>
+  );
+}
+
+// ─── Resultados Reais ─────────────────────────────────────────────────────────
+const RESULTADO_IMAGES = [
+  "/resultados/resultado-1.jpg",
+  "/resultados/resultado-2.jpg",
+  "/resultados/resultado-3.jpg",
+  "/resultados/resultado-4.jpg",
+  "/resultados/resultado-5.jpg",
+  "/resultados/resultado-6.jpg",
+];
+
+function ResultadosReaisSection() {
+  return (
+    <section className="mt-10 rounded-2xl border border-white/10 bg-[#0D0D0D] p-6 md:p-8">
+      {/* Header */}
+      <div className="mb-6">
+        <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#EE4D2D]">
+          PROVA SOCIAL
+        </span>
+        <h3 className="mt-2 text-xl font-black text-white">
+          Resultados Reais de Quem Impulsionou
+        </h3>
+        <p className="mt-1 text-sm text-white/50">
+          Prints reais enviados pelos nossos vendedores
+        </p>
+      </div>
+
+      {/* Gallery */}
+      <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide">
+        {RESULTADO_IMAGES.map((src, i) => (
+          <div
+            key={i}
+            className="snap-start flex-shrink-0 overflow-hidden rounded-2xl border border-white/10 transition-all duration-300 hover:shadow-[0_0_20px_rgba(238,77,45,0.3)]"
+            style={{ width: 200, aspectRatio: "9 / 16" }}
+          >
+            <img
+              src={src}
+              alt={`Resultado ${i + 1}`}
+              className="h-full w-full object-cover"
+            />
+          </div>
+        ))}
+      </div>
+
+      {/* CTA */}
+      <p className="mt-5 text-center text-sm font-bold text-[#EE4D2D]">
+        🔥 Quer ser o próximo? Escolha seu pack acima.
+      </p>
+    </section>
   );
 }
 
