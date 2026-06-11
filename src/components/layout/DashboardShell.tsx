@@ -59,6 +59,7 @@ const baseNav: NavItem[] = [
   { to: "/dashboard/meus-produtos", label: "Meus Produtos", icon: PackageCheck },
   { to: "/dashboard/vendas-clientes", label: "Vendas / Clientes", icon: Receipt },
   { to: "/dashboard/precificacao", label: "Precificação", icon: Calculator },
+  { to: "/dashboard/impulsionar-vendas", label: "Impulsionar Vendas", icon: Flame, special: "fire" },
   { to: "/dashboard/grupos", label: "Grupos de Divulgação", icon: Megaphone },
   { to: "/dashboard/robo-divulgador", label: "Robô Divulgador", icon: Bot },
   { to: "/dashboard/conectar-contas", label: "Conectar Contas", icon: Plug },
