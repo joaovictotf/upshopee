@@ -6,20 +6,16 @@ import { useApp } from "../lib/state";
 import { brl } from "../lib/format";
 import { Button } from "../components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "../components/ui/dialog";
 import {
-  Flame, Sparkles, TrendingUp, Eye, MousePointerClick, Users, Zap,
-  ShieldCheck, Rocket, BarChart3, CheckCircle2, Lock, Activity, Wallet,
-  CalendarDays, Layers,
+  Flame, TrendingUp, Zap, ShieldCheck, Rocket, BarChart3,
+  CheckCircle2, Lock, Activity, Wallet, CalendarDays, Layers,
+  ChevronDown, Sparkles,
 } from "lucide-react";
 
-const BOOST_PACK_24_CHECKOUT_URL = "https://go.ironpayapp.com.br/rnaqezkbld";
-const BOOST_PACK_50_CHECKOUT_URL = "https://go.ironpayapp.com.br/a7brsesrse";
+const BOOST_PACK_24_CHECKOUT_URL  = "https://go.ironpayapp.com.br/rnaqezkbld";
+const BOOST_PACK_50_CHECKOUT_URL  = "https://go.ironpayapp.com.br/a7brsesrse";
 const BOOST_PACK_150_CHECKOUT_URL = "https://go.ironpayapp.com.br/kteiyf8epw";
 const BOOST_PACK_400_CHECKOUT_URL = "https://go.ironpayapp.com.br/bsyspglspg";
 
@@ -37,13 +33,11 @@ type Pack = {
   views: string;
   interactions: string;
   conversion: string;
-  short: string;
   roi: string;
   roiAmount: string;
   guaranteeMin: string;
   checkoutUrl: string;
   badge?: string;
-  highlighted?: boolean;
 };
 
 const PACKS: Pack[] = [
@@ -56,9 +50,8 @@ const PACKS: Pack[] = [
     views: "250 a 450",
     interactions: "20 a 45",
     conversion: "até 1 a 3 vendas",
-    short: "Uma opção acessível para começar a dar mais visibilidade aos seus produtos.",
     roi: "Invista R$ 40,00 e tenha potencial de gerar até R$ 200,00 em comissões.",
-    roiAmount: "até R$ 200,00 em comissões",
+    roiAmount: "até R$ 200,00",
     guaranteeMin: "R$ 80,00",
     checkoutUrl: BOOST_PACK_24_CHECKOUT_URL,
   },
@@ -71,13 +64,11 @@ const PACKS: Pack[] = [
     views: "700 a 1.100",
     interactions: "60 a 120",
     conversion: "até 3 a 7 vendas",
-    short: "Mais alcance, mais visualizações e mais chance de conversão em pouco tempo.",
     roi: "Invista R$ 64,90 e tenha potencial de gerar até R$ 324,50 em comissões.",
-    roiAmount: "até R$ 324,50 em comissões",
+    roiAmount: "até R$ 324,50",
     guaranteeMin: "R$ 129,80",
     checkoutUrl: BOOST_PACK_50_CHECKOUT_URL,
     badge: "Melhor para começar",
-    highlighted: true,
   },
   {
     id: "escala",
@@ -89,9 +80,8 @@ const PACKS: Pack[] = [
     views: "2.000 a 3.500",
     interactions: "180 a 350",
     conversion: "até 8 a 18 vendas",
-    short: "Perfeito para produtos com boa margem e potencial de giro maior.",
     roi: "Invista R$ 150,00 e tenha potencial de gerar até R$ 2.000,00 em comissões.",
-    roiAmount: "até R$ 2.000,00 em comissões",
+    roiAmount: "até R$ 2.000,00",
     guaranteeMin: "R$ 300,00",
     checkoutUrl: BOOST_PACK_150_CHECKOUT_URL,
     badge: "Mais escolhido",
@@ -105,16 +95,14 @@ const PACKS: Pack[] = [
     views: "6.000 a 10.000",
     interactions: "500 a 900",
     conversion: "até 20 a 45 vendas",
-    short: "O pacote mais forte para quem deseja escalar com o máximo de exposição.",
     roi: "Invista R$ 400,00 e tenha potencial de gerar até R$ 5.000,00 em comissões.",
-    roiAmount: "até R$ 5.000,00 em comissões",
+    roiAmount: "até R$ 5.000,00",
     guaranteeMin: "R$ 800,00",
     checkoutUrl: BOOST_PACK_400_CHECKOUT_URL,
     badge: "Maior alcance",
   },
 ];
 
-// Bar fill widths per pack tier
 const METRIC_PCT: Record<string, number> = {
   inicio: 20,
   aceleracao: 45,
@@ -128,17 +116,15 @@ type BoostInfo = {
   returnMultiplier: number; completed: boolean;
 };
 
-type PageProps = {
-  boost: BoostInfo | null;
+type DialogProps = {
   selectedPack: Pack | null;
-  setSelectedPack: React.Dispatch<React.SetStateAction<Pack | null>>;
   stage: "guarantee" | "how" | "confirm";
+  setSelectedPack: React.Dispatch<React.SetStateAction<Pack | null>>;
   setStage: React.Dispatch<React.SetStateAction<"guarantee" | "how" | "confirm">>;
-  startActivate: (p: Pack) => void;
   goToPayment: () => void;
 };
 
-// ─── Main component ───────────────────────────────────────────────────────────
+// ─── Main ─────────────────────────────────────────────────────────────────────
 function ImpulsionarVendasPage() {
   const { user, myActiveBoost, isAdmin } = useApp();
   const navigate = useNavigate();
@@ -151,37 +137,500 @@ function ImpulsionarVendasPage() {
 
   if (!user) return null;
 
-  const startActivate = (pack: Pack) => {
-    setSelectedPack(pack);
-    setStage("guarantee");
-  };
+  const startActivate = (pack: Pack) => { setSelectedPack(pack); setStage("guarantee"); };
+  const goToPayment = () => { if (selectedPack) window.location.href = selectedPack.checkoutUrl; };
+  const boost = myActiveBoost as BoostInfo | null;
 
-  const goToPayment = () => {
-    if (!selectedPack) return;
-    window.location.href = selectedPack.checkoutUrl;
-  };
+  const dialogProps: DialogProps = { selectedPack, stage, setSelectedPack, setStage, goToPayment };
 
-  const pageProps: PageProps = {
-    boost: myActiveBoost as BoostInfo | null,
-    selectedPack,
-    setSelectedPack,
-    stage,
-    setStage,
-    startActivate,
-    goToPayment,
-  };
+  if (!isAdmin) {
+    return (
+      <LegacyView
+        boost={boost}
+        selectedPack={selectedPack}
+        setSelectedPack={setSelectedPack}
+        stage={stage}
+        setStage={setStage}
+        startActivate={startActivate}
+        goToPayment={goToPayment}
+      />
+    );
+  }
 
-  return <PremiumView {...pageProps} />;
+  return <NewView boost={boost} startActivate={startActivate} dialogProps={dialogProps} />;
 }
 
-// ─── Activation dialog (shared, identical logic) ──────────────────────────────
-function ActivationDialog({ selectedPack, stage, setSelectedPack, setStage, goToPayment }: {
-  selectedPack: Pack | null;
-  stage: "guarantee" | "how" | "confirm";
-  setSelectedPack: React.Dispatch<React.SetStateAction<Pack | null>>;
-  setStage: React.Dispatch<React.SetStateAction<"guarantee" | "how" | "confirm">>;
-  goToPayment: () => void;
+// ─── New conversion-focused view ──────────────────────────────────────────────
+function NewView({
+  boost,
+  startActivate,
+  dialogProps,
+}: {
+  boost: BoostInfo | null;
+  startActivate: (p: Pack) => void;
+  dialogProps: DialogProps;
 }) {
+  const [hoveredPack, setHoveredPack] = useState<Pack | null>(null);
+  const [roiPack, setRoiPack] = useState<Pack>(PACKS[2]);
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
+
+  return (
+    <DashboardShell
+      title="Impulsionar vendas 🔥"
+      subtitle="Multiplique sua exposição e alcance mais compradores"
+    >
+      <style>{`
+        @keyframes iv-glow {
+          0%,100% { box-shadow: 0 0 0 0 rgba(238,77,45,0.5), 0 8px 24px rgba(238,77,45,0.25); }
+          50%      { box-shadow: 0 0 0 8px rgba(238,77,45,0), 0 8px 32px rgba(238,77,45,0.40); }
+        }
+        .iv-btn-glow { animation: iv-glow 2.2s ease-in-out infinite; }
+        @keyframes iv-gold-shimmer {
+          0%,60%  { transform: translateX(-130%) skewX(-15deg); opacity:0; }
+          65%     { opacity: 0.8; }
+          85%     { transform: translateX(270%) skewX(-15deg); opacity:0; }
+          100%    { opacity:0; }
+        }
+        .iv-maximo-shine {
+          animation: iv-gold-shimmer 3s ease-in-out infinite;
+        }
+        .iv-scrollbar-hide::-webkit-scrollbar { display:none; }
+        .iv-scrollbar-hide { -ms-overflow-style:none; scrollbar-width:none; }
+      `}</style>
+
+      <BoostPerformanceSection boost={boost} />
+
+      {/* ── HERO ─────────────────────────────────────────────────────────── */}
+      <section className="relative mb-8 overflow-hidden rounded-3xl bg-[#080808] px-6 py-10 md:px-12 md:py-14 border border-white/5">
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{ background: "radial-gradient(ellipse 70% 60% at 70% 110%, rgba(238,77,45,0.13) 0%, transparent 70%)" }}
+        />
+        <div className="relative z-10">
+          <div className="inline-flex items-center gap-2 rounded-full border border-[#EE4D2D]/30 bg-[#EE4D2D]/10 px-4 py-1.5 mb-6">
+            <Flame className="h-3.5 w-3.5 text-[#EE4D2D]" />
+            <span className="text-[11px] font-bold uppercase tracking-widest text-[#EE4D2D]">
+              +1.200 vendedores já impulsionaram
+            </span>
+          </div>
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-black leading-[1.0] tracking-tight text-white mb-4">
+            Multiplique suas vendas
+            <br />
+            <span style={{ color: "#EE4D2D" }}>no automático</span>
+          </h1>
+          <p className="text-white/50 text-base md:text-lg max-w-xl mb-8">
+            Escolha o nível de exposição ideal e deixe o sistema trabalhar por você
+          </p>
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-white/35 font-medium">
+            <span>R$234k+ em comissões geradas</span>
+            <span className="hidden sm:block w-px h-3 bg-white/10" />
+            <span>4.9★ avaliação média</span>
+            <span className="hidden sm:block w-px h-3 bg-white/10" />
+            <span>🛡️ Garantia condicional de resultado</span>
+          </div>
+        </div>
+      </section>
+
+      {/* ── PACK GRID (asymmetric) ────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-stretch mb-4">
+        {/* Início — minimal, 1 col */}
+        <article
+          className="flex flex-col rounded-2xl border border-gray-200 bg-white p-5 transition-all duration-200 hover:border-gray-300 hover:shadow-md"
+          onMouseEnter={() => setHoveredPack(PACKS[0])}
+          onMouseLeave={() => setHoveredPack(null)}
+        >
+          <h3 className="font-bold text-gray-900 text-base mb-1">{PACKS[0].name}</h3>
+          <div className="text-2xl font-black text-gray-900 mb-0.5">{brl(PACKS[0].price)}</div>
+          <div className="text-xs text-gray-400 mb-4">pacote único</div>
+          <div className="space-y-2 mb-4 flex-1">
+            <MBar label="Alcance" value={PACKS[0].reach} pct={METRIC_PCT["inicio"]} />
+            <MBar label="Views" value={PACKS[0].views} pct={METRIC_PCT["inicio"]} />
+            <MBar label="Conversão" value={PACKS[0].conversion} pct={METRIC_PCT["inicio"]} />
+          </div>
+          <p className="text-xs text-gray-400 mb-5">{PACKS[0].ideal}</p>
+          <Button
+            variant="outline"
+            onClick={() => startActivate(PACKS[0])}
+            className="w-full border-gray-300 text-gray-600 hover:border-orange-400 hover:text-orange-600"
+          >
+            <Zap className="mr-2 h-4 w-4" /> Ativar
+          </Button>
+        </article>
+
+        {/* Aceleração — orange border, 1 col */}
+        <article
+          className="relative flex flex-col rounded-2xl border-2 border-orange-400 bg-white p-5 transition-all duration-200 hover:shadow-lg hover:shadow-orange-500/10"
+          onMouseEnter={() => setHoveredPack(PACKS[1])}
+          onMouseLeave={() => setHoveredPack(null)}
+        >
+          {PACKS[1].badge && (
+            <span className="absolute -top-3 left-4 rounded-full bg-orange-500 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white shadow">
+              {PACKS[1].badge}
+            </span>
+          )}
+          <h3 className="font-bold text-gray-900 text-base mb-1">{PACKS[1].name}</h3>
+          <div className="text-2xl font-black text-gray-900 mb-0.5">{brl(PACKS[1].price)}</div>
+          <div className="text-xs text-gray-400 mb-4">pacote único</div>
+          <div className="space-y-2 mb-4 flex-1">
+            <MBar label="Alcance" value={PACKS[1].reach} pct={METRIC_PCT["aceleracao"]} />
+            <MBar label="Views" value={PACKS[1].views} pct={METRIC_PCT["aceleracao"]} />
+            <MBar label="Conversão" value={PACKS[1].conversion} pct={METRIC_PCT["aceleracao"]} />
+          </div>
+          <p className="text-xs text-gray-400 mb-5">{PACKS[1].ideal}</p>
+          <Button
+            onClick={() => startActivate(PACKS[1])}
+            className="w-full bg-orange-500 text-white hover:bg-orange-600 shadow-md shadow-orange-500/20"
+          >
+            <Zap className="mr-2 h-4 w-4" /> Ativar
+          </Button>
+        </article>
+
+        {/* Escala — dominant, col-span-2 */}
+        <article
+          className="relative lg:col-span-2 flex flex-col rounded-2xl bg-[#080808] border border-[#EE4D2D]/40 p-6 md:p-8 shadow-[0_0_40px_rgba(238,77,45,0.15)] transition-all duration-200 hover:shadow-[0_0_60px_rgba(238,77,45,0.25)]"
+          onMouseEnter={() => setHoveredPack(PACKS[2])}
+          onMouseLeave={() => setHoveredPack(null)}
+        >
+          <div
+            className="absolute top-0 right-0 w-56 h-56 rounded-full pointer-events-none"
+            style={{ background: "radial-gradient(circle, rgba(238,77,45,0.18) 0%, transparent 70%)" }}
+          />
+          {PACKS[2].badge && (
+            <span className="absolute -top-3 left-6 z-10 rounded-full bg-gradient-to-r from-[#EE4D2D] to-orange-400 px-4 py-1 text-[11px] font-bold uppercase tracking-wider text-white shadow-lg">
+              ★ {PACKS[2].badge}
+            </span>
+          )}
+          <div className="relative z-10 flex flex-col h-full">
+            <h3 className="font-black text-white text-2xl mb-1">{PACKS[2].name}</h3>
+            {PACKS[2].originalPrice && (
+              <div className="text-sm text-white/30 mb-0.5">
+                De <span className="line-through">{brl(PACKS[2].originalPrice)}</span>
+              </div>
+            )}
+            <div className="flex items-baseline gap-2 mb-1">
+              {PACKS[2].originalPrice && (
+                <span className="text-sm font-semibold text-[#EE4D2D]">Por</span>
+              )}
+              <span className="text-5xl font-black text-[#EE4D2D] tracking-tight">{brl(PACKS[2].price)}</span>
+            </div>
+            <div className="text-xs text-white/30 mb-5">pacote único</div>
+
+            <div className="grid grid-cols-2 gap-3 mb-5">
+              {[
+                { label: "Alcance", value: PACKS[2].reach },
+                { label: "Visualizações", value: PACKS[2].views },
+                { label: "Interações", value: PACKS[2].interactions },
+                { label: "Conversão", value: PACKS[2].conversion, accent: true },
+              ].map(({ label, value, accent }) => (
+                <div
+                  key={label}
+                  className={`rounded-xl px-4 py-3 ${accent
+                    ? "bg-[#EE4D2D]/10 border border-[#EE4D2D]/20"
+                    : "bg-white/5"
+                  }`}
+                >
+                  <div className={`text-[10px] uppercase tracking-wider mb-1 ${accent ? "text-[#EE4D2D]/60" : "text-white/30"}`}>{label}</div>
+                  <div className={`text-sm font-bold ${accent ? "text-[#EE4D2D]" : "text-white"}`}>{value}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="space-y-2 mb-5">
+              <MBar label="Alcance" value="" pct={METRIC_PCT["escala"]} dark />
+              <MBar label="Visibilidade" value="" pct={METRIC_PCT["escala"]} dark />
+              <MBar label="Conversão" value="" pct={METRIC_PCT["escala"]} dark />
+            </div>
+
+            <div className="rounded-xl bg-[#EE4D2D]/10 border border-[#EE4D2D]/20 px-4 py-3 mb-5">
+              <div className="text-[10px] text-[#EE4D2D]/70 uppercase tracking-wider mb-1">Potencial de retorno</div>
+              <div className="text-lg font-black text-[#EE4D2D]">{PACKS[2].roiAmount} em comissões</div>
+            </div>
+
+            <p className="text-white/40 text-sm mb-6 flex-1">{PACKS[2].ideal}</p>
+
+            <Button
+              onClick={() => startActivate(PACKS[2])}
+              className="iv-btn-glow w-full bg-[#EE4D2D] text-white hover:bg-[#d93e22] text-base py-6 font-bold"
+            >
+              <Flame className="mr-2 h-5 w-5" /> Ativar Pack Escala
+            </Button>
+          </div>
+        </article>
+
+        {/* Máximo — dark premium, gold border */}
+        <article
+          className="relative flex flex-col rounded-2xl overflow-hidden p-[2px] transition-all duration-200"
+          style={{
+            background: "linear-gradient(135deg, #92400E 0%, #F59E0B 50%, #92400E 100%)",
+            boxShadow: "0 0 32px rgba(245,158,11,0.15)",
+          }}
+          onMouseEnter={() => setHoveredPack(PACKS[3])}
+          onMouseLeave={() => setHoveredPack(null)}
+        >
+          {PACKS[3].badge && (
+            <span
+              className="absolute -top-3 left-4 z-10 rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white shadow"
+              style={{ background: "linear-gradient(135deg, #D97706, #F59E0B)" }}
+            >
+              {PACKS[3].badge}
+            </span>
+          )}
+          {/* shimmer sweep */}
+          <div className="absolute inset-y-0 w-1/3 pointer-events-none iv-maximo-shine z-20"
+            style={{ background: "linear-gradient(90deg, transparent, rgba(245,158,11,0.2), transparent)" }} />
+          <div className="relative flex flex-col bg-[#0D0A06] rounded-[14px] p-5 h-full z-10">
+            <h3 className="font-bold text-amber-400 text-base mb-1">{PACKS[3].name}</h3>
+            <div className="text-2xl font-black text-white mb-0.5">{brl(PACKS[3].price)}</div>
+            <div className="text-xs text-amber-400/40 mb-4">pacote único</div>
+            <div className="space-y-2 mb-4 flex-1">
+              <MBar label="Alcance" value={PACKS[3].reach} pct={METRIC_PCT["maximo"]} dark gold />
+              <MBar label="Views" value={PACKS[3].views} pct={METRIC_PCT["maximo"]} dark gold />
+              <MBar label="Conversão" value={PACKS[3].conversion} pct={METRIC_PCT["maximo"]} dark gold />
+            </div>
+            <p className="text-xs text-amber-400/40 mb-5">{PACKS[3].ideal}</p>
+            <Button
+              onClick={() => startActivate(PACKS[3])}
+              className="w-full text-white font-bold hover:opacity-90"
+              style={{ background: "linear-gradient(135deg, #B45309, #F59E0B)" }}
+            >
+              <Zap className="mr-2 h-4 w-4" /> Ativar
+            </Button>
+          </div>
+        </article>
+      </div>
+
+      {/* ── RETORNO STRIP (on hover) ──────────────────────────────────────── */}
+      <div className={`transition-all duration-300 mb-8 ${hoveredPack ? "opacity-100 translate-y-0" : "pointer-events-none opacity-0 -translate-y-1"}`}>
+        <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-[#080808] border border-[#EE4D2D]/20 px-6 py-4">
+          <div className="min-w-0">
+            <div className="text-[10px] font-bold uppercase tracking-widest text-[#EE4D2D] mb-0.5">
+              Retorno estimado — {hoveredPack?.name}
+            </div>
+            <p className="text-white font-semibold text-sm">{hoveredPack?.roi}</p>
+            <p className="text-white/30 text-[11px] mt-0.5">
+              Os resultados podem variar conforme produto, preço e demanda.
+            </p>
+          </div>
+          <div className="text-right shrink-0">
+            <div className="text-[10px] text-white/30 uppercase tracking-wider mb-0.5">Retorno mínimo acompanhado</div>
+            <div className="text-2xl font-black text-white">{hoveredPack?.guaranteeMin}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── ROI CALCULATOR ───────────────────────────────────────────────── */}
+      <section className="mb-8 rounded-2xl bg-[#0D0D0D] border border-white/5 p-6 md:p-8">
+        <div className="mb-5">
+          <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#EE4D2D]">
+            CALCULADORA DE RETORNO
+          </span>
+          <h3 className="text-xl font-black text-white mt-1">Quanto posso ganhar?</h3>
+        </div>
+        <div className="flex flex-wrap gap-2 mb-6">
+          {PACKS.map((p) => (
+            <button
+              key={p.id}
+              onClick={() => setRoiPack(p)}
+              className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+                roiPack.id === p.id
+                  ? "bg-[#EE4D2D] text-white"
+                  : "bg-white/5 text-white/50 hover:bg-white/10 hover:text-white"
+              }`}
+            >
+              {p.name}
+            </button>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="rounded-xl bg-white/5 px-5 py-4">
+            <div className="text-xs text-white/40 uppercase tracking-wider mb-1">Você investe</div>
+            <div className="text-3xl font-black text-white">{brl(roiPack.price)}</div>
+          </div>
+          <div className="rounded-xl bg-[#EE4D2D]/10 border border-[#EE4D2D]/20 px-5 py-4">
+            <div className="text-xs text-[#EE4D2D]/70 uppercase tracking-wider mb-1">Potencial de retorno</div>
+            <div className="text-3xl font-black text-[#EE4D2D]">{roiPack.roiAmount}</div>
+          </div>
+          <div className="rounded-xl bg-white/5 px-5 py-4">
+            <div className="text-xs text-white/40 uppercase tracking-wider mb-1">Alcance estimado</div>
+            <div className="text-xl font-black text-white leading-tight">{roiPack.reach}</div>
+          </div>
+        </div>
+        <p className="text-white/25 text-[11px] mt-4">
+          Os resultados podem variar conforme produto, preço, oferta e demanda.
+        </p>
+      </section>
+
+      {/* ── HOW IT WORKS ─────────────────────────────────────────────────── */}
+      <section className="mb-8 rounded-2xl bg-[#0D0D0D] border border-white/5 p-6 md:p-8">
+        <div className="mb-8 text-center">
+          <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#EE4D2D]">COMO FUNCIONA</span>
+          <h3 className="text-2xl font-black text-white mt-2">3 passos para impulsionar</h3>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-4">
+          {[
+            {
+              n: "01",
+              icon: <Layers className="h-6 w-6 text-[#EE4D2D]" />,
+              label: "Escolha o pack ideal",
+              sub: "Selecione o nível de exposição para sua operação",
+            },
+            {
+              n: "02",
+              icon: <Zap className="h-6 w-6 text-[#EE4D2D]" />,
+              label: "Ative o impulsionamento",
+              sub: "Conclua o pagamento e a ativação é imediata",
+            },
+            {
+              n: "03",
+              icon: <BarChart3 className="h-6 w-6 text-[#EE4D2D]" />,
+              label: "Acompanhe os resultados",
+              sub: "Veja vendas, comissões e retorno no painel em tempo real",
+            },
+          ].map((step, i) => (
+            <div key={step.n} className="relative flex flex-col items-center text-center">
+              {i < 2 && (
+                <div className="absolute hidden md:block top-8 left-[calc(50%+44px)] w-[calc(100%-88px)] border-t-2 border-dashed border-[#EE4D2D]/15" />
+              )}
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#EE4D2D]/10 border border-[#EE4D2D]/20 mb-4">
+                {step.icon}
+              </div>
+              <div className="text-[10px] font-bold text-[#EE4D2D]/40 mb-1">{step.n}</div>
+              <p className="font-bold text-white text-sm">{step.label}</p>
+              <p className="text-white/40 text-xs mt-1 max-w-[160px]">{step.sub}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── RESULTS GALLERY ──────────────────────────────────────────────── */}
+      <ResultadosReaisSection />
+
+      {/* ── FAQ ──────────────────────────────────────────────────────────── */}
+      <section className="mb-8 rounded-2xl bg-[#0D0D0D] border border-white/5 p-6 md:p-8">
+        <div className="mb-6">
+          <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#EE4D2D]">DÚVIDAS</span>
+          <h3 className="text-xl font-black text-white mt-1">Perguntas frequentes</h3>
+        </div>
+        <div className="space-y-2">
+          {[
+            {
+              q: "O impulsionamento garante vendas?",
+              a: "O impulsionamento possui garantia condicional. Caso o pacote não gere retorno mínimo equivalente ao dobro do valor investido em comissões registradas no painel, você pode solicitar a devolução, conforme as regras da garantia.",
+            },
+            {
+              q: "Qual o melhor pack para começar?",
+              a: "O Pack Aceleração (R$ 64,90) oferece o melhor equilíbrio entre investimento, alcance e potencial de retorno para quem está começando.",
+            },
+            {
+              q: "Como funciona a ativação?",
+              a: "Após o pagamento, a equipe ShopSync ativa o impulsionamento e você acompanha tudo pelo painel em tempo real — alcance, visualizações, interações e comissões geradas.",
+            },
+            {
+              q: "Posso contratar mais de um pack?",
+              a: "Sim. Você pode escalar progressivamente, contratando packs maiores conforme valida os resultados.",
+            },
+          ].map((faq, i) => (
+            <div key={i} className="rounded-xl border border-white/5 overflow-hidden">
+              <button
+                onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left bg-white/[0.02] hover:bg-white/[0.04] transition-colors"
+              >
+                <span className="text-white font-semibold text-sm">{faq.q}</span>
+                <ChevronDown
+                  className={`h-4 w-4 text-[#EE4D2D] shrink-0 transition-transform duration-200 ${openFaq === i ? "rotate-180" : ""}`}
+                />
+              </button>
+              {openFaq === i && (
+                <div className="px-5 pb-4 text-white/50 text-sm leading-relaxed border-t border-white/5">
+                  {faq.a}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <ActivationDialog {...dialogProps} />
+    </DashboardShell>
+  );
+}
+
+// ─── MetricBar ────────────────────────────────────────────────────────────────
+function MBar({
+  label,
+  value,
+  pct,
+  dark,
+  gold,
+}: {
+  label: string;
+  value: string;
+  pct: number;
+  dark?: boolean;
+  gold?: boolean;
+}) {
+  return (
+    <div>
+      <div className="mb-1 flex items-center justify-between text-[11px]">
+        <span className={gold ? "text-amber-400/50" : dark ? "text-white/40" : "text-gray-400"}>{label}</span>
+        {value && (
+          <span className={`font-semibold ${gold ? "text-amber-300" : dark ? "text-white" : "text-gray-700"}`}>
+            {value}
+          </span>
+        )}
+      </div>
+      <div className={`h-1.5 w-full overflow-hidden rounded-full ${gold ? "bg-amber-900/30" : dark ? "bg-white/10" : "bg-gray-100"}`}>
+        <div
+          className={`h-full rounded-full ${gold ? "bg-amber-400" : dark ? "bg-[#EE4D2D]" : "bg-orange-500"}`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+// ─── Results gallery ──────────────────────────────────────────────────────────
+const RESULTADO_IMAGES = [
+  "/resultados/resultado-1.jpg",
+  "/resultados/resultado-2.jpg",
+  "/resultados/resultado-3.jpg",
+  "/resultados/resultado-4.jpg",
+  "/resultados/resultado-5.jpg",
+  "/resultados/resultado-6.jpg",
+];
+
+function ResultadosReaisSection() {
+  return (
+    <section className="mb-8 rounded-2xl border border-white/5 bg-[#0D0D0D] p-6 md:p-8">
+      <div className="mb-6">
+        <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#EE4D2D]">PROVA SOCIAL</span>
+        <h3 className="mt-2 text-xl font-black text-white">Resultados Reais de Quem Impulsionou</h3>
+        <p className="mt-1 text-sm text-white/50">Prints reais enviados pelos nossos vendedores</p>
+      </div>
+      <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory iv-scrollbar-hide">
+        {RESULTADO_IMAGES.map((src, i) => (
+          <div
+            key={i}
+            className="snap-start flex-shrink-0 overflow-hidden rounded-2xl border border-white/10 transition-all duration-300 hover:shadow-[0_0_20px_rgba(238,77,45,0.3)]"
+            style={{ width: 200, aspectRatio: "9 / 16" }}
+          >
+            <img
+              src={src}
+              alt={`Resultado ${i + 1}`}
+              className="h-full w-full object-cover"
+            />
+          </div>
+        ))}
+      </div>
+      <p className="mt-5 text-center text-sm font-bold text-[#EE4D2D]">
+        🔥 Quer ser o próximo? Escolha seu pack acima.
+      </p>
+    </section>
+  );
+}
+
+// ─── Activation dialog ────────────────────────────────────────────────────────
+function ActivationDialog({ selectedPack, stage, setSelectedPack, setStage, goToPayment }: DialogProps) {
   return (
     <Dialog
       open={!!selectedPack}
@@ -241,9 +690,6 @@ function ActivationDialog({ selectedPack, stage, setSelectedPack, setStage, goTo
               <p className="text-sm text-muted-foreground">
                 A equipe da ShopSync organiza a divulgação dos produtos que você escolheu, aumentando a visibilidade, o alcance e as chances de venda dentro da sua operação.
               </p>
-              <p className="text-sm text-muted-foreground">
-                Você não precisa se preocupar com a divulgação. O processo é organizado para que seus produtos recebam mais exposição e tenham mais potencial de conversão.
-              </p>
               <ol className="space-y-2">
                 {[
                   { icon: <Flame className="h-4 w-4" />, t: "Você escolhe o pack" },
@@ -286,7 +732,7 @@ function ActivationDialog({ selectedPack, stage, setSelectedPack, setStage, goTo
                 <div className="mt-3 grid gap-2 text-sm">
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground">Valor do investimento</span>
-                    <span className="text-right font-semibold">
+                    <span className="font-semibold">
                       {selectedPack.originalPrice && (
                         <span className="mr-2 text-xs text-muted-foreground line-through">
                           {brl(selectedPack.originalPrice)}
@@ -324,137 +770,21 @@ function ActivationDialog({ selectedPack, stage, setSelectedPack, setStage, goTo
   );
 }
 
-// ─── Legacy UI ────────────────────────────────────────────────────────────────
-function OldView({ boost, selectedPack, setSelectedPack, stage, setStage, startActivate, goToPayment }: PageProps) {
-  return (
-    <DashboardShell
-      title="Impulsionar vendas 🔥"
-      subtitle="Escolha um pacote para aumentar a visibilidade dos seus produtos, alcançar mais pessoas e melhorar sua conversão dentro da operação ShopeSync."
-    >
-      <BoostPerformanceSection boost={boost} />
+// ─── Legacy view (non-admin fallback — unchanged from previous build) ──────────
+type LegacyPageProps = {
+  boost: BoostInfo | null;
+  selectedPack: Pack | null;
+  setSelectedPack: React.Dispatch<React.SetStateAction<Pack | null>>;
+  stage: "guarantee" | "how" | "confirm";
+  setStage: React.Dispatch<React.SetStateAction<"guarantee" | "how" | "confirm">>;
+  startActivate: (p: Pack) => void;
+  goToPayment: () => void;
+};
 
-      <div className="relative mb-6 overflow-hidden rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 p-6 shadow-sm">
-        <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-amber-300/30 blur-3xl" />
-        <div className="relative flex items-start gap-4">
-          <div className="grid h-12 w-12 place-items-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-lg shadow-amber-500/40">
-            <Flame className="h-6 w-6" />
-          </div>
-          <div>
-            <h2 className="text-lg sm:text-xl font-bold tracking-tight text-amber-900">Mais visibilidade para os seus produtos</h2>
-            <p className="mt-1 max-w-2xl text-sm text-amber-900/80">
-              Os pacotes abaixo foram pensados para dar mais alcance aos seus produtos, gerar mais visualizações e aumentar a chance de vendas.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        {PACKS.map((p) => (
-          <article
-            key={p.id}
-            className={`relative flex flex-col rounded-2xl border bg-card p-5 transition hover:-translate-y-0.5 hover:shadow-lg ${
-              p.highlighted ? "border-amber-500/60 shadow-lg shadow-amber-500/20 ring-1 ring-amber-500/30" : "border-border"
-            }`}
-          >
-            {p.badge && (
-              <span className="absolute -top-3 left-4 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-white shadow">
-                {p.badge}
-              </span>
-            )}
-            <div className="mb-3 flex items-center gap-2">
-              <Flame className={`h-4 w-4 ${p.highlighted ? "text-amber-500" : "text-orange-500"}`} />
-              <h3 className="text-base font-semibold tracking-tight">{p.name}</h3>
-            </div>
-            <div className="mb-3">
-              {p.originalPrice && (
-                <div className="text-sm text-muted-foreground">De <span className="line-through">{brl(p.originalPrice)}</span></div>
-              )}
-              <div className="flex items-baseline gap-2">
-                {p.originalPrice && <span className="text-xs font-semibold text-amber-600">Por</span>}
-                <div className="text-2xl font-bold">{brl(p.price)}</div>
-              </div>
-              <div className="text-xs text-muted-foreground">pacote único</div>
-            </div>
-            <p className="mb-4 text-sm text-muted-foreground">{p.short}</p>
-            <ul className="space-y-2 text-sm">
-              <Row icon={<Users className="h-4 w-4 text-amber-500" />} label="Alcance estimado" value={p.reach} />
-              <Row icon={<Eye className="h-4 w-4 text-amber-500" />} label="Visualizações estimadas" value={p.views} />
-              <Row icon={<MousePointerClick className="h-4 w-4 text-amber-500" />} label="Interações estimadas" value={p.interactions} />
-              <Row icon={<TrendingUp className="h-4 w-4 text-amber-500" />} label="Potencial de conversão" value={p.conversion} />
-            </ul>
-            <div className="mt-4 rounded-lg border border-amber-500/30 bg-gradient-to-br from-amber-50 to-orange-50 px-3 py-2">
-              <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-amber-700">
-                <TrendingUp className="h-3.5 w-3.5" /> Retorno estimado
-              </div>
-              <p className="mt-1 text-sm text-amber-900">{p.roi}</p>
-              <p className="mt-1 text-[11px] text-amber-700/80">Os resultados podem variar conforme produto, preço, oferta, demanda e execução.</p>
-            </div>
-            <div className="mt-4 rounded-lg bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-              <span className="font-medium text-foreground">Ideal para: </span>{p.ideal}
-            </div>
-            <Button
-              onClick={() => startActivate(p)}
-              className={`mt-5 w-full ${p.highlighted ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600" : ""}`}
-            >
-              <Zap className="mr-2 h-4 w-4" /> Ativar impulsionamento
-            </Button>
-          </article>
-        ))}
-      </div>
-
-      <section className="mt-10 rounded-2xl border border-border bg-card p-6">
-        <h3 className="flex items-center gap-2 text-lg font-semibold">
-          <Sparkles className="h-5 w-5 text-amber-500" /> Como funciona o impulsionamento?
-        </h3>
-        <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-          A ShopeSync organiza uma estratégia de aumento de visibilidade para os seus produtos, ajudando sua operação a alcançar mais pessoas, gerar mais visualizações e melhorar o potencial de conversão.
-        </p>
-        <ol className="mt-5 grid gap-3 grid-cols-1 md:grid-cols-3">
-          {["Escolha o pack", "Ative o impulsionamento", "Acompanhe o potencial de crescimento"].map((step, i) => (
-            <li key={step} className="flex items-start gap-3 rounded-xl border border-border/70 bg-background p-4">
-              <div className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-amber-500/15 text-sm font-bold text-amber-600">{i + 1}</div>
-              <span className="text-sm font-medium">{step}</span>
-            </li>
-          ))}
-        </ol>
-      </section>
-
-      <section className="mt-6 rounded-2xl border border-border bg-card p-6">
-        <h3 className="text-lg font-semibold">Perguntas frequentes</h3>
-        <div className="mt-4 space-y-4">
-          <div>
-            <div className="text-sm font-semibold">Esse impulsionamento garante vendas?</div>
-            <p className="text-sm text-muted-foreground">
-              Sim, o impulsionamento possui garantia condicional. Caso o pacote contratado não gere nenhuma venda dentro do período de acompanhamento definido, você poderá solicitar a devolução do valor investido nesse pack, conforme as regras da garantia.
-            </p>
-            <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-medium text-emerald-700">
-              <ShieldCheck className="h-3 w-3" /> Garantia condicional
-            </div>
-          </div>
-          <div>
-            <div className="text-sm font-semibold">Qual o melhor pack para começar?</div>
-            <p className="text-sm text-muted-foreground">
-              O melhor pack para começar é o Pack Aceleração de R$ 64,90. Ele oferece um bom equilíbrio entre investimento, alcance e potencial de vendas, sendo uma das melhores opções para quem quer começar a impulsionar com mais força.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <ActivationDialog
-        selectedPack={selectedPack}
-        stage={stage}
-        setSelectedPack={setSelectedPack}
-        setStage={setStage}
-        goToPayment={goToPayment}
-      />
-    </DashboardShell>
-  );
-}
-
-// ─── Premium UI ───────────────────────────────────────────────────────────────
-function PremiumView({ boost, selectedPack, setSelectedPack, stage, setStage, startActivate, goToPayment }: PageProps) {
+function LegacyView({
+  boost, selectedPack, setSelectedPack, stage, setStage, startActivate, goToPayment,
+}: LegacyPageProps) {
   const [hoveredPack, setHoveredPack] = useState<Pack | null>(null);
-  const displayPack = hoveredPack;
 
   return (
     <DashboardShell
@@ -462,29 +792,22 @@ function PremiumView({ boost, selectedPack, setSelectedPack, stage, setStage, st
       subtitle="Escolha um pacote para aumentar a visibilidade dos seus produtos, alcançar mais pessoas e melhorar sua conversão dentro da operação ShopeSync."
     >
       <style>{`
-        @keyframes glow-pulse {
+        @keyframes legacy-glow {
           0%, 100% { box-shadow: 0 0 0 0 rgba(249,115,22,0.45), 0 10px 30px -5px rgba(249,115,22,0.30); }
-          50%       { box-shadow: 0 0 0 7px rgba(249,115,22,0),  0 10px 30px -5px rgba(249,115,22,0.40); }
+          50%       { box-shadow: 0 0 0 7px rgba(249,115,22,0), 0 10px 30px -5px rgba(249,115,22,0.40); }
         }
-        .btn-escala-glow { animation: glow-pulse 2s ease-in-out infinite; }
-
-        @keyframes maximo-border-glow {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(194,65,12,0.55), 0 8px 28px rgba(234,88,12,0.22); }
-          50%       { box-shadow: 0 0 0 5px rgba(194,65,12,0),  0 8px 36px rgba(234,88,12,0.40); }
-        }
-        @keyframes maximo-shimmer {
+        .legacy-escala-glow { animation: legacy-glow 2s ease-in-out infinite; }
+        @keyframes legacy-maximo-shimmer {
           0%, 60%  { transform: translateX(-140%) skewX(-15deg); opacity: 0; }
           68%      { opacity: 1; }
           85%      { transform: translateX(280%) skewX(-15deg); opacity: 0; }
           100%     { transform: translateX(280%) skewX(-15deg); opacity: 0; }
         }
-        .card-maximo-shine { animation: maximo-shimmer 3s ease-in-out infinite; }
+        .legacy-maximo-shine { animation: legacy-maximo-shimmer 3s ease-in-out infinite; }
       `}</style>
 
-      {/* Active boost performance */}
       <BoostPerformanceSection boost={boost} />
 
-      {/* Header banner */}
       <div className="relative mb-8 overflow-hidden rounded-2xl border border-orange-200 bg-gradient-to-r from-orange-50 to-amber-50 p-6 shadow-sm">
         <div className="absolute -right-8 -top-8 h-48 w-48 rounded-full bg-orange-300/20 blur-3xl" />
         <div className="relative flex items-center gap-4">
@@ -500,10 +823,9 @@ function PremiumView({ boost, selectedPack, setSelectedPack, stage, setStage, st
         </div>
       </div>
 
-      {/* ── Asymmetric pack grid ── */}
       <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {PACKS.map((pack) => (
-          <PremiumPackCard
+          <LegacyPackCard
             key={pack.id}
             pack={pack}
             onActivate={() => startActivate(pack)}
@@ -513,88 +835,50 @@ function PremiumView({ boost, selectedPack, setSelectedPack, stage, setStage, st
         ))}
       </div>
 
-      {/* ── Retorno estimado strip (fades in on hover) ── */}
-      <div className={`mt-4 transition-all duration-300 ${displayPack ? "opacity-100 translate-y-0" : "pointer-events-none opacity-0 -translate-y-1"}`}>
+      <div className={`mt-4 mb-8 transition-all duration-300 ${hoveredPack ? "opacity-100 translate-y-0" : "pointer-events-none opacity-0 -translate-y-1"}`}>
         <div className="flex items-start gap-4 rounded-2xl border border-orange-200 bg-gradient-to-r from-orange-50 to-amber-50 px-6 py-4">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-orange-500 text-white shadow-md shadow-orange-500/25">
             <TrendingUp className="h-4 w-4" />
           </div>
           <div className="min-w-0 flex-1">
-            <div className="text-[10px] font-bold uppercase tracking-widest text-orange-600">Retorno estimado — {displayPack?.name}</div>
-            <p className="mt-0.5 text-sm font-semibold text-gray-800">{displayPack?.roi ?? "—"}</p>
+            <div className="text-[10px] font-bold uppercase tracking-widest text-orange-600">Retorno estimado — {hoveredPack?.name}</div>
+            <p className="mt-0.5 text-sm font-semibold text-gray-800">{hoveredPack?.roi ?? "—"}</p>
             <p className="mt-0.5 text-[11px] text-gray-400">Os resultados podem variar conforme produto, preço, oferta, demanda e execução.</p>
           </div>
           <div className="shrink-0 text-right">
             <div className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Garantia mínima</div>
-            <div className="mt-0.5 text-base font-black text-gray-900">{displayPack?.guaranteeMin ?? "—"}</div>
+            <div className="mt-0.5 text-base font-black text-gray-900">{hoveredPack?.guaranteeMin ?? "—"}</div>
           </div>
         </div>
       </div>
 
-      {/* ── Resultados Reais ── */}
-      <ResultadosReaisSection />
-
-      {/* ── Como funciona ── */}
-      <section className="mt-10 rounded-2xl border border-gray-100 bg-white p-8 shadow-sm">
+      <section className="rounded-2xl border border-gray-100 bg-white p-8 shadow-sm mb-6">
         <div className="mb-8 text-center">
           <h3 className="text-xl font-bold text-gray-900">Como funciona o impulsionamento?</h3>
-          <p className="mt-2 text-sm text-gray-400">
-            A ShopeSync organiza uma estratégia de visibilidade para seus produtos de forma automática.
-          </p>
+          <p className="mt-2 text-sm text-gray-400">A ShopeSync organiza uma estratégia de visibilidade para seus produtos de forma automática.</p>
         </div>
-
         <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start sm:justify-center">
-          {/* Step 1 */}
-          <HowItWorksStep
-            icon={<Layers className="h-7 w-7 text-orange-500" />}
-            label="Escolha o pack"
-            sub="Selecione o nível de visibilidade ideal para sua operação"
-          />
-
-          {/* Dashed connector */}
-          <div className="hidden sm:flex flex-1 items-center pt-7">
-            <div className="w-full border-t-2 border-dashed border-orange-200 animate-pulse" />
-          </div>
-
-          {/* Step 2 */}
-          <HowItWorksStep
-            icon={<Zap className="h-7 w-7 text-orange-500" />}
-            label="Ative o impulsionamento"
-            sub="Conclua o pagamento e a ativação é imediata"
-          />
-
-          {/* Dashed connector */}
-          <div className="hidden sm:flex flex-1 items-center pt-7">
-            <div className="w-full border-t-2 border-dashed border-orange-200 animate-pulse" />
-          </div>
-
-          {/* Step 3 */}
-          <HowItWorksStep
-            icon={<BarChart3 className="h-7 w-7 text-orange-500" />}
-            label="Acompanhe os resultados"
-            sub="Veja vendas, comissões e retorno no painel em tempo real"
-          />
+          <LegacyStep icon={<Layers className="h-7 w-7 text-orange-500" />} label="Escolha o pack" sub="Selecione o nível de visibilidade ideal para sua operação" />
+          <div className="hidden sm:flex flex-1 items-center pt-7"><div className="w-full border-t-2 border-dashed border-orange-200 animate-pulse" /></div>
+          <LegacyStep icon={<Zap className="h-7 w-7 text-orange-500" />} label="Ative o impulsionamento" sub="Conclua o pagamento e a ativação é imediata" />
+          <div className="hidden sm:flex flex-1 items-center pt-7"><div className="w-full border-t-2 border-dashed border-orange-200 animate-pulse" /></div>
+          <LegacyStep icon={<BarChart3 className="h-7 w-7 text-orange-500" />} label="Acompanhe os resultados" sub="Veja vendas, comissões e retorno no painel em tempo real" />
         </div>
       </section>
 
-      {/* ── FAQ ── */}
-      <section className="mt-6 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+      <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
         <h3 className="text-base font-bold text-gray-900">Perguntas frequentes</h3>
         <div className="mt-5 space-y-5">
           <div>
             <div className="text-sm font-semibold text-gray-800">Esse impulsionamento garante vendas?</div>
-            <p className="mt-1 text-sm text-gray-500">
-              Sim, o impulsionamento possui garantia condicional. Caso o pacote contratado não gere nenhuma venda dentro do período de acompanhamento definido, você poderá solicitar a devolução do valor investido nesse pack, conforme as regras da garantia.
-            </p>
+            <p className="mt-1 text-sm text-gray-500">Sim, o impulsionamento possui garantia condicional. Caso o pacote contratado não gere nenhuma venda dentro do período de acompanhamento definido, você poderá solicitar a devolução do valor investido nesse pack, conforme as regras da garantia.</p>
             <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700">
               <ShieldCheck className="h-3 w-3" /> Garantia condicional
             </div>
           </div>
           <div className="border-t border-gray-100 pt-5">
             <div className="text-sm font-semibold text-gray-800">Qual o melhor pack para começar?</div>
-            <p className="mt-1 text-sm text-gray-500">
-              O melhor pack para começar é o Pack Aceleração de R$ 64,90. Ele oferece um bom equilíbrio entre investimento, alcance e potencial de vendas, sendo uma das melhores opções para quem quer começar a impulsionar com mais força.
-            </p>
+            <p className="mt-1 text-sm text-gray-500">O melhor pack para começar é o Pack Aceleração de R$ 64,90. Ele oferece um bom equilíbrio entre investimento, alcance e potencial de vendas, sendo uma das melhores opções para quem quer começar a impulsionar com mais força.</p>
           </div>
         </div>
       </section>
@@ -610,12 +894,10 @@ function PremiumView({ boost, selectedPack, setSelectedPack, stage, setStage, st
   );
 }
 
-// ─── Premium pack card ────────────────────────────────────────────────────────
-function PremiumPackCard({ pack, onActivate, onHover, onLeave }: {
-  pack: Pack;
-  onActivate: () => void;
-  onHover: () => void;
-  onLeave: () => void;
+function LegacyPackCard({
+  pack, onActivate, onHover, onLeave,
+}: {
+  pack: Pack; onActivate: () => void; onHover: () => void; onLeave: () => void;
 }) {
   const pct = METRIC_PCT[pack.id] ?? 50;
   const isInicio = pack.id === "inicio";
@@ -623,63 +905,32 @@ function PremiumPackCard({ pack, onActivate, onHover, onLeave }: {
   const isEscala = pack.id === "escala";
   const isMaximo = pack.id === "maximo";
 
-  // ── Máximo: gradient border wrapper + inner white card ──────────────────────
   if (isMaximo) {
     return (
       <article
         className="relative min-w-0 rounded-2xl cursor-default transition-all duration-300 overflow-visible"
-        style={{
-          background: "linear-gradient(135deg, #EA580C 0%, #F59E0B 100%)",
-          padding: "2px",
-          boxShadow: "0 0 40px rgba(234,88,12,0.25)",
-        }}
-        onMouseEnter={onHover}
-        onMouseLeave={onLeave}
+        style={{ background: "linear-gradient(135deg, #EA580C 0%, #F59E0B 100%)", padding: "2px", boxShadow: "0 0 40px rgba(234,88,12,0.25)" }}
+        onMouseEnter={onHover} onMouseLeave={onLeave}
       >
-        {/* Badge — positioned on the outer wrapper so it sits above the border */}
         {pack.badge && (
-          <span
-            className="absolute -top-3 left-4 rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white shadow-md"
-            style={{ background: "linear-gradient(135deg, #F59E0B 0%, #D97706 100%)" }}
-          >
+          <span className="absolute -top-3 left-4 rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white shadow-md"
+            style={{ background: "linear-gradient(135deg, #F59E0B 0%, #D97706 100%)" }}>
             {pack.badge}
           </span>
         )}
-
-        {/* Inner white card */}
         <div className="relative flex flex-col bg-white rounded-[14px] p-5 overflow-hidden h-full">
-          {/* Diagonal shimmer sweep */}
-          <div
-            className="card-maximo-shine pointer-events-none absolute inset-y-0 w-2/5"
-            style={{ background: "linear-gradient(90deg, transparent, rgba(234,88,12,0.07), transparent)" }}
-          />
-
+          <div className="legacy-maximo-shine pointer-events-none absolute inset-y-0 w-2/5"
+            style={{ background: "linear-gradient(90deg, transparent, rgba(234,88,12,0.07), transparent)" }} />
           <h3 className="font-bold mb-1 text-base text-gray-900">{pack.name}</h3>
-
-          <div className="mb-1 flex items-baseline gap-1.5">
-            <span className="font-black tabular-nums text-3xl text-gray-900">{brl(pack.price)}</span>
-          </div>
+          <div className="text-3xl font-black text-gray-900 mb-0.5">{brl(pack.price)}</div>
           <div className="text-xs mb-4 text-gray-500">pacote único</div>
-
-          <p className="text-sm mb-5 text-gray-500">{pack.short}</p>
-
+          <p className="text-sm mb-5 text-gray-500 flex-1">{pack.ideal}</p>
           <div className="space-y-3 mb-5">
-            <MetricBar label="Alcance" value={pack.reach} pct={pct} />
-            <MetricBar label="Visualizações" value={pack.views} pct={pct} />
-            <MetricBar label="Interações" value={pack.interactions} pct={pct} />
-            <MetricBar label="Conversão" value={pack.conversion} pct={pct} />
+            <MBar label="Alcance" value={pack.reach} pct={pct} />
+            <MBar label="Visualizações" value={pack.views} pct={pct} />
+            <MBar label="Conversão" value={pack.conversion} pct={pct} />
           </div>
-
-          <div className="mt-auto rounded-xl bg-gray-50 px-3 py-2.5 text-xs text-gray-500 mb-5">
-            <span className="font-semibold text-gray-700">Ideal para: </span>
-            {pack.ideal}
-          </div>
-
-          <Button
-            onClick={onActivate}
-            className="w-full text-white hover:opacity-90"
-            style={{ backgroundColor: "#EA580C" }}
-          >
+          <Button onClick={onActivate} className="w-full text-white hover:opacity-90" style={{ backgroundColor: "#EA580C" }}>
             <Zap className="mr-2 h-4 w-4" /> Ativar impulsionamento
           </Button>
         </div>
@@ -687,168 +938,53 @@ function PremiumPackCard({ pack, onActivate, onHover, onLeave }: {
     );
   }
 
-  // ── All other cards (unchanged) ─────────────────────────────────────────────
   const cardCls = [
     "relative flex flex-col rounded-2xl border transition-all duration-300 cursor-default min-w-0",
-    isInicio && "border-gray-200 bg-white p-5 hover:border-gray-300",
+    isInicio    && "border-gray-200 bg-white p-5 hover:border-gray-300",
     isAceleracao && "border-orange-200 bg-white p-5 hover:border-orange-400 hover:shadow-md hover:shadow-orange-500/10",
-    isEscala && "border-orange-500/70 bg-white p-6 ring-2 ring-orange-500/20 shadow-xl shadow-orange-500/15 hover:shadow-2xl hover:shadow-orange-500/20 lg:-mt-2",
+    isEscala    && "border-orange-500/70 bg-white p-6 ring-2 ring-orange-500/20 shadow-xl shadow-orange-500/15 hover:shadow-2xl hover:shadow-orange-500/20 lg:-mt-2",
   ].filter(Boolean).join(" ");
-
-  const priceSize = isEscala ? "text-4xl" : "text-2xl";
 
   return (
     <article className={cardCls} onMouseEnter={onHover} onMouseLeave={onLeave}>
-      {/* Badge */}
       {pack.badge && (
-        <span className={`absolute -top-3 left-4 rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white shadow ${
-          isEscala ? "bg-orange-500" : "bg-[#EA580C]"
-        }`}>
+        <span className={`absolute -top-3 left-4 rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white shadow ${isEscala ? "bg-orange-500" : "bg-[#EA580C]"}`}>
           {pack.badge}
         </span>
       )}
-
-      <h3 className={`font-bold mb-1 ${isEscala ? "text-xl" : "text-base"} text-gray-900`}>
-        {pack.name}
-      </h3>
-
+      <h3 className={`font-bold mb-1 ${isEscala ? "text-xl" : "text-base"} text-gray-900`}>{pack.name}</h3>
       {pack.originalPrice && (
-        <div className="text-xs mb-0.5 text-gray-500">
-          De <span className="line-through">{brl(pack.originalPrice)}</span>
-        </div>
+        <div className="text-xs mb-0.5 text-gray-500">De <span className="line-through">{brl(pack.originalPrice)}</span></div>
       )}
-
       <div className="mb-1 flex items-baseline gap-1.5">
-        {pack.originalPrice && (
-          <span className={`text-xs font-semibold ${isEscala ? "text-orange-500" : "text-gray-500"}`}>Por</span>
-        )}
-        <span className={`font-black tabular-nums ${priceSize} text-gray-900`}>{brl(pack.price)}</span>
+        {pack.originalPrice && <span className={`text-xs font-semibold ${isEscala ? "text-orange-500" : "text-gray-500"}`}>Por</span>}
+        <span className={`font-black tabular-nums ${isEscala ? "text-4xl" : "text-2xl"} text-gray-900`}>{brl(pack.price)}</span>
       </div>
       <div className="text-xs mb-4 text-gray-500">pacote único</div>
-
-      <p className="text-sm mb-5 text-gray-500">{pack.short}</p>
-
+      <p className="text-sm mb-5 text-gray-500 flex-1">{pack.ideal}</p>
       <div className="space-y-3 mb-5">
-        <MetricBar label="Alcance" value={pack.reach} pct={pct} />
-        <MetricBar label="Visualizações" value={pack.views} pct={pct} />
-        <MetricBar label="Interações" value={pack.interactions} pct={pct} />
-        <MetricBar label="Conversão" value={pack.conversion} pct={pct} />
+        <MBar label="Alcance" value={pack.reach} pct={pct} />
+        <MBar label="Visualizações" value={pack.views} pct={pct} />
+        <MBar label="Conversão" value={pack.conversion} pct={pct} />
       </div>
-
-      <div className="mt-auto rounded-xl bg-gray-50 px-3 py-2.5 text-xs text-gray-500 mb-5">
-        <span className="font-semibold text-gray-700">Ideal para: </span>
-        {pack.ideal}
-      </div>
-
-      {isInicio && (
-        <Button variant="outline" onClick={onActivate} className="w-full border-gray-300 text-gray-600 hover:border-orange-400 hover:text-orange-600">
-          <Zap className="mr-2 h-4 w-4" /> Ativar impulsionamento
-        </Button>
-      )}
-      {isAceleracao && (
-        <Button onClick={onActivate} className="w-full bg-orange-500 text-white shadow-md shadow-orange-500/25 hover:bg-orange-600">
-          <Zap className="mr-2 h-4 w-4" /> Ativar impulsionamento
-        </Button>
-      )}
-      {isEscala && (
-        <Button onClick={onActivate} className="btn-escala-glow w-full bg-orange-500 text-white hover:bg-orange-600">
-          <Flame className="mr-2 h-4 w-4" /> Ativar impulsionamento
-        </Button>
-      )}
+      {isInicio    && <Button variant="outline" onClick={onActivate} className="w-full border-gray-300 text-gray-600 hover:border-orange-400 hover:text-orange-600"><Zap className="mr-2 h-4 w-4" /> Ativar impulsionamento</Button>}
+      {isAceleracao && <Button onClick={onActivate} className="w-full bg-orange-500 text-white shadow-md shadow-orange-500/25 hover:bg-orange-600"><Zap className="mr-2 h-4 w-4" /> Ativar impulsionamento</Button>}
+      {isEscala    && <Button onClick={onActivate} className="legacy-escala-glow w-full bg-orange-500 text-white hover:bg-orange-600"><Flame className="mr-2 h-4 w-4" /> Ativar impulsionamento</Button>}
     </article>
   );
 }
 
-// ─── Resultados Reais ─────────────────────────────────────────────────────────
-const RESULTADO_IMAGES = [
-  "/resultados/resultado-1.jpg",
-  "/resultados/resultado-2.jpg",
-  "/resultados/resultado-3.jpg",
-  "/resultados/resultado-4.jpg",
-  "/resultados/resultado-5.jpg",
-  "/resultados/resultado-6.jpg",
-];
-
-function ResultadosReaisSection() {
-  return (
-    <section className="mt-10 rounded-2xl border border-white/10 bg-[#0D0D0D] p-6 md:p-8">
-      {/* Header */}
-      <div className="mb-6">
-        <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#EE4D2D]">
-          PROVA SOCIAL
-        </span>
-        <h3 className="mt-2 text-xl font-black text-white">
-          Resultados Reais de Quem Impulsionou
-        </h3>
-        <p className="mt-1 text-sm text-white/50">
-          Prints reais enviados pelos nossos vendedores
-        </p>
-      </div>
-
-      {/* Gallery */}
-      <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide">
-        {RESULTADO_IMAGES.map((src, i) => (
-          <div
-            key={i}
-            className="snap-start flex-shrink-0 overflow-hidden rounded-2xl border border-white/10 transition-all duration-300 hover:shadow-[0_0_20px_rgba(238,77,45,0.3)]"
-            style={{ width: 200, aspectRatio: "9 / 16" }}
-          >
-            <img
-              src={src}
-              alt={`Resultado ${i + 1}`}
-              className="h-full w-full object-cover"
-            />
-          </div>
-        ))}
-      </div>
-
-      {/* CTA */}
-      <p className="mt-5 text-center text-sm font-bold text-[#EE4D2D]">
-        🔥 Quer ser o próximo? Escolha seu pack acima.
-      </p>
-    </section>
-  );
-}
-
-function MetricBar({ label, value, pct, dark }: { label: string; value: string; pct: number; dark?: boolean }) {
-  return (
-    <div>
-      <div className="mb-1 flex items-center justify-between text-[11px]">
-        <span className={dark ? "text-white/60" : "text-gray-400"}>{label}</span>
-        <span className={`font-semibold ${dark ? "text-white" : "text-gray-700"}`}>{value}</span>
-      </div>
-      <div className={`h-1.5 w-full overflow-hidden rounded-full ${dark ? "bg-white/20" : "bg-gray-100"}`}>
-        <div
-          className={`h-full rounded-full transition-all duration-700 ${dark ? "bg-white/80" : "bg-orange-500"}`}
-          style={{ width: `${pct}%` }}
-        />
-      </div>
-    </div>
-  );
-}
-
-function HowItWorksStep({ icon, label, sub }: { icon: React.ReactNode; label: string; sub: string }) {
+function LegacyStep({ icon, label, sub }: { icon: React.ReactNode; label: string; sub: string }) {
   return (
     <div className="flex w-40 flex-col items-center text-center">
-      <div className="flex h-16 w-16 items-center justify-center rounded-2xl border-2 border-orange-100 bg-orange-50 shadow-sm">
-        {icon}
-      </div>
+      <div className="flex h-16 w-16 items-center justify-center rounded-2xl border-2 border-orange-100 bg-orange-50 shadow-sm">{icon}</div>
       <p className="mt-3 text-sm font-bold text-gray-800">{label}</p>
       <p className="mt-1 text-xs text-gray-400">{sub}</p>
     </div>
   );
 }
 
-// ─── Legacy helpers ───────────────────────────────────────────────────────────
-function Row({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
-  return (
-    <li className="flex items-start justify-between gap-3">
-      <span className="flex items-center gap-2 text-muted-foreground">{icon}{label}</span>
-      <span className="text-right font-medium">{value}</span>
-    </li>
-  );
-}
-
+// ─── Boost performance (shared) ───────────────────────────────────────────────
 function BoostPerformanceSection({ boost }: { boost: BoostInfo | null }) {
   if (!boost) {
     return (
@@ -864,10 +1000,12 @@ function BoostPerformanceSection({ boost }: { boost: BoostInfo | null }) {
       : boost.completed
         ? { text: "Elegível para análise da garantia condicional.", tone: "text-amber-800 bg-amber-50 border-amber-200" }
         : { text: "O impulsionamento ainda está em acompanhamento.", tone: "text-violet-700 bg-violet-50 border-violet-200" };
-  const retornoLabel = boost.eventsReleased === 0
-    ? "aguardando primeiras vendas"
-    : `${boost.returnMultiplier.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 2 })}x o valor investido`;
+  const retornoLabel =
+    boost.eventsReleased === 0
+      ? "aguardando primeiras vendas"
+      : `${boost.returnMultiplier.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 2 })}x o valor investido`;
   const fmtDate = (s: string) => new Date(s).toLocaleDateString("pt-BR");
+
   return (
     <div className="mb-6 overflow-hidden rounded-2xl border border-amber-500/30 bg-white p-5 shadow-sm">
       <div className="flex items-center gap-2">
@@ -877,20 +1015,23 @@ function BoostPerformanceSection({ boost }: { boost: BoostInfo | null }) {
         <div>
           <h3 className="text-base font-semibold">Desempenho do impulsionamento</h3>
           <p className="text-xs text-muted-foreground">
-            {boost.completed ? "Último impulsionamento concluído" : "Impulsionamento em andamento"} • Pack ativo: <strong>{boost.packName}</strong>
+            {boost.completed ? "Último impulsionamento concluído" : "Impulsionamento em andamento"} • Pack ativo:{" "}
+            <strong>{boost.packName}</strong>
           </p>
         </div>
       </div>
       <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat icon={<Wallet className="h-3.5 w-3.5" />} label="Investimento" value={brl(boost.packValue)} />
-        <Stat icon={<Sparkles className="h-3.5 w-3.5" />} label="Vendas geradas" value={String(boost.eventsReleased)} />
-        <Stat icon={<TrendingUp className="h-3.5 w-3.5" />} label="Comissões geradas" value={brl(boost.commissionTotal)} accent />
-        <Stat icon={<BarChart3 className="h-3.5 w-3.5" />} label="Retorno atual" value={retornoLabel} />
+        <BStat icon={<Wallet className="h-3.5 w-3.5" />} label="Investimento" value={brl(boost.packValue)} />
+        <BStat icon={<Sparkles className="h-3.5 w-3.5" />} label="Vendas geradas" value={String(boost.eventsReleased)} />
+        <BStat icon={<TrendingUp className="h-3.5 w-3.5" />} label="Comissões geradas" value={brl(boost.commissionTotal)} accent />
+        <BStat icon={<BarChart3 className="h-3.5 w-3.5" />} label="Retorno atual" value={retornoLabel} />
       </div>
       <div className="mt-4">
         <div className="mb-1 flex items-center justify-between text-xs text-muted-foreground">
           <span>Progresso do impulsionamento</span>
-          <span className="font-medium text-foreground">{boost.completed ? "Impulsionamento concluído" : `${pct}% concluído`}</span>
+          <span className="font-medium text-foreground">
+            {boost.completed ? "Impulsionamento concluído" : `${pct}% concluído`}
+          </span>
         </div>
         <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
           <div className="h-full bg-gradient-to-r from-amber-400 to-orange-500 transition-all" style={{ width: `${pct}%` }} />
@@ -910,7 +1051,7 @@ function BoostPerformanceSection({ boost }: { boost: BoostInfo | null }) {
   );
 }
 
-function Stat({ icon, label, value, accent }: { icon: React.ReactNode; label: string; value: string; accent?: boolean }) {
+function BStat({ icon, label, value, accent }: { icon: React.ReactNode; label: string; value: string; accent?: boolean }) {
   return (
     <div className="rounded-xl border border-border bg-card p-3">
       <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-muted-foreground">
