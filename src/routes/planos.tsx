@@ -1387,8 +1387,8 @@ function PlanosPage() {
       <FeaturesSection />
       <HowItWorksSection />
       <PricingSection />
-      <TestimonialsSection />
       <GuaranteeSection />
+      <TestimonialsSection />
       <FAQSection />
       <FinalCTASection />
       <FooterSection />
