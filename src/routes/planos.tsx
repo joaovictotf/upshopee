@@ -1113,36 +1113,38 @@ function PricingSection() {
             <hr className="border-white/10 mb-6" />
             <p className="text-white/60 text-sm text-center mb-4">Como prefere pagar?</p>
 
-            {/* PIX — MAIN (large, prominent) */}
-            <div className="relative mb-3">
-              <span className="absolute -top-3 right-4 bg-[#32BCAD] text-white text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full z-10">
-                MAIS POPULAR
-              </span>
+            {/* Payment options — both large, equal prominence */}
+            <div className="flex flex-col gap-3 mb-4">
+              {/* PIX */}
               <a
                 href={LINKS[paymentModal.plan!].pix}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center gap-3 bg-[#0D2B1F] border-2 border-[#32BCAD] rounded-2xl py-5 w-full hover:bg-[#0D3524] transition-all"
+                className="flex items-center gap-4 bg-[#0D2B1F] border-2 border-[#32BCAD] rounded-2xl py-5 px-5 w-full hover:bg-[#0D3524] transition-all"
               >
-                <svg viewBox="0 0 512 512" width="24" height="24" fill="#32BCAD">
+                <svg viewBox="0 0 512 512" width="28" height="28" fill="#32BCAD" style={{ flexShrink: 0 }}>
                   <path d="M242.4 292.5C247.8 287.1 255.1 284.1 262.5 284.1C269.9 284.1 277.2 287.1 282.6 292.5L364.1 374C377 386.9 393.9 394.1 412.1 394.1H427.4L344.6 476.8C319.9 501.5 279.6 501.5 254.9 476.8L172.8 394.1H188.4C206.6 394.1 223.5 386.9 236.4 374L242.4 292.5zM282.6 219.5C277.2 224.9 269.9 227.9 262.5 227.9C255.1 227.9 247.8 224.9 242.4 219.5L160.1 138C147.2 125.1 130.3 117.9 112.1 117.9H96.8L179.6 35.2C204.3 10.5 244.6 10.5 269.3 35.2L352.1 117.9H336.5C318.3 117.9 301.4 125.1 288.5 138L282.6 219.5z"/>
                 </svg>
                 <div>
-                  <p className="text-white font-bold">PIX</p>
-                  <p className="text-[#32BCAD] text-xs">⚡ Aprovação em 1 minuto</p>
+                  <p className="text-white font-bold text-base">PIX</p>
+                  <p className="text-[#32BCAD] text-xs mt-0.5">Aprovação instantânea</p>
+                </div>
+              </a>
+
+              {/* Cartão */}
+              <a
+                href={LINKS[paymentModal.plan!].cartao}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-4 bg-[#1A1030] border-2 border-purple-700 rounded-2xl py-5 px-5 w-full hover:bg-[#1E1438] transition-all"
+              >
+                <span className="text-2xl" style={{ flexShrink: 0 }}>💳</span>
+                <div>
+                  <p className="text-white font-bold text-base">Cartão de Crédito</p>
+                  <p className="text-purple-400 text-xs mt-0.5">Até 12x · Visa, Master, Elo, Amex</p>
                 </div>
               </a>
             </div>
-
-            {/* Card — SECONDARY (small text link) */}
-            <a
-              href={LINKS[paymentModal.plan!].cartao}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block text-center text-white/50 text-sm py-2 hover:text-white/70 transition-colors mb-4"
-            >
-              💳 ou pagar com cartão em até 12x →
-            </a>
 
             {/* Trust */}
             <div className="flex items-center justify-center gap-2 text-white/40 text-xs mb-4">
