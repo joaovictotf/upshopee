@@ -978,7 +978,6 @@ const MENSAL_FEATURES = ["Robô Divulgador ilimitado", "Produtos validados para 
 const VITALICIO_FEATURES = ["Robô Divulgador ilimitado", "Produtos validados para vender", "Publicação nos maiores grupos", "Copy de IA para WhatsApp", "Dashboard estilo Shopee", "BÔNUS: acesso vitalício a todos os recursos futuros"];
 
 function PricingSection() {
-  const { label } = useCountdown(600);
   const [paymentModal, setPaymentModal] = useState<{
     open: boolean;
     plan: 'mensal' | 'vitalicio' | null;
@@ -1047,11 +1046,6 @@ function PricingSection() {
             <h3 style={{ fontSize: 20, fontWeight: 700, margin: "0 0 4px", color: "#FFFFFF", fontFamily: "'Barlow', sans-serif" }}>Vitalício</h3>
             <p style={{ fontSize: 13, color: "#888888", margin: "0 0 20px", fontFamily: "'Barlow', sans-serif" }}>Pague uma vez. Use para sempre.</p>
 
-            <div style={{ background: "rgba(238,77,45,0.06)", border: "1px solid rgba(238,77,45,0.15)", borderRadius: 10, padding: "10px 16px", marginBottom: 20, textAlign: "center" as const }}>
-              <div style={{ fontSize: 11, color: "#888888", fontWeight: 600, marginBottom: 4, fontFamily: "'Barlow', sans-serif" }}>⏰ Oferta expira em:</div>
-              <div style={{ fontSize: 30, fontWeight: 900, color: "#EE4D2D", letterSpacing: "3px", fontVariantNumeric: "tabular-nums", fontFamily: "'Barlow', sans-serif" }}>{label}</div>
-            </div>
-
             <div style={{ marginBottom: 28 }}>
               <div style={{ fontSize: 13, color: "#888888", textDecoration: "line-through", marginBottom: 2, fontFamily: "'Barlow', sans-serif" }}>De R$528</div>
               <div>
@@ -1082,53 +1076,84 @@ function PricingSection() {
             </div>
           </div>
         </div>
-        <p className="text-center mt-6 text-sm font-bold text-[#EE4D2D] animate-pulse">
+        <div className="flex items-center justify-center gap-2 mt-8 text-white/50 text-sm">
+          <span>🛡️</span>
+          <span>7 dias de garantia total — devolvemos 100% se não gostar</span>
+        </div>
+        <p className="text-center mt-4 text-sm font-bold text-[#EE4D2D] animate-pulse">
           496 / 500 vagas — restam apenas 4 vagas
         </p>
       </div>
 
       {paymentModal.open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="bg-[#0F0F1A] rounded-3xl p-8 max-w-sm w-full border border-white/10">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+          onClick={() => setPaymentModal({ open: false, plan: null })}
+        >
+          <div
+            className="bg-[#0F0F1A] rounded-3xl p-8 max-w-sm w-full border border-white/10"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Plan icon */}
             <div className="flex justify-center mb-4">
               <div className="w-16 h-16 rounded-2xl bg-[#EE4D2D] flex items-center justify-center text-3xl">🚀</div>
             </div>
+            {/* Plan name */}
             <p className="text-[#EE4D2D] font-black text-xs uppercase tracking-widest text-center mb-2">
               {paymentModal.plan === 'mensal' ? 'PLANO MENSAL' : 'PLANO VITALÍCIO'}
             </p>
+            {/* Price */}
             <h2 className="text-white font-black text-4xl text-center mb-1">
               {paymentModal.plan === 'mensal' ? 'R$145' : 'R$285'}
             </h2>
+            {/* Subtitle */}
             <p className="text-white/50 text-sm text-center mb-6">
               {paymentModal.plan === 'mensal' ? 'por mês · cancele quando quiser' : 'pagamento único — acesso vitalício'}
             </p>
             <hr className="border-white/10 mb-6" />
             <p className="text-white/60 text-sm text-center mb-4">Como prefere pagar?</p>
-            <a href={LINKS[paymentModal.plan!].pix} target="_blank" rel="noopener noreferrer"
-              className="flex items-center gap-4 bg-[#0D2B1F] border border-green-800/50 rounded-2xl p-4 mb-3 hover:bg-[#0D3524] transition-all group">
-              <div className="w-10 h-10 rounded-xl bg-green-600 flex items-center justify-center text-xl flex-shrink-0">💚</div>
-              <div className="flex-1">
-                <p className="text-white font-bold text-sm">PIX</p>
-                <p className="text-green-400 text-xs">Aprovação instantânea · Mais rápido</p>
-              </div>
-              <span className="text-white/40 group-hover:text-white transition-colors">›</span>
-            </a>
-            <a href={LINKS[paymentModal.plan!].cartao} target="_blank" rel="noopener noreferrer"
-              className="flex items-center gap-4 bg-[#1A1030] border border-purple-800/50 rounded-2xl p-4 mb-6 hover:bg-[#1E1438] transition-all group">
-              <div className="w-10 h-10 rounded-xl bg-purple-700 flex items-center justify-center text-xl flex-shrink-0">💳</div>
-              <div className="flex-1">
-                <p className="text-white font-bold text-sm">Cartão de Crédito</p>
-                <p className="text-purple-400 text-xs">Até 12x · Visa, Master, Elo, Amex</p>
-              </div>
-              <span className="text-white/40 group-hover:text-white transition-colors">›</span>
-            </a>
-            <div className="flex items-center justify-center gap-4 text-white/40 text-xs mb-4">
-              <span>🔒 Pagamento 100% seguro</span>
-              <span>·</span>
-              <span>🛡️ 7 dias de garantia</span>
+
+            {/* PIX — MAIN (large, prominent) */}
+            <div className="relative mb-3">
+              <span className="absolute -top-3 right-4 bg-[#32BCAD] text-white text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full z-10">
+                MAIS POPULAR
+              </span>
+              <a
+                href={LINKS[paymentModal.plan!].pix}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-3 bg-[#0D2B1F] border-2 border-[#32BCAD] rounded-2xl py-5 w-full hover:bg-[#0D3524] transition-all"
+              >
+                <svg viewBox="0 0 512 512" width="24" height="24" fill="#32BCAD">
+                  <path d="M242.4 292.5C247.8 287.1 255.1 284.1 262.5 284.1C269.9 284.1 277.2 287.1 282.6 292.5L364.1 374C377 386.9 393.9 394.1 412.1 394.1H427.4L344.6 476.8C319.9 501.5 279.6 501.5 254.9 476.8L172.8 394.1H188.4C206.6 394.1 223.5 386.9 236.4 374L242.4 292.5zM282.6 219.5C277.2 224.9 269.9 227.9 262.5 227.9C255.1 227.9 247.8 224.9 242.4 219.5L160.1 138C147.2 125.1 130.3 117.9 112.1 117.9H96.8L179.6 35.2C204.3 10.5 244.6 10.5 269.3 35.2L352.1 117.9H336.5C318.3 117.9 301.4 125.1 288.5 138L282.6 219.5z"/>
+                </svg>
+                <div>
+                  <p className="text-white font-bold">PIX</p>
+                  <p className="text-[#32BCAD] text-xs">⚡ Aprovação em 1 minuto</p>
+                </div>
+              </a>
             </div>
-            <button onClick={() => setPaymentModal({ open: false, plan: null })}
-              className="w-full text-white/40 text-sm hover:text-white transition-colors py-2">
+
+            {/* Card — SECONDARY (small text link) */}
+            <a
+              href={LINKS[paymentModal.plan!].cartao}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block text-center text-white/50 text-sm py-2 hover:text-white/70 transition-colors mb-4"
+            >
+              💳 ou pagar com cartão em até 12x →
+            </a>
+
+            {/* Trust */}
+            <div className="flex items-center justify-center gap-2 text-white/40 text-xs mb-4">
+              <span>🔒 Pagamento 100% seguro · 🛡️ 7 dias de garantia</span>
+            </div>
+
+            {/* Close */}
+            <button
+              onClick={() => setPaymentModal({ open: false, plan: null })}
+              className="w-full text-white/40 text-sm hover:text-white transition-colors py-2"
+            >
               Fechar
             </button>
           </div>

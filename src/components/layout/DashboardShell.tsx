@@ -82,7 +82,7 @@ function Logo() {
   );
 }
 
-export function DashboardShell({ children, title, subtitle, actions, onLightningClick }: { children: ReactNode; title: string; subtitle?: string; actions?: ReactNode; onLightningClick?: () => void }) {
+export function DashboardShell({ children, title, subtitle, actions, onLightningClick, onResetMetrics }: { children: ReactNode; title: string; subtitle?: string; actions?: ReactNode; onLightningClick?: () => void; onResetMetrics?: () => void }) {
   const { user, logout, isAdmin, selectedMarketplace, privacy, setPrivacy, adminPresentationMode, toggleAdminPresentationMode, hasLightningAccess, recordLightningClick } = useApp();
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -235,26 +235,39 @@ export function DashboardShell({ children, title, subtitle, actions, onLightning
       {showCopaPopup && <CopaPopup onClose={handleCopaClose} onView={handleCopaView} />}
 
       {hasLightningAccess && (
-        <button
-          onClick={() => {
-            onLightningClick?.();
-            void (async () => {
-              const r = await recordLightningClick();
-              if (!r.ok) {
-                toast.error(r.error || "Não foi possível registrar a comissão.");
-                return;
+        <div className="flex gap-2 fixed bottom-6 right-6 z-50">
+          <button
+            onClick={() => {
+              if (window.confirm('Zerar as vendas de hoje?')) {
+                onResetMetrics?.();
               }
-              toast.success(`Nova comissão registrada — ${brl(r.amount ?? 0)}`, {
-                description: `Comissão adicionada ao painel em ${MARKETPLACE_LABEL[selectedMarketplace]}.`,
-              });
-            })();
-          }}
-          aria-label={`Simular venda em ${MARKETPLACE_LABEL[selectedMarketplace]}`}
-          title={`Simular venda em ${MARKETPLACE_LABEL[selectedMarketplace]}`}
-          className="fixed bottom-6 right-6 z-30 grid h-12 w-12 place-items-center rounded-full bg-primary text-primary-foreground shadow-2xl shadow-primary/40 ring-1 ring-primary/40 transition hover:scale-105"
-        >
-          <Zap className="h-5 w-5" />
-        </button>
+            }}
+            className="w-8 h-8 bg-[#333] hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs transition-all"
+            title="Zerar vendas de hoje"
+          >
+            ✕
+          </button>
+          <button
+            onClick={() => {
+              onLightningClick?.();
+              void (async () => {
+                const r = await recordLightningClick();
+                if (!r.ok) {
+                  toast.error(r.error || "Não foi possível registrar a comissão.");
+                  return;
+                }
+                toast.success(`Nova comissão registrada — ${brl(r.amount ?? 0)}`, {
+                  description: `Comissão adicionada ao painel em ${MARKETPLACE_LABEL[selectedMarketplace]}.`,
+                });
+              })();
+            }}
+            aria-label={`Simular venda em ${MARKETPLACE_LABEL[selectedMarketplace]}`}
+            title={`Simular venda em ${MARKETPLACE_LABEL[selectedMarketplace]}`}
+            className="grid h-12 w-12 place-items-center rounded-full bg-primary text-primary-foreground shadow-2xl shadow-primary/40 ring-1 ring-primary/40 transition hover:scale-105"
+          >
+            <Zap className="h-5 w-5" />
+          </button>
+        </div>
       )}
     </div>
   );

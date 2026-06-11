@@ -113,6 +113,10 @@ function NewDashboard() {
     }));
   }, []);
 
+  const handleReset = useCallback(() => {
+    setMetricsBoost({ visitors: 0, views: 0, orders: 0, units: 0, buyers: 0 });
+  }, []);
+
   useEffect(() => {
     const id = setInterval(() => setStamp(formatStamp()), 1000);
     return () => clearInterval(id);
@@ -161,7 +165,7 @@ function NewDashboard() {
   }));
 
   return (
-    <DashboardShell title="Dashboard" subtitle="Painel ShopSync para Shopee" onLightningClick={handleLightning}>
+    <DashboardShell title="Dashboard" subtitle="Painel ShopSync para Shopee" onLightningClick={handleLightning} onResetMetrics={handleReset}>
       <BoostActiveMiniCard />
       <BoostPromoModal />
       <NewShopeeHeroPanel
