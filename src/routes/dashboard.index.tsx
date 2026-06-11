@@ -24,7 +24,7 @@ import {
   Package,
   Flame,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { WithdrawalButton } from "../components/withdrawal/WithdrawalDialog";
 import { BoostPromoModal } from "../components/boost/BoostPromoModal";
 
@@ -96,29 +96,9 @@ function DashboardHome() {
 // ---------------------------------------------------------------------------
 
 function NewDashboard() {
-  const { privacy, setPrivacy, isAdmin, getCommissionSum } = useApp();
+  const { privacy, isAdmin, getCommissionSum, isTodayReset } = useApp();
   const [range, setRange] = useState<RangeKey>("today");
   const [stamp, setStamp] = useState(() => formatStamp());
-  const [metricsBoost, setMetricsBoost] = useState({ visitors: 0, views: 0, orders: 0, units: 0, buyers: 0 });
-  const [todayBaseline, setTodayBaseline] = useState({ commission: 0, orders: 0, units: 0, buyers: 0, visitors: 0, views: 0 });
-  const todayValuesRef = useRef({ commission: 0, orders: 0, units: 0, buyers: 0, visitors: 0, views: 0 });
-
-  const handleLightning = useCallback(() => {
-    const addV = Math.floor(Math.random() * 26) + 15;
-    const addVw = Math.floor(Math.random() * 76) + 45;
-    setMetricsBoost(prev => ({
-      visitors: prev.visitors + addV,
-      views: prev.views + addVw,
-      orders: prev.orders + 1,
-      units: prev.units + 1,
-      buyers: prev.buyers + 1,
-    }));
-  }, []);
-
-  const handleReset = useCallback(() => {
-    setTodayBaseline({ ...todayValuesRef.current });
-    setMetricsBoost({ visitors: 0, views: 0, orders: 0, units: 0, buyers: 0 });
-  }, []);
 
   useEffect(() => {
     const id = setInterval(() => setStamp(formatStamp()), 1000);
@@ -130,41 +110,29 @@ function NewDashboard() {
     totalOrders: hookOrders,
     totalUnits: hookUnits,
     totalBuyers: hookBuyers,
-    conversionRate: hookConversionRate,
     topProducts,
   } = useShopSyncData(period);
 
-  // Use getCommissionSum so lightning-click totals are always reflected in the hero value.
-  // useShopSyncData only sums salesOrders and knows nothing about lightningTotals.
+  // Single source of truth: data.salesOrders (lightning clicks included).
   const totalCommission = getCommissionSum("shopee", range);
 
-  // Admin "today": real Supabase data is preferred (admin now fetches ALL orders).
-  // Fall back to hardcoded presentation counts only when real data is genuinely 0
-  // (no users have orders today yet), so the dashboard always looks live.
-  const isAdminToday = isAdmin && range === "today";
-  const totalOrders = isAdminToday && hookOrders === 0 ? 252 : hookOrders;
-  const totalUnits = isAdminToday && hookUnits === 0 ? 294 : hookUnits;
-  const totalBuyers = isAdminToday && hookBuyers === 0 ? 187 : hookBuyers;
-  const conversionRate = isAdminToday && hookConversionRate === 0 ? 5.56 : hookConversionRate;
+  // Admin "today" presentation baseline keeps the panel looking live at the
+  // start of the day; real orders (lightning included) stack on top of it.
+  // After a reset (✕) the baseline is suppressed so every metric reads 0.
+  const showBaseline = isAdmin && range === "today" && !isTodayReset;
+  const displayCommission = totalCommission;
+  const displayOrders = (showBaseline ? 252 : 0) + hookOrders;
+  const displayUnits = (showBaseline ? 294 : 0) + hookUnits;
+  const displayBuyers = (showBaseline ? 187 : 0) + hookBuyers;
+  const displayVisitors = Math.max(0, displayOrders * 18);
+  const displayViews = Math.max(0, displayOrders * 55);
+  const displayConversionRate =
+    displayOrders === 0 || displayVisitors === 0
+      ? "0.00"
+      : ((displayOrders / displayVisitors) * 100).toFixed(2);
 
-  const baseVisitors = Math.max(0, totalOrders * 18);
-  const baseViews = Math.max(0, totalOrders * 55);
-
-  // Keep ref current so handleReset captures the latest "today" values without stale closure
-  todayValuesRef.current = { commission: totalCommission, orders: totalOrders, units: totalUnits, buyers: totalBuyers, visitors: baseVisitors, views: baseViews };
-
-  const bl = range === "today" ? todayBaseline : { commission: 0, orders: 0, units: 0, buyers: 0, visitors: 0, views: 0 };
-  const displayCommission = Math.max(0, totalCommission - bl.commission);
-  const displayOrders = Math.max(0, totalOrders - bl.orders) + metricsBoost.orders;
-  const displayUnits = Math.max(0, totalUnits - bl.units) + metricsBoost.units;
-  const displayBuyers = Math.max(0, totalBuyers - bl.buyers) + metricsBoost.buyers;
-  const displayVisitors = Math.max(0, baseVisitors - bl.visitors) + metricsBoost.visitors;
-  const displayViews = Math.max(0, baseViews - bl.views) + metricsBoost.views;
-  const displayConversionRate = displayOrders === 0 && displayVisitors === 0
-    ? "0.00"
-    : displayVisitors > 0
-      ? (displayOrders / displayVisitors * 100).toFixed(2)
-      : conversionRate.toFixed(2);
+  const todayCommission = getCommissionSum("shopee", "today");
+  const todayFlat = isTodayReset && todayCommission === 0;
 
   const top5 = topProducts.map((p) => ({
     productId: p.productId,
@@ -175,7 +143,7 @@ function NewDashboard() {
   }));
 
   return (
-    <DashboardShell title="Dashboard" subtitle="Painel ShopSync para Shopee" onLightningClick={handleLightning} onResetMetrics={handleReset}>
+    <DashboardShell title="Dashboard" subtitle="Painel ShopSync para Shopee">
       <BoostActiveMiniCard />
       <BoostPromoModal />
       <NewShopeeHeroPanel
@@ -196,7 +164,7 @@ function NewDashboard() {
           />
         </div>
         <div className="lg:col-span-6 flex flex-col">
-          <NewSalesChart range={range} onRangeChange={setRange} />
+          <NewSalesChart range={range} onRangeChange={setRange} todayFlat={todayFlat} />
         </div>
         <div className="lg:col-span-3 flex flex-col">
           <Top5Block items={top5} />
@@ -348,9 +316,11 @@ function NewMetricCell({ label, value }: { label: string; value: string }) {
 function NewSalesChart({
   range,
   onRangeChange,
+  todayFlat,
 }: {
   range: RangeKey;
   onRangeChange: (r: RangeKey) => void;
+  todayFlat?: boolean;
 }) {
   const chartData = useMemo(() => {
     if (range === "today") {
@@ -365,7 +335,8 @@ function NewSalesChart({
         const ontemRaw = Math.round(
           peakAt(i, 10, 2.2, 220) + peakAt(i, 17, 2.6, 260) + peakAt(i, 14, 2.5, 110)
         );
-        const hoje = i <= h ? hojeRaw : null;
+        // After a reset with no new sales, today's line stays flat at zero.
+        const hoje = i <= h ? (todayFlat ? 0 : hojeRaw) : null;
         arr.push({ label: pad2(i), hoje, ontem: ontemRaw });
       }
       return arr;
@@ -385,7 +356,7 @@ function NewSalesChart({
         ontem,
       };
     });
-  }, [range]);
+  }, [range, todayFlat]);
 
   // Yesterday's date label for legend
   const yesterday = new Date();

@@ -23,7 +23,7 @@ const BOOST_PACK_50_CHECKOUT_URL = "https://go.ironpayapp.com.br/a7brsesrse";
 const BOOST_PACK_150_CHECKOUT_URL = "https://go.ironpayapp.com.br/kteiyf8epw";
 const BOOST_PACK_400_CHECKOUT_URL = "https://go.ironpayapp.com.br/bsyspglspg";
 
-export const Route = createFileRoute("/dashboard/impulsionar-vendas")({
+export const Route = createFileRoute("/dashboard/impulsionar-vendas/backup")({
   component: ImpulsionarVendasPage,
 });
 

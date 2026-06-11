@@ -37,6 +37,7 @@ import { Route as DashboardGruposRouteImport } from './routes/dashboard.grupos'
 import { Route as DashboardConfiguracoesRouteImport } from './routes/dashboard.configuracoes'
 import { Route as DashboardConectarContasRouteImport } from './routes/dashboard.conectar-contas'
 import { Route as DashboardAdicionarAdmsRouteImport } from './routes/dashboard.adicionar-adms'
+import { Route as DashboardImpulsionarVendasBackupRouteImport } from './routes/dashboard.impulsionar-vendas.backup'
 
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
@@ -180,6 +181,12 @@ const DashboardAdicionarAdmsRoute = DashboardAdicionarAdmsRouteImport.update({
   path: '/adicionar-adms',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardImpulsionarVendasBackupRoute =
+  DashboardImpulsionarVendasBackupRouteImport.update({
+    id: '/backup',
+    path: '/backup',
+    getParentRoute: () => DashboardImpulsionarVendasRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -194,7 +201,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/conectar-contas': typeof DashboardConectarContasRoute
   '/dashboard/configuracoes': typeof DashboardConfiguracoesRoute
   '/dashboard/grupos': typeof DashboardGruposRoute
-  '/dashboard/impulsionar-vendas': typeof DashboardImpulsionarVendasRoute
+  '/dashboard/impulsionar-vendas': typeof DashboardImpulsionarVendasRouteWithChildren
   '/dashboard/metricas': typeof DashboardMetricasRoute
   '/dashboard/meus-produtos': typeof DashboardMeusProdutosRoute
   '/dashboard/precificacao': typeof DashboardPrecificacaoRoute
@@ -210,6 +217,7 @@ export interface FileRoutesByFullPath {
   '/demo/vendas-clientes': typeof DemoVendasClientesRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/demo/': typeof DemoIndexRoute
+  '/dashboard/impulsionar-vendas/backup': typeof DashboardImpulsionarVendasBackupRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -222,7 +230,7 @@ export interface FileRoutesByTo {
   '/dashboard/conectar-contas': typeof DashboardConectarContasRoute
   '/dashboard/configuracoes': typeof DashboardConfiguracoesRoute
   '/dashboard/grupos': typeof DashboardGruposRoute
-  '/dashboard/impulsionar-vendas': typeof DashboardImpulsionarVendasRoute
+  '/dashboard/impulsionar-vendas': typeof DashboardImpulsionarVendasRouteWithChildren
   '/dashboard/metricas': typeof DashboardMetricasRoute
   '/dashboard/meus-produtos': typeof DashboardMeusProdutosRoute
   '/dashboard/precificacao': typeof DashboardPrecificacaoRoute
@@ -238,6 +246,7 @@ export interface FileRoutesByTo {
   '/demo/vendas-clientes': typeof DemoVendasClientesRoute
   '/dashboard': typeof DashboardIndexRoute
   '/demo': typeof DemoIndexRoute
+  '/dashboard/impulsionar-vendas/backup': typeof DashboardImpulsionarVendasBackupRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -253,7 +262,7 @@ export interface FileRoutesById {
   '/dashboard/conectar-contas': typeof DashboardConectarContasRoute
   '/dashboard/configuracoes': typeof DashboardConfiguracoesRoute
   '/dashboard/grupos': typeof DashboardGruposRoute
-  '/dashboard/impulsionar-vendas': typeof DashboardImpulsionarVendasRoute
+  '/dashboard/impulsionar-vendas': typeof DashboardImpulsionarVendasRouteWithChildren
   '/dashboard/metricas': typeof DashboardMetricasRoute
   '/dashboard/meus-produtos': typeof DashboardMeusProdutosRoute
   '/dashboard/precificacao': typeof DashboardPrecificacaoRoute
@@ -269,6 +278,7 @@ export interface FileRoutesById {
   '/demo/vendas-clientes': typeof DemoVendasClientesRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/demo/': typeof DemoIndexRoute
+  '/dashboard/impulsionar-vendas/backup': typeof DashboardImpulsionarVendasBackupRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -301,6 +311,7 @@ export interface FileRouteTypes {
     | '/demo/vendas-clientes'
     | '/dashboard/'
     | '/demo/'
+    | '/dashboard/impulsionar-vendas/backup'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -329,6 +340,7 @@ export interface FileRouteTypes {
     | '/demo/vendas-clientes'
     | '/dashboard'
     | '/demo'
+    | '/dashboard/impulsionar-vendas/backup'
   id:
     | '__root__'
     | '/'
@@ -359,6 +371,7 @@ export interface FileRouteTypes {
     | '/demo/vendas-clientes'
     | '/dashboard/'
     | '/demo/'
+    | '/dashboard/impulsionar-vendas/backup'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -570,15 +583,37 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardAdicionarAdmsRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/impulsionar-vendas/backup': {
+      id: '/dashboard/impulsionar-vendas/backup'
+      path: '/backup'
+      fullPath: '/dashboard/impulsionar-vendas/backup'
+      preLoaderRoute: typeof DashboardImpulsionarVendasBackupRouteImport
+      parentRoute: typeof DashboardImpulsionarVendasRoute
+    }
   }
 }
+
+interface DashboardImpulsionarVendasRouteChildren {
+  DashboardImpulsionarVendasBackupRoute: typeof DashboardImpulsionarVendasBackupRoute
+}
+
+const DashboardImpulsionarVendasRouteChildren: DashboardImpulsionarVendasRouteChildren =
+  {
+    DashboardImpulsionarVendasBackupRoute:
+      DashboardImpulsionarVendasBackupRoute,
+  }
+
+const DashboardImpulsionarVendasRouteWithChildren =
+  DashboardImpulsionarVendasRoute._addFileChildren(
+    DashboardImpulsionarVendasRouteChildren,
+  )
 
 interface DashboardRouteChildren {
   DashboardAdicionarAdmsRoute: typeof DashboardAdicionarAdmsRoute
   DashboardConectarContasRoute: typeof DashboardConectarContasRoute
   DashboardConfiguracoesRoute: typeof DashboardConfiguracoesRoute
   DashboardGruposRoute: typeof DashboardGruposRoute
-  DashboardImpulsionarVendasRoute: typeof DashboardImpulsionarVendasRoute
+  DashboardImpulsionarVendasRoute: typeof DashboardImpulsionarVendasRouteWithChildren
   DashboardMetricasRoute: typeof DashboardMetricasRoute
   DashboardMeusProdutosRoute: typeof DashboardMeusProdutosRoute
   DashboardPrecificacaoRoute: typeof DashboardPrecificacaoRoute
@@ -595,7 +630,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardConectarContasRoute: DashboardConectarContasRoute,
   DashboardConfiguracoesRoute: DashboardConfiguracoesRoute,
   DashboardGruposRoute: DashboardGruposRoute,
-  DashboardImpulsionarVendasRoute: DashboardImpulsionarVendasRoute,
+  DashboardImpulsionarVendasRoute: DashboardImpulsionarVendasRouteWithChildren,
   DashboardMetricasRoute: DashboardMetricasRoute,
   DashboardMeusProdutosRoute: DashboardMeusProdutosRoute,
   DashboardPrecificacaoRoute: DashboardPrecificacaoRoute,

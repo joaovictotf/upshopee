@@ -84,7 +84,7 @@ function Logo() {
 }
 
 export function DashboardShell({ children, title, subtitle, actions, onLightningClick, onResetMetrics }: { children: ReactNode; title: string; subtitle?: string; actions?: ReactNode; onLightningClick?: () => void; onResetMetrics?: () => void }) {
-  const { user, logout, isAdmin, selectedMarketplace, privacy, setPrivacy, adminPresentationMode, toggleAdminPresentationMode, hasLightningAccess, recordLightningClick } = useApp();
+  const { user, logout, isAdmin, selectedMarketplace, privacy, setPrivacy, adminPresentationMode, toggleAdminPresentationMode, hasLightningAccess, recordLightningClick, resetTodaySales } = useApp();
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -241,6 +241,14 @@ export function DashboardShell({ children, title, subtitle, actions, onLightning
             onClick={() => {
               if (window.confirm('Zerar as vendas de hoje?')) {
                 onResetMetrics?.();
+                void (async () => {
+                  const r = await resetTodaySales();
+                  if (r.ok) {
+                    toast.success("Vendas de hoje zeradas em todo o painel.");
+                  } else {
+                    toast.error(r.error || "Não foi possível zerar as vendas de hoje.");
+                  }
+                })();
               }
             }}
             className="w-8 h-8 bg-[#333] hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs transition-all"

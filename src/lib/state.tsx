@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { setGlobalPrivacy } from "./format";
 import { products as CATALOG } from "./mock/products";
 import { supabase } from "../integrations/supabase/client";
@@ -22,6 +22,7 @@ const ADMIN_DEMO_CONN_KEY = "shopesync_admin_demo_connections";
 const VENDAS_HOJE_KEY = (email: string) => `shopesync.vendashoje.${email.toLowerCase()}`;
 const COMMISSION_HIST_KEY = (email: string) => `shopesync.commissionhist.${email.toLowerCase()}`;
 const LAST_AUTO_SALE_KEY = (email: string) => `shopesync.lastautosale.${email.toLowerCase()}`;
+const TODAY_RESET_KEY = (email: string) => `shopesync.todayreset.${email.toLowerCase()}`;
 
 const READY_DELAY_MS = 5 * 60 * 60 * 1000; // 5h após pronto para 1ª venda automática
 const AUTO_SALE_INTERVAL_MS = 5 * 60 * 60 * 1000; // ~5h entre vendas automáticas
@@ -624,6 +625,8 @@ type Ctx = {
   isPresentationAdmin: boolean;
   hasLightningAccess: boolean;
   recordLightningClick: () => Promise<{ ok: boolean; error?: string; amount?: number }>;
+  resetTodaySales: () => Promise<{ ok: boolean; error?: string }>;
+  isTodayReset: boolean;
   listAllProfiles: () => Promise<Array<{ userId: string; email: string; fullName: string; phone?: string | null; createdAt?: number; approvalStatus: ApprovalStatus; isPresentationAdmin: boolean; isFullAdmin: boolean }>>;
   grantPresentationAdmin: (userId: string) => Promise<{ ok: boolean; error?: string }>;
   revokePresentationAdmin: (userId: string) => Promise<{ ok: boolean; error?: string }>;
@@ -802,9 +805,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [myWithdrawals, setMyWithdrawals] = useState<WithdrawalRequest[]>([]);
   const [accountStatus, setAccountStatus] = useState<ApprovalStatus | null>(null);
   const [isPresentationAdmin, setIsPresentationAdmin] = useState<boolean>(false);
-  // Lightning totals per period (today / last 7d / last 30d) — derived from
-  // dashboard_lightning_events. Source of truth for the lightning button.
-  const [lightningTotals, setLightningTotals] = useState<{ today: number; last7: number; last30: number }>({ today: 0, last7: 0, last30: 0 });
+  // Timestamp of the last "reset today" (✕ button) — only meaningful while it
+  // is still the same local day. Persisted per user in localStorage.
+  const [todayResetAt, setTodayResetAt] = useState<number | null>(null);
+
+  // Reset-window suppression: orders sold today before the last reset are
+  // hidden (and deleted server-side where policies allow). Ref keeps the
+  // realtime callbacks below from closing over a stale value.
+  const todayResetAtRef = useRef<number | null>(null);
+  useEffect(() => { todayResetAtRef.current = todayResetAt; }, [todayResetAt]);
+  const isResetSuppressed = (saleDate: number) => {
+    const ra = todayResetAtRef.current;
+    if (!ra) return false;
+    const resetDayStart = new Date(ra); resetDayStart.setHours(0, 0, 0, 0);
+    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+    if (resetDayStart.getTime() !== todayStart.getTime()) return false; // reset expires at midnight
+    return saleDate >= resetDayStart.getTime() && saleDate <= ra;
+  };
 
   const isAdmin = isAdminUser || isAdminEmail(user?.email);
 
@@ -830,7 +847,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setUser(null);
         setIsAdminUser(false);
         setIsPresentationAdmin(false);
-        setLightningTotals({ today: 0, last7: 0, last30: 0 });
+        setTodayResetAt(null);
         setCurrentUserId(null);
         setMyConnections({});
         setAllConnections({});
@@ -912,6 +929,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const las = localStorage.getItem(LAST_AUTO_SALE_KEY(email));
         setLastAutoSaleAt(las ? Number(las) || 0 : 0);
       } catch {}
+      try {
+        const tr = Number(localStorage.getItem(TODAY_RESET_KEY(email)) || 0);
+        setTodayResetAt(tr > 0 && dateKey(new Date(tr)) === dateKey(new Date()) ? tr : null);
+      } catch { setTodayResetAt(null); }
       setAuthReady(true);
     };
 
@@ -1033,12 +1054,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
         source: (r.source as string | null) ?? null,
       }));
 
+      // Hide today's orders that were cleared by the reset (✕) button. The
+      // server-side delete is best-effort; this keeps them out either way.
+      const visibleOrders = orders.filter((o) => !isResetSuppressed(o.saleDate));
+
       // Replace any existing remote-backed orders (those whose id matches a
       // sales_orders.id) with the fresh list, keeping local-only ones.
       const remoteIds = new Set(orders.map((o) => o.id));
       setData((s) => {
         const localOnly = s.salesOrders.filter((o) => !remoteIds.has(o.id) && !/^[0-9a-f-]{36}$/i.test(o.id));
-        const merged = [...orders, ...localOnly].sort((a, b) => b.saleDate - a.saleDate);
+        const merged = [...visibleOrders, ...localOnly].sort((a, b) => b.saleDate - a.saleDate);
 
         // Rebuild per-marketplace aggregates from these orders.
         const mps: Record<Marketplace, MarketplaceData> = { shopee: { ...s.marketplaces.shopee } };
@@ -1058,7 +1083,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       // Rebuild commissionHistory from these orders so getCommissionSum
       // (today / 7d / 30d) reflects the new sales.
       const hist: CommissionHistory = emptyHistory();
-      for (const o of orders) {
+      for (const o of visibleOrders) {
         const dk = dateKey(new Date(o.saleDate));
         const m = hist[o.marketplace] || {};
         m[dk] = Math.round(((m[dk] || 0) + o.netProfit) * 100) / 100;
@@ -1397,11 +1422,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const getCommissionSum = (mp: Marketplace, range: "today" | "7d" | "30d") => {
-    const lightning =
-      range === "today" ? lightningTotals.today : range === "7d" ? lightningTotals.last7 : lightningTotals.last30;
     // GDM (full admin or presentation_admin): single source of truth is
-    // data.salesOrders, which Vendas / Clientes also reads. Today is
-    // computed from real orders (resets at midnight São Paulo time).
+    // data.salesOrders, which Vendas / Clientes also reads. Lightning clicks
+    // are materialized into salesOrders too, so they count here without a
+    // separate total. Today resets at midnight São Paulo time.
     if ((isAdmin || isPresentationAdmin) && mp === "shopee") {
       const now = new Date();
       const start = new Date();
@@ -1416,11 +1440,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (o.saleDate < startTs || o.saleDate > endTs) continue;
         total += o.netProfit;
       }
-      return Math.round((total + lightning) * 100) / 100;
+      return Math.round(total * 100) / 100;
     }
     const map = commissionHistory[mp] || {};
-    const base = range === "today" ? (map[todayKey()] || 0) : sumRange(map, range === "7d" ? 7 : 30);
-    return base + lightning;
+    return range === "today" ? (map[todayKey()] || 0) : sumRange(map, range === "7d" ? 7 : 30);
   };
 
   const listAccounts = (): Array<AccountRecord & { email: string }> => accounts;
@@ -2197,49 +2220,74 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const listMyWithdrawalRequests = () => myWithdrawals;
 
   // ============== Lightning button persistence ==============
+  // Lightning clicks are stored in dashboard_lightning_events (Supabase) and
+  // materialized into data.salesOrders as regular orders, so Dashboard,
+  // Métricas and Vendas / Clientes all read the same source of truth.
   const hasLightningAccess = isAdmin || isPresentationAdmin;
 
-  const refreshLightningTotals = async (uid: string | null) => {
-    if (!uid) { setLightningTotals({ today: 0, last7: 0, last30: 0 }); return; }
+  const buildLightningOrder = (eventId: string, amount: number, ts: number): SalesOrder => {
+    let h = 0;
+    for (let i = 0; i < eventId.length; i++) h = (h * 31 + eventId.charCodeAt(i)) >>> 0;
+    const p = GDM_PRODUCTS[h % GDM_PRODUCTS.length];
+    const cust = GDM_CUSTOMERS[h % GDM_CUSTOMERS.length];
+    return {
+      id: `lightning-${eventId}`,
+      productId: p.id,
+      productName: p.name,
+      productImage: p.image,
+      marketplace: "shopee",
+      supplierName: p.supplierName,
+      supplierLocation: p.supplierLocation,
+      customerName: cust.name,
+      customerEmailMasked: cust.email,
+      customerPhoneMasked: cust.phone,
+      customerLocation: cust.loc,
+      salePrice: p.salePrice,
+      supplierCost: p.supplierCost,
+      marketplaceFee: 0,
+      operationalCost: 0,
+      netProfit: amount,
+      saleDate: ts,
+      source: "lightning_click",
+    };
+  };
+
+  const mergeLightningOrders = (fresh: SalesOrder[]) => {
+    setData((s) => {
+      const others = s.salesOrders.filter((o) => !o.id.startsWith("lightning-"));
+      return { ...s, salesOrders: [...fresh, ...others].sort((a, b) => b.saleDate - a.saleDate) };
+    });
+  };
+
+  const refreshLightningOrders = async (uid: string | null) => {
+    if (!uid) { mergeLightningOrders([]); return; }
     const since30 = new Date();
     since30.setDate(since30.getDate() - 30);
     const { data: rows, error } = await supabase
       .from("dashboard_lightning_events")
-      .select("amount, created_at")
+      .select("id, amount, created_at")
       .eq("user_id", uid)
       .gte("created_at", since30.toISOString());
     if (error || !rows) return;
-    const now = Date.now();
-    const startToday = new Date(); startToday.setHours(0, 0, 0, 0);
-    const startToday_ts = startToday.getTime();
-    const start7_ts = now - 7 * 24 * 60 * 60 * 1000;
-    let today = 0, last7 = 0, last30 = 0;
-    for (const r of rows) {
-      const ts = new Date(r.created_at as string).getTime();
-      const amt = Number(r.amount) || 0;
-      last30 += amt;
-      if (ts >= start7_ts) last7 += amt;
-      if (ts >= startToday_ts) today += amt;
-    }
-    setLightningTotals({
-      today: Math.round(today * 100) / 100,
-      last7: Math.round(last7 * 100) / 100,
-      last30: Math.round(last30 * 100) / 100,
-    });
+    const fresh = rows
+      .map((r) => buildLightningOrder(String(r.id), Number(r.amount) || 0, new Date(r.created_at as string).getTime()))
+      .filter((o) => !isResetSuppressed(o.saleDate));
+    mergeLightningOrders(fresh);
   };
 
   useEffect(() => {
     if (!currentUserId) return;
-    void refreshLightningTotals(currentUserId);
+    void refreshLightningOrders(currentUserId);
     const ch = supabase
       .channel(`lightning-${currentUserId}`)
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "dashboard_lightning_events", filter: `user_id=eq.${currentUserId}` },
-        () => { void refreshLightningTotals(currentUserId); },
+        { event: "*", schema: "public", table: "dashboard_lightning_events", filter: `user_id=eq.${currentUserId}` },
+        () => { void refreshLightningOrders(currentUserId); },
       )
       .subscribe();
     return () => { supabase.removeChannel(ch); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUserId]);
 
   const recordLightningClick = async () => {
@@ -2249,15 +2297,55 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const { data, error } = await (supabase.rpc as unknown as (fn: string, args: Record<string, unknown>) => Promise<{ data: number | null; error: { message: string } | null }>)("record_lightning_click", { _amount: amount });
     if (error) return { ok: false, error: error.message };
     const final = Number(data) || amount;
-    // Optimistic update — realtime INSERT will refetch the authoritative value.
-    setLightningTotals((p) => ({
-      today: Math.round((p.today + final) * 100) / 100,
-      last7: Math.round((p.last7 + final) * 100) / 100,
-      last30: Math.round((p.last30 + final) * 100) / 100,
+    // Optimistic order — replaced by the authoritative list on the refresh below.
+    setData((s) => ({
+      ...s,
+      salesOrders: [buildLightningOrder(`temp-${Date.now()}`, final, Date.now()), ...s.salesOrders],
     }));
-    if (currentUserId) void refreshLightningTotals(currentUserId);
+    if (currentUserId) void refreshLightningOrders(currentUserId);
     return { ok: true, amount: final };
   };
+
+  // ============== Reset today (✕ button) ==============
+  // Clears today's sales AT THE SOURCE so every page zeroes together.
+  // History (7d / 30d minus today) is untouched.
+  const resetTodaySales = async () => {
+    if (!hasLightningAccess) return { ok: false, error: "Acesso restrito" };
+    if (!user || !currentUserId) return { ok: false, error: "Sessão expirada" };
+    const dayStart = new Date();
+    dayStart.setHours(0, 0, 0, 0);
+    const startTs = dayStart.getTime();
+    const now = Date.now();
+    // 1. Delete today's lightning events (owner-scoped RLS DELETE policy).
+    const { error: delErr } = await supabase
+      .from("dashboard_lightning_events")
+      .delete()
+      .eq("user_id", currentUserId)
+      .gte("created_at", dayStart.toISOString());
+    // 2. Best-effort: delete today's sales_orders rows via security-definer RPC
+    //    (the table has no client DELETE policy). If the function isn't
+    //    deployed yet, the reset-window suppression keeps them hidden anyway.
+    try {
+      const { error } = await supabase.rpc("reset_today_sales" as never, {} as never);
+      if (error) console.warn("[resetTodaySales] reset_today_sales RPC:", error.message);
+    } catch (err) {
+      console.warn("[resetTodaySales] reset_today_sales RPC failed:", err);
+    }
+    // 3. Clear today in local state. GDM presentation orders are all dated
+    //    before today, so the 7d / 30d windows stay intact.
+    setData((s) => ({
+      ...s,
+      salesOrders: s.salesOrders.filter((o) => o.saleDate < startTs || o.saleDate > now),
+    }));
+    setVendasHojeStore({ date: todayKey(), values: { shopee: 0 } });
+    setCommissionHistory((h) => ({ ...h, shopee: { ...h.shopee, [todayKey()]: 0 } }));
+    setTodayResetAt(now);
+    try { localStorage.setItem(TODAY_RESET_KEY(user.email), String(now)); } catch {}
+    if (delErr) return { ok: false, error: delErr.message };
+    return { ok: true };
+  };
+
+  const isTodayReset = !!todayResetAt && dateKey(new Date(todayResetAt)) === dateKey(new Date());
 
   // ============== Presentation-admin management (full admin only) ==============
   const listAllProfiles = async () => {
@@ -2321,7 +2409,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [user, currentUserId, isAdmin]);
 
   return (
-    <C.Provider value={{ user, isAdmin, authReady, login, register, logout, selectedMarketplace, setSelectedMarketplace, data, triggerDemoSale, saveMeuProduto, addSalesOrderForProduct, vendasHoje: vendasHojeStore.values, privacy, setPrivacy, adminPresentationMode, toggleAdminPresentationMode, getCommissionSum, listAccounts, refreshAccounts, approveAccount, rejectAccount, blockAccountPayment, unblockAccountPayment, addManualCommissionToUser, bulkAdminDemoCommissionShopee, approveAllPendingAccounts, adminCreateBoostCampaign, adminCancelBoostCampaign, getActiveBoostByUserId, myActiveBoost, getUserConnectedMarketplaces, getUserProducts, myConnections: isAdmin ? adminDemoMap : myConnections, getApprovedMarketplaces, requestMarketplaceConnection, getUserConnectionsByEmail, getUserApprovedMarketplaces, validateMarketplaceConnection, rejectMarketplaceConnection, allUserProducts, refreshAllUserProducts, getUserCommissionTotal, validateUserProduct, validateAllPendingProducts, validateUserPendingProducts, validateAllPendingConnections, validateUserPendingConnections, bulkApproveAllProductsAndMakeReady, accountCreatedAt, accountApprovedAt, submitWithdrawalRequest, listMyWithdrawalRequests, accountStatus, isPresentationAdmin, hasLightningAccess, recordLightningClick, listAllProfiles, grantPresentationAdmin, revokePresentationAdmin }}>
+    <C.Provider value={{ user, isAdmin, authReady, login, register, logout, selectedMarketplace, setSelectedMarketplace, data, triggerDemoSale, saveMeuProduto, addSalesOrderForProduct, vendasHoje: vendasHojeStore.values, privacy, setPrivacy, adminPresentationMode, toggleAdminPresentationMode, getCommissionSum, listAccounts, refreshAccounts, approveAccount, rejectAccount, blockAccountPayment, unblockAccountPayment, addManualCommissionToUser, bulkAdminDemoCommissionShopee, approveAllPendingAccounts, adminCreateBoostCampaign, adminCancelBoostCampaign, getActiveBoostByUserId, myActiveBoost, getUserConnectedMarketplaces, getUserProducts, myConnections: isAdmin ? adminDemoMap : myConnections, getApprovedMarketplaces, requestMarketplaceConnection, getUserConnectionsByEmail, getUserApprovedMarketplaces, validateMarketplaceConnection, rejectMarketplaceConnection, allUserProducts, refreshAllUserProducts, getUserCommissionTotal, validateUserProduct, validateAllPendingProducts, validateUserPendingProducts, validateAllPendingConnections, validateUserPendingConnections, bulkApproveAllProductsAndMakeReady, accountCreatedAt, accountApprovedAt, submitWithdrawalRequest, listMyWithdrawalRequests, accountStatus, isPresentationAdmin, hasLightningAccess, recordLightningClick, resetTodaySales, isTodayReset, listAllProfiles, grantPresentationAdmin, revokePresentationAdmin }}>
       {children}
     </C.Provider>
   );

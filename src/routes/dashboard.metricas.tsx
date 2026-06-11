@@ -30,24 +30,29 @@ function pad2(n: number) {
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 function MetricasPage() {
-  const { isAdmin, getCommissionSum } = useApp();
+  const { isAdmin, getCommissionSum, isTodayReset } = useApp();
   const navigate = useNavigate();
   const [range, setRange] = useState<RangeKey>("today");
 
   const period: Period = range === "today" ? "today" : range === "7d" ? "7days" : "30days";
-  const { totalOrders: hookOrders, conversionRate: hookConversionRate, topProducts } = useShopSyncData(period);
+  const { totalOrders: hookOrders, topProducts } = useShopSyncData(period);
 
-  // Commission via getCommissionSum to include lightning-click totals (same as dashboard.index.tsx)
+  // Commission via getCommissionSum — same source as dashboard.index.tsx
+  // (data.salesOrders, lightning clicks included).
   const totalCommission = getCommissionSum("shopee", range);
-  // Fall back to hardcoded presentation counts only when real data is 0 for admin today
-  const isAdminToday = isAdmin && range === "today";
-  const totalOrders = isAdminToday && hookOrders === 0 ? 252 : hookOrders;
-  const conversionRate = isAdminToday && hookConversionRate === 0 ? 5.56 : hookConversionRate;
+  // Admin "today" presentation baseline (same as dashboard.index.tsx);
+  // suppressed after a reset (✕) so every metric reads 0.
+  const showBaseline = isAdmin && range === "today" && !isTodayReset;
+  const totalOrders = (showBaseline ? 252 : 0) + hookOrders;
+  const conversionRate = totalOrders > 0 ? 5.56 : 0;
 
   const visitors = Math.max(0, totalOrders * 18);
   const pageViews = Math.max(0, totalOrders * 55);
   const conversionPct = conversionRate.toFixed(2);
   const avgPerOrder = totalOrders > 0 ? totalCommission / totalOrders : 0;
+
+  const todayCommission = getCommissionSum("shopee", "today");
+  const todayFlat = isTodayReset && todayCommission === 0;
 
   // Role guard
   if (!isAdmin) return <Navigate to="/dashboard/" />;
@@ -286,7 +291,7 @@ function MetricasPage() {
             </span>
           </div>
         </div>
-        <SalesAreaChart range={range} />
+        <SalesAreaChart range={range} todayFlat={todayFlat} />
       </div>
 
       {/* ── Rankings section ─── */}
@@ -469,7 +474,7 @@ function MetricasPage() {
 }
 
 // ─── Area chart — exact same data logic, Shopee-style visuals ─────────────────
-function SalesAreaChart({ range }: { range: RangeKey }) {
+function SalesAreaChart({ range, todayFlat }: { range: RangeKey; todayFlat?: boolean }) {
   const chartData = useMemo(() => {
     if (range === "today") {
       const h = new Date().getHours();
@@ -488,7 +493,8 @@ function SalesAreaChart({ range }: { range: RangeKey }) {
         );
         return {
           label: pad2(i) + ":00",
-          atual: i <= h ? hojeRaw : null,
+          // After a reset with no new sales, today's line stays flat at zero.
+          atual: i <= h ? (todayFlat ? 0 : hojeRaw) : null,
           anterior: ontemRaw,
         };
       });
@@ -514,7 +520,7 @@ function SalesAreaChart({ range }: { range: RangeKey }) {
         anterior,
       };
     });
-  }, [range]);
+  }, [range, todayFlat]);
 
   return (
     <div className="h-56">
