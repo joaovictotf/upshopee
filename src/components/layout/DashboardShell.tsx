@@ -59,7 +59,7 @@ const baseNav: NavItem[] = [
   { to: "/dashboard/meus-produtos", label: "Meus Produtos", icon: PackageCheck },
   { to: "/dashboard/vendas-clientes", label: "Vendas / Clientes", icon: Receipt },
   { to: "/dashboard/precificacao", label: "Precificação", icon: Calculator },
-  { to: "/dashboard/impulsionar-vendas", label: "Impulsionar Vendas", icon: Flame, special: "fire" },
+  { to: "/dashboard/impulsionar-vendas", label: "Impulsionar vendas", icon: Zap, adminOnly: true },
   { to: "/dashboard/grupos", label: "Grupos de Divulgação", icon: Megaphone },
   { to: "/dashboard/robo-divulgador", label: "Robô Divulgador", icon: Bot },
   { to: "/dashboard/conectar-contas", label: "Conectar Contas", icon: Plug },
@@ -111,7 +111,7 @@ export function DashboardShell({ children, title, subtitle, actions, onLightning
 
   const handleLogout = () => { logout(); navigate({ to: "/login" }); };
   const showAdmin = isAdmin && !adminPresentationMode;
-  const nav: NavItem[] = showAdmin ? [...baseNav, ...adminExtraNav] : [...baseNav];
+  const nav: NavItem[] = (showAdmin ? [...baseNav, ...adminExtraNav] : [...baseNav]).filter(({ adminOnly }) => !adminOnly || isAdmin);
 
   const NavList = (
     <nav className="flex-1 space-y-1 px-3">
