@@ -100,6 +100,8 @@ function NewDashboard() {
   const [range, setRange] = useState<RangeKey>("today");
   const [stamp, setStamp] = useState(() => formatStamp());
   const [metricsBoost, setMetricsBoost] = useState({ visitors: 0, views: 0, orders: 0, units: 0, buyers: 0 });
+  const [todayBaseline, setTodayBaseline] = useState({ commission: 0, orders: 0, units: 0, buyers: 0, visitors: 0, views: 0 });
+  const todayValuesRef = useRef({ commission: 0, orders: 0, units: 0, buyers: 0, visitors: 0, views: 0 });
 
   const handleLightning = useCallback(() => {
     const addV = Math.floor(Math.random() * 26) + 15;
@@ -114,6 +116,7 @@ function NewDashboard() {
   }, []);
 
   const handleReset = useCallback(() => {
+    setTodayBaseline({ ...todayValuesRef.current });
     setMetricsBoost({ visitors: 0, views: 0, orders: 0, units: 0, buyers: 0 });
   }, []);
 
@@ -147,14 +150,21 @@ function NewDashboard() {
   const baseVisitors = Math.max(0, totalOrders * 18);
   const baseViews = Math.max(0, totalOrders * 55);
 
-  const displayOrders = totalOrders + metricsBoost.orders;
-  const displayUnits = totalUnits + metricsBoost.units;
-  const displayBuyers = totalBuyers + metricsBoost.buyers;
-  const displayVisitors = baseVisitors + metricsBoost.visitors;
-  const displayViews = baseViews + metricsBoost.views;
-  const displayConversionRate = displayVisitors > 0
-    ? (displayOrders / displayVisitors * 100).toFixed(2)
-    : conversionRate.toFixed(2);
+  // Keep ref current so handleReset captures the latest "today" values without stale closure
+  todayValuesRef.current = { commission: totalCommission, orders: totalOrders, units: totalUnits, buyers: totalBuyers, visitors: baseVisitors, views: baseViews };
+
+  const bl = range === "today" ? todayBaseline : { commission: 0, orders: 0, units: 0, buyers: 0, visitors: 0, views: 0 };
+  const displayCommission = Math.max(0, totalCommission - bl.commission);
+  const displayOrders = Math.max(0, totalOrders - bl.orders) + metricsBoost.orders;
+  const displayUnits = Math.max(0, totalUnits - bl.units) + metricsBoost.units;
+  const displayBuyers = Math.max(0, totalBuyers - bl.buyers) + metricsBoost.buyers;
+  const displayVisitors = Math.max(0, baseVisitors - bl.visitors) + metricsBoost.visitors;
+  const displayViews = Math.max(0, baseViews - bl.views) + metricsBoost.views;
+  const displayConversionRate = displayOrders === 0 && displayVisitors === 0
+    ? "0.00"
+    : displayVisitors > 0
+      ? (displayOrders / displayVisitors * 100).toFixed(2)
+      : conversionRate.toFixed(2);
 
   const top5 = topProducts.map((p) => ({
     productId: p.productId,
@@ -169,7 +179,7 @@ function NewDashboard() {
       <BoostActiveMiniCard />
       <BoostPromoModal />
       <NewShopeeHeroPanel
-        valor={totalCommission}
+        valor={displayCommission}
         privacy={privacy}
         stamp={stamp}
       />
