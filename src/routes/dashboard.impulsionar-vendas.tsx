@@ -418,6 +418,9 @@ function NewView({
         </div>
       </div>
 
+      {/* ── RESULTS GALLERY ──────────────────────────────────────────────── */}
+      <ResultadosReaisSection />
+
       {/* ── ROI CALCULATOR ───────────────────────────────────────────────── */}
       <section className="mb-8 rounded-2xl bg-white border border-gray-100 shadow-sm p-6 md:p-8">
         <div className="mb-5">
@@ -502,9 +505,6 @@ function NewView({
         </div>
       </section>
 
-      {/* ── RESULTS GALLERY ──────────────────────────────────────────────── */}
-      <ResultadosReaisSection />
-
       {/* ── FAQ ──────────────────────────────────────────────────────────── */}
       <section className="mb-8 rounded-2xl bg-white border border-gray-100 shadow-sm p-6 md:p-8">
         <div className="mb-6">
@@ -586,12 +586,13 @@ function MBar({
 
 // ─── Results gallery ──────────────────────────────────────────────────────────
 const RESULTADO_IMAGES = [
-  "/resultados/resultado-1.jpg",
-  "/resultados/resultado-2.jpg",
-  "/resultados/resultado-3.jpg",
-  "/resultados/resultado-4.jpg",
-  "/resultados/resultado-5.jpg",
-  "/resultados/resultado-6.jpg",
+  "/resultados/photo_4994789065806777341_w.jpg",
+  "/resultados/photo_4994789065806777342_w.jpg",
+  "/resultados/photo_4994789065806777343_w.jpg",
+  "/resultados/photo_4994789065806777344_w.jpg",
+  "/resultados/photo_4994789065806777345_w.jpg",
+  "/resultados/photo_4994789065806777346_w.jpg",
+  "/resultados/photo_4994789065806777347_w.jpg",
 ];
 
 function ResultadosReaisSection() {
@@ -599,15 +600,14 @@ function ResultadosReaisSection() {
     <section className="mb-8 rounded-2xl border border-gray-100 bg-white shadow-sm p-6 md:p-8">
       <div className="mb-6">
         <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#EE4D2D]">PROVA SOCIAL</span>
-        <h3 className="mt-2 text-xl font-black text-gray-900">Resultados Reais de Quem Impulsionou</h3>
+        <h3 className="mt-2 text-xl font-black text-gray-900">Resultados reais de quem impulsionou</h3>
         <p className="mt-1 text-sm text-gray-500">Prints reais enviados pelos nossos vendedores</p>
       </div>
-      <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory iv-scrollbar-hide">
+      <div className="flex gap-4 overflow-x-auto pb-6 snap-x snap-mandatory iv-scrollbar-hide">
         {RESULTADO_IMAGES.map((src, i) => (
           <div
             key={i}
-            className="snap-start flex-shrink-0 overflow-hidden rounded-2xl border border-gray-100 transition-all duration-300 hover:shadow-[0_0_20px_rgba(238,77,45,0.3)]"
-            style={{ width: 200, aspectRatio: "9 / 16" }}
+            className="snap-start flex-shrink-0 w-[170px] sm:w-[200px] aspect-[9/16] rounded-2xl overflow-hidden border border-gray-200 bg-white shadow-sm hover:shadow-orange-200 hover:border-orange-300 transition-all"
           >
             <img
               src={src}
