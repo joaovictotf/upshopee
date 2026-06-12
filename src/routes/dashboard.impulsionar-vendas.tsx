@@ -201,10 +201,10 @@ function NewView({
       <BoostPerformanceSection boost={boost} />
 
       {/* ── HERO ─────────────────────────────────────────────────────────── */}
-      <section className="relative mb-8 overflow-hidden rounded-3xl bg-[#080808] px-6 py-10 md:px-12 md:py-14 border border-white/5">
+      <section className="relative mb-8 overflow-hidden rounded-3xl bg-[#FFF8F5] px-6 py-10 md:px-12 md:py-14 border border-orange-100">
         <div
           className="absolute inset-0 pointer-events-none"
-          style={{ background: "radial-gradient(ellipse 70% 60% at 70% 110%, rgba(238,77,45,0.13) 0%, transparent 70%)" }}
+          style={{ background: "radial-gradient(ellipse 70% 60% at 70% 110%, rgba(238,77,45,0.10) 0%, transparent 70%)" }}
         />
         <div className="relative z-10">
           <div className="inline-flex items-center gap-2 rounded-full border border-[#EE4D2D]/30 bg-[#EE4D2D]/10 px-4 py-1.5 mb-6">
@@ -213,19 +213,19 @@ function NewView({
               +1.200 vendedores já impulsionaram
             </span>
           </div>
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-black leading-[1.0] tracking-tight text-white mb-4">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-black leading-[1.0] tracking-tight text-gray-900 mb-4">
             Multiplique suas vendas
             <br />
             <span style={{ color: "#EE4D2D" }}>no automático</span>
           </h1>
-          <p className="text-white/50 text-base md:text-lg max-w-xl mb-8">
+          <p className="text-gray-600 text-base md:text-lg max-w-xl mb-8">
             Escolha o nível de exposição ideal e deixe o sistema trabalhar por você
           </p>
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-white/35 font-medium">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-gray-400 font-medium">
             <span>R$234k+ em comissões geradas</span>
-            <span className="hidden sm:block w-px h-3 bg-white/10" />
+            <span className="hidden sm:block w-px h-3 bg-gray-200" />
             <span>4.9★ avaliação média</span>
-            <span className="hidden sm:block w-px h-3 bg-white/10" />
+            <span className="hidden sm:block w-px h-3 bg-gray-200" />
             <span>🛡️ Garantia condicional de resultado</span>
           </div>
         </div>
@@ -287,13 +287,13 @@ function NewView({
 
         {/* Escala — dominant, col-span-2 */}
         <article
-          className="relative lg:col-span-2 flex flex-col rounded-2xl bg-[#080808] border border-[#EE4D2D]/40 p-6 md:p-8 shadow-[0_0_40px_rgba(238,77,45,0.15)] transition-all duration-200 hover:shadow-[0_0_60px_rgba(238,77,45,0.25)]"
+          className="relative lg:col-span-2 flex flex-col rounded-2xl bg-[#FFF4EF] border-2 border-[#EE4D2D] p-6 md:p-8 shadow-[0_8px_30px_rgba(238,77,45,0.15)] transition-all duration-200 hover:shadow-[0_12px_40px_rgba(238,77,45,0.22)]"
           onMouseEnter={() => setHoveredPack(PACKS[2])}
           onMouseLeave={() => setHoveredPack(null)}
         >
           <div
             className="absolute top-0 right-0 w-56 h-56 rounded-full pointer-events-none"
-            style={{ background: "radial-gradient(circle, rgba(238,77,45,0.18) 0%, transparent 70%)" }}
+            style={{ background: "radial-gradient(circle, rgba(238,77,45,0.10) 0%, transparent 70%)" }}
           />
           {PACKS[2].badge && (
             <span className="absolute -top-3 left-6 z-10 rounded-full bg-gradient-to-r from-[#EE4D2D] to-orange-400 px-4 py-1 text-[11px] font-bold uppercase tracking-wider text-white shadow-lg">
@@ -301,9 +301,9 @@ function NewView({
             </span>
           )}
           <div className="relative z-10 flex flex-col h-full">
-            <h3 className="font-black text-white text-2xl mb-1">{PACKS[2].name}</h3>
+            <h3 className="font-black text-gray-900 text-2xl mb-1">{PACKS[2].name}</h3>
             {PACKS[2].originalPrice && (
-              <div className="text-sm text-white/30 mb-0.5">
+              <div className="text-sm text-gray-400 mb-0.5">
                 De <span className="line-through">{brl(PACKS[2].originalPrice)}</span>
               </div>
             )}
@@ -313,7 +313,7 @@ function NewView({
               )}
               <span className="text-5xl font-black text-[#EE4D2D] tracking-tight">{brl(PACKS[2].price)}</span>
             </div>
-            <div className="text-xs text-white/30 mb-5">pacote único</div>
+            <div className="text-xs text-gray-400 mb-5">pacote único</div>
 
             <div className="grid grid-cols-2 gap-3 mb-5">
               {[
@@ -326,19 +326,19 @@ function NewView({
                   key={label}
                   className={`rounded-xl px-4 py-3 ${accent
                     ? "bg-[#EE4D2D]/10 border border-[#EE4D2D]/20"
-                    : "bg-white/5"
+                    : "bg-white border border-orange-100"
                   }`}
                 >
-                  <div className={`text-[10px] uppercase tracking-wider mb-1 ${accent ? "text-[#EE4D2D]/60" : "text-white/30"}`}>{label}</div>
-                  <div className={`text-sm font-bold ${accent ? "text-[#EE4D2D]" : "text-white"}`}>{value}</div>
+                  <div className={`text-[10px] uppercase tracking-wider mb-1 ${accent ? "text-[#EE4D2D]/70" : "text-gray-400"}`}>{label}</div>
+                  <div className={`text-sm font-bold ${accent ? "text-[#EE4D2D]" : "text-gray-900"}`}>{value}</div>
                 </div>
               ))}
             </div>
 
             <div className="space-y-2 mb-5">
-              <MBar label="Alcance" value="" pct={METRIC_PCT["escala"]} dark />
-              <MBar label="Visibilidade" value="" pct={METRIC_PCT["escala"]} dark />
-              <MBar label="Conversão" value="" pct={METRIC_PCT["escala"]} dark />
+              <MBar label="Alcance" value="" pct={METRIC_PCT["escala"]} tinted />
+              <MBar label="Visibilidade" value="" pct={METRIC_PCT["escala"]} tinted />
+              <MBar label="Conversão" value="" pct={METRIC_PCT["escala"]} tinted />
             </div>
 
             <div className="rounded-xl bg-[#EE4D2D]/10 border border-[#EE4D2D]/20 px-4 py-3 mb-5">
@@ -346,7 +346,7 @@ function NewView({
               <div className="text-lg font-black text-[#EE4D2D]">{PACKS[2].roiAmount} em comissões</div>
             </div>
 
-            <p className="text-white/40 text-sm mb-6 flex-1">{PACKS[2].ideal}</p>
+            <p className="text-gray-600 text-sm mb-6 flex-1">{PACKS[2].ideal}</p>
 
             <Button
               onClick={() => startActivate(PACKS[2])}
@@ -378,16 +378,16 @@ function NewView({
           {/* shimmer sweep */}
           <div className="absolute inset-y-0 w-1/3 pointer-events-none iv-maximo-shine z-20"
             style={{ background: "linear-gradient(90deg, transparent, rgba(245,158,11,0.2), transparent)" }} />
-          <div className="relative flex flex-col bg-[#0D0A06] rounded-[14px] p-5 h-full z-10">
-            <h3 className="font-bold text-amber-400 text-base mb-1">{PACKS[3].name}</h3>
-            <div className="text-2xl font-black text-white mb-0.5">{brl(PACKS[3].price)}</div>
-            <div className="text-xs text-amber-400/40 mb-4">pacote único</div>
+          <div className="relative flex flex-col bg-white rounded-[14px] p-5 h-full z-10">
+            <h3 className="font-bold text-gray-900 text-base mb-1">{PACKS[3].name}</h3>
+            <div className="text-2xl font-black text-gray-900 mb-0.5">{brl(PACKS[3].price)}</div>
+            <div className="text-xs text-gray-400 mb-4">pacote único</div>
             <div className="space-y-2 mb-4 flex-1">
-              <MBar label="Alcance" value={PACKS[3].reach} pct={METRIC_PCT["maximo"]} dark gold />
-              <MBar label="Views" value={PACKS[3].views} pct={METRIC_PCT["maximo"]} dark gold />
-              <MBar label="Conversão" value={PACKS[3].conversion} pct={METRIC_PCT["maximo"]} dark gold />
+              <MBar label="Alcance" value={PACKS[3].reach} pct={METRIC_PCT["maximo"]} />
+              <MBar label="Views" value={PACKS[3].views} pct={METRIC_PCT["maximo"]} />
+              <MBar label="Conversão" value={PACKS[3].conversion} pct={METRIC_PCT["maximo"]} />
             </div>
-            <p className="text-xs text-amber-400/40 mb-5">{PACKS[3].ideal}</p>
+            <p className="text-xs text-gray-400 mb-5">{PACKS[3].ideal}</p>
             <Button
               onClick={() => startActivate(PACKS[3])}
               className="w-full text-white font-bold hover:opacity-90"
@@ -401,30 +401,30 @@ function NewView({
 
       {/* ── RETORNO STRIP (on hover) ──────────────────────────────────────── */}
       <div className={`transition-all duration-300 mb-8 ${hoveredPack ? "opacity-100 translate-y-0" : "pointer-events-none opacity-0 -translate-y-1"}`}>
-        <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-[#080808] border border-[#EE4D2D]/20 px-6 py-4">
+        <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-[#FFF8F5] border border-[#EE4D2D]/20 px-6 py-4">
           <div className="min-w-0">
             <div className="text-[10px] font-bold uppercase tracking-widest text-[#EE4D2D] mb-0.5">
               Retorno estimado — {hoveredPack?.name}
             </div>
-            <p className="text-white font-semibold text-sm">{hoveredPack?.roi}</p>
-            <p className="text-white/30 text-[11px] mt-0.5">
+            <p className="text-gray-900 font-semibold text-sm">{hoveredPack?.roi}</p>
+            <p className="text-gray-400 text-[11px] mt-0.5">
               Os resultados podem variar conforme produto, preço e demanda.
             </p>
           </div>
           <div className="text-right shrink-0">
-            <div className="text-[10px] text-white/30 uppercase tracking-wider mb-0.5">Retorno mínimo acompanhado</div>
-            <div className="text-2xl font-black text-white">{hoveredPack?.guaranteeMin}</div>
+            <div className="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">Retorno mínimo acompanhado</div>
+            <div className="text-2xl font-black text-gray-900">{hoveredPack?.guaranteeMin}</div>
           </div>
         </div>
       </div>
 
       {/* ── ROI CALCULATOR ───────────────────────────────────────────────── */}
-      <section className="mb-8 rounded-2xl bg-[#0D0D0D] border border-white/5 p-6 md:p-8">
+      <section className="mb-8 rounded-2xl bg-white border border-gray-100 shadow-sm p-6 md:p-8">
         <div className="mb-5">
           <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#EE4D2D]">
             CALCULADORA DE RETORNO
           </span>
-          <h3 className="text-xl font-black text-white mt-1">Quanto posso ganhar?</h3>
+          <h3 className="text-xl font-black text-gray-900 mt-1">Quanto posso ganhar?</h3>
         </div>
         <div className="flex flex-wrap gap-2 mb-6">
           {PACKS.map((p) => (
@@ -434,7 +434,7 @@ function NewView({
               className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
                 roiPack.id === p.id
                   ? "bg-[#EE4D2D] text-white"
-                  : "bg-white/5 text-white/50 hover:bg-white/10 hover:text-white"
+                  : "bg-gray-50 text-gray-500 hover:bg-orange-50 hover:text-gray-900"
               }`}
             >
               {p.name}
@@ -442,29 +442,29 @@ function NewView({
           ))}
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="rounded-xl bg-white/5 px-5 py-4">
-            <div className="text-xs text-white/40 uppercase tracking-wider mb-1">Você investe</div>
-            <div className="text-3xl font-black text-white">{brl(roiPack.price)}</div>
+          <div className="rounded-xl bg-gray-50 px-5 py-4">
+            <div className="text-xs text-gray-400 uppercase tracking-wider mb-1">Você investe</div>
+            <div className="text-3xl font-black text-gray-900">{brl(roiPack.price)}</div>
           </div>
           <div className="rounded-xl bg-[#EE4D2D]/10 border border-[#EE4D2D]/20 px-5 py-4">
             <div className="text-xs text-[#EE4D2D]/70 uppercase tracking-wider mb-1">Potencial de retorno</div>
             <div className="text-3xl font-black text-[#EE4D2D]">{roiPack.roiAmount}</div>
           </div>
-          <div className="rounded-xl bg-white/5 px-5 py-4">
-            <div className="text-xs text-white/40 uppercase tracking-wider mb-1">Alcance estimado</div>
-            <div className="text-xl font-black text-white leading-tight">{roiPack.reach}</div>
+          <div className="rounded-xl bg-gray-50 px-5 py-4">
+            <div className="text-xs text-gray-400 uppercase tracking-wider mb-1">Alcance estimado</div>
+            <div className="text-xl font-black text-gray-900 leading-tight">{roiPack.reach}</div>
           </div>
         </div>
-        <p className="text-white/25 text-[11px] mt-4">
+        <p className="text-gray-400 text-[11px] mt-4">
           Os resultados podem variar conforme produto, preço, oferta e demanda.
         </p>
       </section>
 
       {/* ── HOW IT WORKS ─────────────────────────────────────────────────── */}
-      <section className="mb-8 rounded-2xl bg-[#0D0D0D] border border-white/5 p-6 md:p-8">
+      <section className="mb-8 rounded-2xl bg-white border border-gray-100 shadow-sm p-6 md:p-8">
         <div className="mb-8 text-center">
           <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#EE4D2D]">COMO FUNCIONA</span>
-          <h3 className="text-2xl font-black text-white mt-2">3 passos para impulsionar</h3>
+          <h3 className="text-2xl font-black text-gray-900 mt-2">3 passos para impulsionar</h3>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-4">
           {[
@@ -494,9 +494,9 @@ function NewView({
               <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#EE4D2D]/10 border border-[#EE4D2D]/20 mb-4">
                 {step.icon}
               </div>
-              <div className="text-[10px] font-bold text-[#EE4D2D]/40 mb-1">{step.n}</div>
-              <p className="font-bold text-white text-sm">{step.label}</p>
-              <p className="text-white/40 text-xs mt-1 max-w-[160px]">{step.sub}</p>
+              <div className="text-[10px] font-bold text-[#EE4D2D]/60 mb-1">{step.n}</div>
+              <p className="font-bold text-gray-900 text-sm">{step.label}</p>
+              <p className="text-gray-400 text-xs mt-1 max-w-[160px]">{step.sub}</p>
             </div>
           ))}
         </div>
@@ -506,10 +506,10 @@ function NewView({
       <ResultadosReaisSection />
 
       {/* ── FAQ ──────────────────────────────────────────────────────────── */}
-      <section className="mb-8 rounded-2xl bg-[#0D0D0D] border border-white/5 p-6 md:p-8">
+      <section className="mb-8 rounded-2xl bg-white border border-gray-100 shadow-sm p-6 md:p-8">
         <div className="mb-6">
           <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#EE4D2D]">DÚVIDAS</span>
-          <h3 className="text-xl font-black text-white mt-1">Perguntas frequentes</h3>
+          <h3 className="text-xl font-black text-gray-900 mt-1">Perguntas frequentes</h3>
         </div>
         <div className="space-y-2">
           {[
@@ -530,18 +530,18 @@ function NewView({
               a: "Sim. Você pode escalar progressivamente, contratando packs maiores conforme valida os resultados.",
             },
           ].map((faq, i) => (
-            <div key={i} className="rounded-xl border border-white/5 overflow-hidden">
+            <div key={i} className="rounded-xl border border-gray-100 overflow-hidden">
               <button
                 onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left bg-white/[0.02] hover:bg-white/[0.04] transition-colors"
+                className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left bg-gray-50 hover:bg-gray-100 transition-colors"
               >
-                <span className="text-white font-semibold text-sm">{faq.q}</span>
+                <span className="text-gray-900 font-semibold text-sm">{faq.q}</span>
                 <ChevronDown
                   className={`h-4 w-4 text-[#EE4D2D] shrink-0 transition-transform duration-200 ${openFaq === i ? "rotate-180" : ""}`}
                 />
               </button>
               {openFaq === i && (
-                <div className="px-5 pb-4 text-white/50 text-sm leading-relaxed border-t border-white/5">
+                <div className="px-5 pb-4 text-gray-500 text-sm leading-relaxed border-t border-gray-100">
                   {faq.a}
                 </div>
               )}
@@ -560,28 +560,23 @@ function MBar({
   label,
   value,
   pct,
-  dark,
-  gold,
 }: {
   label: string;
   value: string;
   pct: number;
-  dark?: boolean;
-  gold?: boolean;
+  tinted?: boolean;
 }) {
   return (
     <div>
       <div className="mb-1 flex items-center justify-between text-[11px]">
-        <span className={gold ? "text-amber-400/50" : dark ? "text-white/40" : "text-gray-400"}>{label}</span>
+        <span className="text-gray-400">{label}</span>
         {value && (
-          <span className={`font-semibold ${gold ? "text-amber-300" : dark ? "text-white" : "text-gray-700"}`}>
-            {value}
-          </span>
+          <span className="font-semibold text-gray-700">{value}</span>
         )}
       </div>
-      <div className={`h-1.5 w-full overflow-hidden rounded-full ${gold ? "bg-amber-900/30" : dark ? "bg-white/10" : "bg-gray-100"}`}>
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
         <div
-          className={`h-full rounded-full ${gold ? "bg-amber-400" : dark ? "bg-[#EE4D2D]" : "bg-orange-500"}`}
+          className="h-full rounded-full bg-orange-500"
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -601,17 +596,17 @@ const RESULTADO_IMAGES = [
 
 function ResultadosReaisSection() {
   return (
-    <section className="mb-8 rounded-2xl border border-white/5 bg-[#0D0D0D] p-6 md:p-8">
+    <section className="mb-8 rounded-2xl border border-gray-100 bg-white shadow-sm p-6 md:p-8">
       <div className="mb-6">
         <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#EE4D2D]">PROVA SOCIAL</span>
-        <h3 className="mt-2 text-xl font-black text-white">Resultados Reais de Quem Impulsionou</h3>
-        <p className="mt-1 text-sm text-white/50">Prints reais enviados pelos nossos vendedores</p>
+        <h3 className="mt-2 text-xl font-black text-gray-900">Resultados Reais de Quem Impulsionou</h3>
+        <p className="mt-1 text-sm text-gray-500">Prints reais enviados pelos nossos vendedores</p>
       </div>
       <div className="flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory iv-scrollbar-hide">
         {RESULTADO_IMAGES.map((src, i) => (
           <div
             key={i}
-            className="snap-start flex-shrink-0 overflow-hidden rounded-2xl border border-white/10 transition-all duration-300 hover:shadow-[0_0_20px_rgba(238,77,45,0.3)]"
+            className="snap-start flex-shrink-0 overflow-hidden rounded-2xl border border-gray-100 transition-all duration-300 hover:shadow-[0_0_20px_rgba(238,77,45,0.3)]"
             style={{ width: 200, aspectRatio: "9 / 16" }}
           >
             <img
