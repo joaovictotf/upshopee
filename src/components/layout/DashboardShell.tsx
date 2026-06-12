@@ -52,14 +52,14 @@ function CopaPopup({ onClose, onView }: { onClose: () => void; onView: () => voi
   );
 }
 
-type NavItem = { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean; special?: "fire"; adminOnly?: boolean };
+type NavItem = { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean; special?: "fire" | "impulsionar"; adminOnly?: boolean };
 const baseNav: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/dashboard/produtos", label: "Produtos", icon: Package },
   { to: "/dashboard/meus-produtos", label: "Meus Produtos", icon: PackageCheck },
   { to: "/dashboard/vendas-clientes", label: "Vendas / Clientes", icon: Receipt },
   { to: "/dashboard/precificacao", label: "Precificação", icon: Calculator },
-  { to: "/dashboard/impulsionar-vendas", label: "Impulsionar vendas", icon: Zap, adminOnly: true },
+  { to: "/dashboard/impulsionar-vendas", label: "Impulsionar vendas", icon: Zap, adminOnly: true, special: "impulsionar" },
   { to: "/dashboard/grupos", label: "Grupos de Divulgação", icon: Megaphone },
   { to: "/dashboard/robo-divulgador", label: "Robô Divulgador", icon: Bot },
   { to: "/dashboard/conectar-contas", label: "Conectar Contas", icon: Plug },
@@ -128,6 +128,22 @@ export function DashboardShell({ children, title, subtitle, actions, onLightning
               <Flame className="h-4 w-4 text-amber-500 drop-shadow-[0_0_6px_rgba(251,191,36,0.7)]" />
               <span className="boost-fire-text">Impulsionar vendas</span>
               <span aria-hidden className="ml-auto text-base leading-none">🔥</span>
+            </Link>
+          );
+        }
+        if (special === "impulsionar") {
+          return (
+            <Link
+              key={to}
+              to={to}
+              onClick={() => setMobileOpen(false)}
+              className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${active ? "bg-orange-100 ring-1 ring-[#EE4D2D]/30" : "hover:bg-orange-50"}`}
+            >
+              <Zap className="h-4 w-4 text-[#EE4D2D]" />
+              <span className="font-bold text-[#EE4D2D]">{label}</span>
+              <span className="ml-auto flex items-center gap-1 bg-[#EE4D2D] text-white text-[9px] font-black uppercase rounded-full px-2 py-0.5 animate-pulse">
+                🔥 NOVO
+              </span>
             </Link>
           );
         }

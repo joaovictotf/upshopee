@@ -696,11 +696,14 @@ function ResultadosReaisSection() {
         <h3 className="mt-2 text-xl font-black text-gray-900">Resultados reais de quem impulsionou</h3>
         <p className="mt-1 text-sm text-gray-500">Prints reais enviados pelos nossos vendedores</p>
       </div>
-      <div className="flex gap-4 overflow-x-auto pb-6 snap-x snap-mandatory iv-scrollbar-hide">
+      <div
+        className="flex gap-3 overflow-x-auto pb-4 snap-x snap-mandatory scroll-smooth iv-scrollbar-hide"
+        style={{ paddingRight: '60px' }}
+      >
         {RESULTADO_IMAGES.map((src, i) => (
           <div
             key={i}
-            className="snap-start flex-shrink-0 w-[170px] sm:w-[200px] aspect-[9/16] rounded-2xl overflow-hidden border border-gray-200 bg-white shadow-sm hover:shadow-orange-200 hover:border-orange-300 transition-all"
+            className="snap-start flex-shrink-0 w-[160px] sm:w-[200px] aspect-[9/16] rounded-2xl overflow-hidden border border-gray-200 bg-white shadow-sm hover:shadow-orange-200 hover:border-orange-300 transition-all"
           >
             <img
               src={src}
@@ -710,6 +713,7 @@ function ResultadosReaisSection() {
           </div>
         ))}
       </div>
+      <p className="mt-2 text-xs text-gray-400 md:hidden">→ deslize</p>
       <p className="mt-5 text-center text-sm font-bold text-[#EE4D2D]">
         🔥 Quer ser o próximo? Escolha seu pack acima.
       </p>
