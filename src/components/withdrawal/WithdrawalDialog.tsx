@@ -402,16 +402,24 @@ export function WithdrawalButton({ className }: { className?: string }) {
   // Usuários normais: precisa ter R$ 5.000+ E ser sexta a partir das 13h SP
   const eligible = isAdmin || (balanceOk && fridayOk);
 
-  // Mensagem de status para usuários não-admin
-  const statusMsg = (() => {
-    if (isAdmin || eligible) return null;
-    if (!balanceOk && !fridayOk)
-      return "Disponível toda sexta às 13h ao atingir R$ 5.000,00 em comissões.";
-    if (!balanceOk)
-      return `Saldo insuficiente — mínimo R$ 5.000,00 (atual: R$ ${balance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}).`;
-    // balanceOk mas não é sexta 13h
-    return "Saque indisponível — liberado somente na sexta-feira às 13h.";
-  })();
+  // Estado visual para usuários não-admin
+  // - Sem saldo mínimo  → "Saque disponível em breve"
+  // - Com saldo, fora do horário → "Sacar na próxima sexta-feira às 13h"
+  // - Com saldo e sexta 13h+   → botão "Sacar" habilitado
+  const showSoon = !isAdmin && !balanceOk;
+  const waitingFriday = !isAdmin && balanceOk && !fridayOk;
+
+  const buttonLabel = eligible
+    ? "Sacar"
+    : showSoon
+      ? "Saque disponível em breve"
+      : "Sacar na próxima sexta-feira às 13h";
+
+  const helperMsg = showSoon
+    ? "Disponível ao atingir R$ 5.000,00 em comissões."
+    : waitingFriday
+      ? "Liberado toda sexta-feira a partir das 13h (horário de Brasília)."
+      : null;
 
   return (
     <div className={"flex flex-col items-center gap-1 " + (className ?? "")}>
@@ -419,7 +427,7 @@ export function WithdrawalButton({ className }: { className?: string }) {
         type="button"
         onClick={() => eligible && setOpen(true)}
         disabled={!eligible}
-        title={eligible ? "Sacar na próxima sexta-feira às 13h" : (statusMsg ?? "")}
+        title={eligible ? "Solicitar saque" : (helperMsg ?? buttonLabel)}
         className={
           "inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition " +
           (eligible
@@ -428,23 +436,12 @@ export function WithdrawalButton({ className }: { className?: string }) {
         }
       >
         <Wallet className="h-4 w-4" />
-        {eligible ? "Sacar" : "Saque indisponível"}
+        {buttonLabel}
       </button>
 
-      {eligible && (
-        <>
-          <span className="text-[11px] font-semibold text-[#EE4D2D]">
-            Sacar na próxima sexta-feira às 13h
-          </span>
-          <span className="text-[10px] text-muted-foreground">
-            Disponível toda sexta-feira a partir das 13h.
-          </span>
-        </>
-      )}
-
-      {!eligible && statusMsg && (
+      {helperMsg && (
         <span className="text-[10px] text-muted-foreground text-center max-w-[220px] leading-snug">
-          {statusMsg}
+          {helperMsg}
         </span>
       )}
 
