@@ -1333,7 +1333,7 @@ function FooterSection() {
             {[
               { label: "Funcionalidades", href: "#funcionalidades" },
               { label: "Planos", href: "#planos" },
-              { label: "Suporte", href: "https://wa.me" },
+              { label: "Suporte", href: "https://wa.me/5534992017453" },
               { label: "Entrar", href: "/login" },
             ].map(({ label, href }) => (
               <a key={label} href={href} style={{ color: "#888888", textDecoration: "none", transition: "color 0.2s", fontFamily: "'Barlow', sans-serif" }}
