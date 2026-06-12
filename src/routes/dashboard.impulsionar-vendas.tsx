@@ -130,6 +130,7 @@ function ImpulsionarVendasPage() {
   const navigate = useNavigate();
   const [selectedPack, setSelectedPack] = useState<Pack | null>(null);
   const [stage, setStage] = useState<"guarantee" | "how" | "confirm">("guarantee");
+  const [policyAccepted, setPolicyAccepted] = useState(false);
 
   useEffect(() => {
     if (!user) navigate({ to: "/login" });
@@ -145,19 +146,111 @@ function ImpulsionarVendasPage() {
 
   if (!isAdmin) {
     return (
-      <LegacyView
-        boost={boost}
-        selectedPack={selectedPack}
-        setSelectedPack={setSelectedPack}
-        stage={stage}
-        setStage={setStage}
-        startActivate={startActivate}
-        goToPayment={goToPayment}
-      />
+      <>
+        {!policyAccepted && <PolicyModal onAccept={() => setPolicyAccepted(true)} />}
+        <LegacyView
+          boost={boost}
+          selectedPack={selectedPack}
+          setSelectedPack={setSelectedPack}
+          stage={stage}
+          setStage={setStage}
+          startActivate={startActivate}
+          goToPayment={goToPayment}
+        />
+      </>
     );
   }
 
   return <NewView boost={boost} startActivate={startActivate} dialogProps={dialogProps} />;
+}
+
+// ─── Policy modal (non-admin, every visit) ────────────────────────────────────
+function PolicyModal({ onAccept }: { onAccept: () => void }) {
+  const [elapsed, setElapsed] = useState(0);
+  const [agreed, setAgreed] = useState(false);
+
+  useEffect(() => {
+    const startTime = Date.now();
+    const id = setInterval(() => {
+      const ms = Math.min(Date.now() - startTime, 20000);
+      setElapsed(ms);
+      if (ms >= 20000) clearInterval(id);
+    }, 100);
+    return () => clearInterval(id);
+  }, []);
+
+  const done = elapsed >= 20000;
+  const secondsLeft = Math.max(0, Math.ceil((20000 - elapsed) / 1000));
+  const pct = (elapsed / 20000) * 100;
+  const enabled = done && agreed;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+      <div className="bg-white rounded-3xl shadow-2xl border border-orange-100 max-w-lg w-full p-8">
+        <div className="flex justify-center mb-6">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#FFF4EF] text-2xl">
+            📋
+          </div>
+        </div>
+
+        <h2 className="text-2xl font-black text-gray-900 text-center mb-6">
+          Política de Impulsionamento
+        </h2>
+
+        <div className="space-y-3 mb-6">
+          {[
+            "Você paga o valor do pack escolhido",
+            "O robô divulga seus produtos automaticamente",
+            "Garantia: se não gerar vendas equivalentes, devolvemos 100%",
+          ].map((text) => (
+            <div key={text} className="flex items-start gap-3">
+              <span className="font-bold text-[#EE4D2D]">✓</span>
+              <span className="text-sm text-gray-700">{text}</span>
+            </div>
+          ))}
+        </div>
+
+        <p className="text-sm text-gray-500 leading-relaxed mb-6">
+          A garantia é condicional e válida quando o impulsionamento não gerar retorno mínimo equivalente ao dobro do valor investido em comissões registradas no painel, dentro do período de acompanhamento. A devolução segue as regras do programa e pode ser solicitada conforme os critérios estabelecidos.
+        </p>
+
+        <div className="mb-5">
+          <p className="mb-2 text-xs text-gray-500">
+            {done ? "✓ Leitura concluída" : `Leia com atenção — ${secondsLeft}s restantes`}
+          </p>
+          <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
+            <div
+              className={`h-full rounded-full transition-none ${done ? "bg-green-500" : "bg-[#EE4D2D]"}`}
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+        </div>
+
+        <label className={`mb-6 flex items-center gap-3 ${done ? "cursor-pointer" : "cursor-not-allowed opacity-50"}`}>
+          <input
+            type="checkbox"
+            disabled={!done}
+            checked={agreed}
+            onChange={(e) => setAgreed(e.target.checked)}
+            className="h-4 w-4 accent-[#EE4D2D]"
+          />
+          <span className="text-sm text-gray-700">Li e concordo com a política</span>
+        </label>
+
+        <button
+          onClick={enabled ? onAccept : undefined}
+          disabled={!enabled}
+          className={`w-full rounded-2xl py-4 text-sm font-black uppercase tracking-wide transition-all ${
+            enabled
+              ? "cursor-pointer bg-[#EE4D2D] text-white hover:bg-[#d93e22]"
+              : "cursor-not-allowed bg-gray-200 text-gray-400"
+          }`}
+        >
+          ENTRAR NO IMPULSIONAR →
+        </button>
+      </div>
+    </div>
+  );
 }
 
 // ─── New conversion-focused view ──────────────────────────────────────────────
