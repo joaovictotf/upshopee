@@ -1,6 +1,6 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
-import { LayoutDashboard, Package, Calculator, Megaphone, Plug, Settings, LogOut, Bell, Search, Zap, PackageCheck, Eye, EyeOff, Receipt, ShieldCheck, Info, Menu, Flame, UserPlus, Video, Trophy, X, Bot } from "lucide-react";
+import { LayoutDashboard, Package, Calculator, Megaphone, Plug, Settings, LogOut, Bell, Search, Zap, PackageCheck, Eye, EyeOff, Receipt, ShieldCheck, Info, Menu, UserPlus, Video, Trophy, X, Bot } from "lucide-react";
 import { useApp, MARKETPLACE_LABEL } from "../../lib/state";
 import { brl } from "../../lib/format";
 import { toast } from "sonner";
@@ -59,7 +59,7 @@ const baseNav: NavItem[] = [
   { to: "/dashboard/meus-produtos", label: "Meus Produtos", icon: PackageCheck },
   { to: "/dashboard/vendas-clientes", label: "Vendas / Clientes", icon: Receipt },
   { to: "/dashboard/precificacao", label: "Precificação", icon: Calculator },
-  { to: "/dashboard/impulsionar-vendas", label: "Impulsionar vendas", icon: Zap, adminOnly: true, special: "impulsionar" },
+  { to: "/dashboard/impulsionar-vendas", label: "Impulsionar vendas", icon: Zap, special: "impulsionar" },
   { to: "/dashboard/grupos", label: "Grupos de Divulgação", icon: Megaphone },
   { to: "/dashboard/robo-divulgador", label: "Robô Divulgador", icon: Bot },
   { to: "/dashboard/conectar-contas", label: "Conectar Contas", icon: Plug },
@@ -117,20 +117,6 @@ export function DashboardShell({ children, title, subtitle, actions, onLightning
     <nav className="flex-1 space-y-1 px-3">
       {nav.map(({ to, label, icon: Icon, exact, special }) => {
         const active = exact ? pathname === to : pathname.startsWith(to);
-        if (special === "fire") {
-          return (
-            <Link
-              key={to}
-              to={to}
-              onClick={() => setMobileOpen(false)}
-              className={`group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors ${active ? "bg-amber-500/10 ring-1 ring-amber-500/30" : "hover:bg-amber-500/10"}`}
-            >
-              <Flame className="h-4 w-4 text-amber-500 drop-shadow-[0_0_6px_rgba(251,191,36,0.7)]" />
-              <span className="boost-fire-text">Impulsionar vendas</span>
-              <span aria-hidden className="ml-auto text-base leading-none">🔥</span>
-            </Link>
-          );
-        }
         if (special === "impulsionar") {
           return (
             <Link
