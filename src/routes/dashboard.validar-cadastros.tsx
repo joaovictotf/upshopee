@@ -51,6 +51,7 @@ import {
   Hourglass,
 } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "../integrations/supabase/client";
 
 export const Route = createFileRoute("/dashboard/validar-cadastros")({ component: ValidarCadastros });
 
@@ -104,6 +105,7 @@ function ValidarCadastros() {
     rejectMarketplaceConnection,
     allUserProducts,
     validateUserProduct,
+    refreshAllUserProducts,
     validateAllPendingProducts,
     validateUserPendingProducts,
     validateAllPendingConnections,
@@ -347,6 +349,37 @@ function ValidarCadastros() {
           const r = await validateUserPendingProducts(userId);
           if (!r.ok) { toast.error(r.error || "Falha."); return; }
           toast.success(`Produtos validados (${r.count ?? 0}).`);
+        }}
+        onUpsertAndValidate={async (product, userId) => {
+          const { data: newRow, error: upsertErr } = await (supabase
+            .from("user_products" as never)
+            .upsert({
+              user_id: userId,
+              local_id: product.id,
+              name: product.name,
+              image: product.image || null,
+              category: product.category || null,
+              marketplaces: product.marketplaces,
+              supplier_name: product.supplierName || null,
+              supplier_location: product.supplierLocation || null,
+              supplier_cost: product.supplierCost || null,
+              recommended_price: product.recommendedPrice || null,
+              estimated_commission: product.estimatedCommission || null,
+              product_id: product.productId || null,
+              status: "Aguardando validação",
+              current_step: "Aguardando validação do produto",
+              validation_status: "pending_validation",
+            } as never)
+            .select("id")
+            .single() as unknown as Promise<{ data: { id: string } | null; error: Error | null }>);
+          if (upsertErr || !newRow?.id) {
+            toast.error("Falha ao sincronizar produto.");
+            return;
+          }
+          await refreshAllUserProducts();
+          const r = await validateUserProduct(newRow.id);
+          if (!r.ok) { toast.error(r.error || "Falha ao validar produto."); return; }
+          toast.success("Produto sincronizado e validado com sucesso.");
         }}
       />
 
@@ -1075,12 +1108,14 @@ function ProductsDialog({
   getUserProducts,
   onValidateProduct,
   onValidateAll,
+  onUpsertAndValidate,
 }: {
   acc: AccountRow | null;
   onClose: () => void;
   getUserProducts: (email: string) => SavedProduct[];
   onValidateProduct: (remoteId: string) => void | Promise<void>;
   onValidateAll: (userId: string) => void | Promise<void>;
+  onUpsertAndValidate: (product: SavedProduct, userId: string) => Promise<void>;
 }) {
   const products = acc ? getUserProducts(acc.email) : [];
   const pendingCount = products.filter((p) => p.productValidationStatus === "pending_validation").length;
@@ -1131,9 +1166,11 @@ function ProductsDialog({
                     <span>Validação: {p.productValidationStatus === "pending_validation" ? "Pendente" : "Produto validado"}</span>
                     <span className="sm:col-span-2">Etapa atual: {p.currentStep}</span>
                   </div>
-                  {p.productValidationStatus === "pending_validation" && p.remoteId && (
+                  {(p.productValidationStatus === "pending_validation" || p.needsSync) && (
                     <div className="mt-2">
-                      <Button size="sm" className="h-7 px-2 text-[11px]" onClick={() => onValidateProduct(p.remoteId!)}>
+                      <Button size="sm" className="h-7 px-2 text-[11px]" onClick={() =>
+                        p.needsSync ? onUpsertAndValidate(p, acc!.userId!) : onValidateProduct(p.remoteId!)
+                      }>
                         <CheckCircle2 className="mr-1 h-3 w-3" /> Validar produto
                       </Button>
                     </div>

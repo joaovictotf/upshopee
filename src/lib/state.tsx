@@ -78,6 +78,7 @@ export type SavedProduct = {
   productValidationStatus?: ProductValidationStatus;
   validatedAt?: number;
   remoteId?: string;
+  needsSync?: boolean;
 };
 
 export type ProductValidationStatus = "pending_validation" | "approved" | "rejected";
@@ -1642,7 +1643,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const getUserProducts = (email: string): SavedProduct[] => {
     const e = email.trim().toLowerCase();
-    // Admin reads from central DB (cross-device) — fall back to localStorage when empty.
     if (isAdmin) {
       const acc = accounts.find((a) => a.email.toLowerCase() === e);
       const central = allUserProducts.filter((p) => acc?.userId ? p.userId === acc.userId : p.userEmail.toLowerCase() === e);
@@ -1676,6 +1676,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
           validatedAt: c.validatedAt,
         }));
       }
+      // Central DB empty — fall back to localStorage and flag products as unsynced.
+      try {
+        const raw = localStorage.getItem(DATA_KEY(e));
+        if (!raw) return [];
+        const parsed = JSON.parse(raw) as Partial<UserData>;
+        return (parsed.meusProdutos ?? []).map((p) => ({ ...p, needsSync: true }));
+      } catch { return []; }
     }
     try {
       const raw = localStorage.getItem(DATA_KEY(e));
@@ -2055,7 +2062,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const known = new Set((res.data ?? []).map((r) => r.local_id));
       const missing = pending.filter((p) => !known.has(p.id));
       for (const p of missing) {
-        const { error } = await supabase.rpc("upsert_my_product_for_validation" as never, {
+        const payload = {
           _local_id: p.id,
           _product_id: p.productId ?? null,
           _name: p.name,
@@ -2067,8 +2074,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
           _supplier_cost: p.supplierCost ?? null,
           _recommended_price: p.recommendedPrice ?? null,
           _estimated_commission: p.estimatedCommission ?? null,
-        } as never);
-        if (error) console.error("[back-sync] upsert failed for", p.id, error);
+        };
+        const { error } = await supabase.rpc("upsert_my_product_for_validation" as never, payload as never);
+        if (error) {
+          console.warn("[back-sync] upsert failed for", p.id, "— retrying in 2s");
+          await new Promise((res) => setTimeout(res, 2000));
+          if (cancelled) return;
+          const { error: retryError } = await supabase.rpc("upsert_my_product_for_validation" as never, payload as never);
+          if (retryError) console.error("[back-sync] retry failed for", p.id, retryError);
+          else console.log("[back-sync] retry succeeded for", p.id);
+        } else {
+          console.log("[back-sync] upsert succeeded for", p.id);
+        }
       }
     })();
     return () => { cancelled = true; };
