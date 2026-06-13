@@ -96,7 +96,7 @@ function DashboardHome() {
 // ---------------------------------------------------------------------------
 
 function NewDashboard() {
-  const { privacy, isAdmin, getCommissionSum, isTodayReset } = useApp();
+  const { privacy, getCommissionSum, isTodayReset } = useApp();
   const [range, setRange] = useState<RangeKey>("today");
   const [stamp, setStamp] = useState(() => formatStamp());
 
@@ -113,17 +113,12 @@ function NewDashboard() {
     topProducts,
   } = useShopSyncData(period);
 
-  // Single source of truth: data.salesOrders (lightning clicks included).
   const totalCommission = getCommissionSum("shopee", range);
 
-  // Admin "today" presentation baseline keeps the panel looking live at the
-  // start of the day; real orders (lightning included) stack on top of it.
-  // After a reset (✕) the baseline is suppressed so every metric reads 0.
-  const showBaseline = isAdmin && range === "today" && !isTodayReset;
   const displayCommission = totalCommission;
-  const displayOrders = (showBaseline ? 252 : 0) + hookOrders;
-  const displayUnits = (showBaseline ? 294 : 0) + hookUnits;
-  const displayBuyers = (showBaseline ? 187 : 0) + hookBuyers;
+  const displayOrders = hookOrders;
+  const displayUnits = hookUnits;
+  const displayBuyers = hookBuyers;
   const displayVisitors = Math.max(0, displayOrders * 18);
   const displayViews = Math.max(0, displayOrders * 55);
   const displayConversionRate =

@@ -1422,28 +1422,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const getCommissionSum = (mp: Marketplace, range: "today" | "7d" | "30d") => {
-    // GDM (full admin or presentation_admin): single source of truth is
-    // data.salesOrders, which Vendas / Clientes also reads. Lightning clicks
-    // are materialized into salesOrders too, so they count here without a
-    // separate total. Today resets at midnight São Paulo time.
-    if ((isAdmin || isPresentationAdmin) && mp === "shopee") {
-      const now = new Date();
-      const start = new Date();
-      start.setHours(0, 0, 0, 0);
-      if (range === "7d") start.setDate(start.getDate() - 6);
-      else if (range === "30d") start.setDate(start.getDate() - 29);
-      const startTs = start.getTime();
-      const endTs = range === "today" ? now.getTime() : Date.now();
-      let total = 0;
-      for (const o of data.salesOrders) {
-        if (o.marketplace !== mp) continue;
-        if (o.saleDate < startTs || o.saleDate > endTs) continue;
-        total += o.netProfit;
-      }
-      return Math.round(total * 100) / 100;
+    const now = new Date();
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    if (range === "7d") start.setDate(start.getDate() - 6);
+    else if (range === "30d") start.setDate(start.getDate() - 29);
+    const startTs = start.getTime();
+    const endTs = range === "today" ? now.getTime() : Date.now();
+    let total = 0;
+    for (const o of data.salesOrders) {
+      if (o.marketplace !== mp) continue;
+      if (o.saleDate < startTs || o.saleDate > endTs) continue;
+      total += o.netProfit;
     }
-    const map = commissionHistory[mp] || {};
-    return range === "today" ? (map[todayKey()] || 0) : sumRange(map, range === "7d" ? 7 : 30);
+    return Math.round(total * 100) / 100;
   };
 
   const listAccounts = (): Array<AccountRecord & { email: string }> => accounts;
