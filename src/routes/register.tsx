@@ -50,12 +50,16 @@ function RegisterPage() {
             }
 
             if (signUpData.user) {
+              await supabase
+                .from("profiles" as never)
+                .update({ approval_status: "approved" } as never)
+                .eq("id", signUpData.user.id);
               await supabase.auth.signOut();
             }
 
             setSubmitting(false);
-            toast.success("Cadastro realizado! Aguarde a aprovação do administrador.");
-            navigate({ to: "/conta-em-analise" });
+            toast.success("Cadastro realizado! Faça login para acessar sua conta.");
+            navigate({ to: "/login" });
           }}
           className="space-y-4"
         >
