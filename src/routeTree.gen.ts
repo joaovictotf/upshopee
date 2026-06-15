@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as RegisterRouteImport } from './routes/register'
+import { Route as Planos2RouteImport } from './routes/planos2'
 import { Route as PlanosRouteImport } from './routes/planos'
 import { Route as PagamentoBloqueadoRouteImport } from './routes/pagamento-bloqueado'
 import { Route as LoginRouteImport } from './routes/login'
@@ -42,6 +43,11 @@ import { Route as DashboardImpulsionarVendasBackupRouteImport } from './routes/d
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
   path: '/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const Planos2Route = Planos2RouteImport.update({
+  id: '/planos2',
+  path: '/planos2',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PlanosRoute = PlanosRouteImport.update({
@@ -196,6 +202,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/pagamento-bloqueado': typeof PagamentoBloqueadoRoute
   '/planos': typeof PlanosRoute
+  '/planos2': typeof Planos2Route
   '/register': typeof RegisterRoute
   '/dashboard/adicionar-adms': typeof DashboardAdicionarAdmsRoute
   '/dashboard/conectar-contas': typeof DashboardConectarContasRoute
@@ -225,6 +232,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/pagamento-bloqueado': typeof PagamentoBloqueadoRoute
   '/planos': typeof PlanosRoute
+  '/planos2': typeof Planos2Route
   '/register': typeof RegisterRoute
   '/dashboard/adicionar-adms': typeof DashboardAdicionarAdmsRoute
   '/dashboard/conectar-contas': typeof DashboardConectarContasRoute
@@ -257,6 +265,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/pagamento-bloqueado': typeof PagamentoBloqueadoRoute
   '/planos': typeof PlanosRoute
+  '/planos2': typeof Planos2Route
   '/register': typeof RegisterRoute
   '/dashboard/adicionar-adms': typeof DashboardAdicionarAdmsRoute
   '/dashboard/conectar-contas': typeof DashboardConectarContasRoute
@@ -290,6 +299,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/pagamento-bloqueado'
     | '/planos'
+    | '/planos2'
     | '/register'
     | '/dashboard/adicionar-adms'
     | '/dashboard/conectar-contas'
@@ -319,6 +329,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/pagamento-bloqueado'
     | '/planos'
+    | '/planos2'
     | '/register'
     | '/dashboard/adicionar-adms'
     | '/dashboard/conectar-contas'
@@ -350,6 +361,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/pagamento-bloqueado'
     | '/planos'
+    | '/planos2'
     | '/register'
     | '/dashboard/adicionar-adms'
     | '/dashboard/conectar-contas'
@@ -382,6 +394,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   PagamentoBloqueadoRoute: typeof PagamentoBloqueadoRoute
   PlanosRoute: typeof PlanosRoute
+  Planos2Route: typeof Planos2Route
   RegisterRoute: typeof RegisterRoute
 }
 
@@ -392,6 +405,13 @@ declare module '@tanstack/react-router' {
       path: '/register'
       fullPath: '/register'
       preLoaderRoute: typeof RegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/planos2': {
+      id: '/planos2'
+      path: '/planos2'
+      fullPath: '/planos2'
+      preLoaderRoute: typeof Planos2RouteImport
       parentRoute: typeof rootRouteImport
     }
     '/planos': {
@@ -674,6 +694,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   PagamentoBloqueadoRoute: PagamentoBloqueadoRoute,
   PlanosRoute: PlanosRoute,
+  Planos2Route: Planos2Route,
   RegisterRoute: RegisterRoute,
 }
 export const routeTree = rootRouteImport
