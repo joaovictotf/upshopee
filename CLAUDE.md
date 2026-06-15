@@ -1,16 +1,273 @@
-## Environment context
-ShopSync is a functional presentation prototype. Real launch: August 2026.
-All flows (sales, commissions, withdrawals, boost, robot, payments) must look and work visually as a real product.
-Rules:
-- Never add "demo", "fake", "simulated" labels near values, commissions, sales or order cards
-- Never process real payments or real withdrawals
-- Never promise guaranteed profit
-- Never claim official Shopee partnership
-- The discrete demo notice already exists — do not create another
-- If a flow involves real money, implement as visual/test flow only
-- Maintain realistic UX at all times
+# ShopSync — Project Memory for Claude Code
 
-## Mobile-first rule
-Every page and component must work perfectly on mobile (320px+).
-Always use responsive layouts: stack vertically on mobile, grid on desktop.
-No horizontal scroll. No cut-off elements. Test every change on small screens.
+> This file is the permanent memory for any Claude Code session, including sessions on a different account.
+> Last updated: 2026-06-15
+
+---
+
+## 1. PROJECT OVERVIEW
+
+- **Name:** ShopSync (also written ShopeSync)
+- **What it is:** SaaS dashboard for Shopee affiliates and sellers. Users connect Shopee accounts, track sales/commissions, boost products, manage affiliate groups, and use the "Robô Divulgador" automation tool.
+- **Status:** Functional presentation prototype. Real launch: August 2026.
+- **GOLDEN RULE:** All financial flows (sales, commissions, withdrawals, boost, payments) are VISUAL only. No real transactions ever happen. The product must look and behave like a real product at all times.
+
+---
+
+## 2. TECH STACK
+
+Confirmed from `package.json`:
+
+| Layer | Technology | Version |
+|---|---|---|
+| UI Framework | React | ^19.2.0 |
+| Router | TanStack Router (file-based) | ^1.168.25 |
+| Build tool | Vite | ^7.3.1 |
+| Styling | Tailwind CSS v4 | ^4.2.1 |
+| Component library | shadcn/ui + Radix UI primitives | various |
+| Language | TypeScript | ^5.8.3 |
+| Backend/Auth/DB | Supabase | ^2.106.0 |
+| Forms | react-hook-form + zod | ^7.x / ^3.x |
+| Charts | recharts | ^2.15.4 |
+| Package manager | Bun (preferred) / npm fallback | — |
+| CF plugin | @cloudflare/vite-plugin | ^1.25.5 (to be removed on Vercel migration) |
+
+**Supabase project ID:** `qtvvbtanpktcppspfofd`
+
+---
+
+## 3. REPO & DEPLOY
+
+- **GitHub:** https://github.com/joaovictotf/shopesyncnew
+- **Local folder:** `C:\Users\vinic\shopesyncnew-main\shopesyncnew-main`
+- **Deploy platform:** Lovable (click "Publish" in the Lovable UI)
+
+### CRITICAL — Branch rule
+Lovable watches the **`main`** branch. The repo has both `master` and `main`. Claude Code sometimes defaults to `master`. **Always push to `main`** or changes won't be published.
+
+Standard end-of-task commit sequence:
+```bash
+git add .
+git commit -m "description"
+git push origin main
+```
+
+If currently on `master`:
+```bash
+git push origin master:main
+```
+
+---
+
+## 4. PROJECT STRUCTURE
+
+```
+src/
+├── assets/
+├── components/
+│   ├── layout/
+│   │   ├── DashboardShell.tsx   ← sidebar + global layout; contains NAV array
+│   │   └── DemoShell.tsx
+│   ├── boost/
+│   ├── products/
+│   ├── withdrawal/
+│   ├── ui/                      ← shadcn/ui components
+│   ├── WhatsAppChannelPopup.tsx
+│   └── WhatsAppSupportButton.tsx
+├── hooks/
+│   ├── useShopSyncData.ts       ← data hook; reads data.salesOrders (SINGLE SOURCE)
+│   └── use-mobile.tsx
+├── integrations/
+│   └── supabase/
+│       ├── client.ts
+│       ├── client.server.ts
+│       ├── types.ts
+│       ├── auth-attacher.ts
+│       └── auth-middleware.ts
+├── lib/
+│   ├── state.tsx                ← AppProvider global state (~2300 lines, huge)
+│   ├── mock/
+│   ├── format.ts
+│   ├── utils.ts
+│   ├── error-capture.ts
+│   └── error-page.ts
+├── routes/
+│   ├── __root.tsx
+│   ├── index.tsx                ← landing page (/)
+│   ├── login.tsx
+│   ├── register.tsx
+│   ├── planos.tsx               ← /planos pricing page (dark theme)
+│   ├── conta-em-analise.tsx
+│   ├── pagamento-bloqueado.tsx
+│   ├── dashboard.tsx            ← dashboard layout shell
+│   ├── dashboard.index.tsx      ← /dashboard home
+│   ├── dashboard.vendas-clientes.tsx
+│   ├── dashboard.meus-produtos.tsx
+│   ├── dashboard.produtos.tsx
+│   ├── dashboard.robo-divulgador.tsx
+│   ├── dashboard.impulsionar-vendas.tsx
+│   ├── dashboard.impulsionar-vendas.backup.tsx
+│   ├── dashboard.grupos.tsx
+│   ├── dashboard.metricas.tsx
+│   ├── dashboard.precificacao.tsx
+│   ├── dashboard.conectar-contas.tsx
+│   ├── dashboard.tutoriais.tsx
+│   ├── dashboard.configuracoes.tsx
+│   ├── dashboard.validar-cadastros.tsx  ← admin panel: validate user products
+│   ├── dashboard.adicionar-adms.tsx
+│   ├── demo.tsx                 ← demo shell
+│   ├── demo.index.tsx
+│   ├── demo.grupos.tsx
+│   ├── demo.precificacao.tsx
+│   ├── demo.produtos.tsx
+│   ├── demo.robo-divulgador.tsx
+│   └── demo.vendas-clientes.tsx
+├── routeTree.gen.ts             ← auto-generated by TanStack Router (do not edit manually)
+├── router.tsx
+├── server.ts
+├── start.ts
+└── styles.css
+```
+
+---
+
+## 5. USER ROLES
+
+Three roles, checked via `profile?.role === 'admin'`:
+
+| Role | Access |
+|---|---|
+| `admin` | Full access. All data. Admin panels. Lightning/reset buttons. |
+| `presentation_admin` | Demo presentation mode. |
+| `regular_user` | Normal user. Sees their own data. |
+
+Admin emails: `victor@shopesync.com`, `rikelme@shopsync.com`
+
+New feature pattern: **admin sees first**, then released to all via `adminOnly` toggle.
+
+---
+
+## 6. DATABASE (Supabase)
+
+### Tables
+
+| Table | Purpose |
+|---|---|
+| `profiles` | User profiles + roles |
+| `sales_orders` | **SINGLE SOURCE OF TRUTH** for all sales data |
+| `user_products` | Products users submit for validation |
+| `dashboard_lightning_events` | Lightning bolt events (admin triggers) |
+| `withdrawal_requests` | Withdrawal requests (visual only) |
+| `registration_tokens` | Legacy — no longer active |
+| `approved_emails` | Legacy — no longer active |
+
+### RPCs (Supabase functions)
+
+- `reset_today_sales` — resets daily sales (admin tool)
+- `upsert_my_product_for_validation` — user submits product
+- `approve_user` — admin approves a user account
+- `cron_auto_approve_pending_accounts` — auto-approve pending accounts
+
+---
+
+## 7. PAYMENT LINKS (CRITICAL — never lose these)
+
+| Plan | Method | Link |
+|---|---|---|
+| Monthly R$145/mo | PIX | https://go.ironpayapp.com.br/knwcyeiala |
+| Monthly R$145/mo | Card | https://go.perfectpay.com.br/PPU38CQC838 |
+| Lifetime R$285 (from R$528) | PIX | https://go.ironpayapp.com.br/jxzfsyhoci |
+| Lifetime R$285 (from R$528) | Card | https://go.perfectpay.com.br/PPU38CQC83E |
+
+- IronPay API token is in `.env`
+- Offer hashes: `monthly=knwcyeiala`, `lifetime=jxzfsyhoci`
+
+---
+
+## 8. CONTACT
+
+- **WhatsApp support:** https://wa.me/5534992017453
+- **Instagram:** https://www.instagram.com/shope_sync/
+
+---
+
+## 9. VISUAL IDENTITY
+
+- **Primary color:** `#EE4D2D` (Shopee orange)
+- **Font:** Inter
+- **Dashboard theme:** LIGHT — white / `#FFF8F5` backgrounds. Zero black backgrounds inside the dashboard.
+- **Landing /planos:** Dark theme (`#080808`) — the ONLY exception to the light theme.
+
+---
+
+## 10. GOLDEN RULES
+
+1. **Single data source:** All sales/commission values across ALL pages must read from `data.salesOrders`. No hardcoded or diverging values.
+2. **Mobile-first 320px+:** Every page and component must work on small screens. No horizontal scroll. No cut-off elements. Stack vertically on mobile, grid on desktop.
+3. **Never show "demo/fake/simulated"** near values, commissions, sales, or order cards. The discrete demo notice already exists — do not add another.
+4. **No real financial transactions** — ever. Implement payment/withdrawal flows as visual/test only.
+5. **Diagnosis before fix:** Always investigate and report before changing any code. Never change things "blind."
+6. **One page at a time:** Never make large sweeping changes across multiple files at once.
+
+---
+
+## 11. WORK ALREADY COMPLETED
+
+- Full Shopee-style dashboard with sidebar navigation (`DashboardShell`)
+- Robô Divulgador page (`dashboard.robo-divulgador.tsx`)
+- Conectar Contas page (`dashboard.conectar-contas.tsx`)
+- Grupos page (`dashboard.grupos.tsx`)
+- Impulsionar Vendas full rebuild (`dashboard.impulsionar-vendas.tsx`)
+- `/planos` landing/pricing page (dark theme, payment modal)
+- Lightning button (admin triggers sales events) + Reset Today Sales button
+- **Critical fix:** unified `getCommissionSum` and all financial summary values to read from `data.salesOrders` for ALL users (admin and regular). Previously admins saw different values from regular users — now everyone sees the same real data.
+- Auto-approve users on registration (removed manual approval gate that was blocking everyone)
+- Admin now sees ALL user products including unsynced ones in `validar-cadastros`
+- WhatsApp support button component
+- Demo shell + demo routes for unauthenticated preview
+
+---
+
+## 12. PENDING TASKS (priority order)
+
+### IN PROGRESS — 4 Instant Flows
+Make these 4 user flows instant (no pending/waiting states):
+
+1. **Registration:** After signup, user goes directly into the dashboard. No `/conta-em-analise` redirect.
+2. **Shopee Connection:** Clicking "Conectar" completes instantly, no pending/loading state.
+3. **Send Products:** Products submitted by user appear immediately in `meus-produtos`, no admin validation queue.
+4. **Admin Visibility:** User products ALWAYS appear in the admin panel (`validar-cadastros`), even before validation.
+
+**Next step:** Architect DIAGNOSIS of all 4 flows before writing any code.
+
+### OTHER PENDING
+- Dashboard chart is disconnected from real data (currently hardcoded sinusoidal values in `dashboard.index.tsx`)
+- `register()` function in `state.tsx` is dead code (phone number was removed from the form but the function still references it)
+- **Future (post-launch):** WhatsApp student-group popup, automatic sales simulation (R$30–60 every ~3h for non-admins), migration from Lovable/Cloudflare to Vercel + own Supabase project, remove admin password from client bundle, full site rebuild.
+
+---
+
+## 13. WORKFLOW RULES FOR CLAUDE CODE
+
+1. **Diagnosis ALWAYS before fix** — investigate every flow before touching code. Report findings first.
+2. **One page at a time** — never big changes everywhere at once.
+3. **Push to `main`** — always end tasks with:
+   ```bash
+   git add .
+   git commit -m "description"
+   git push origin main
+   ```
+4. **Recommended model:** Claude Sonnet
+5. **Route tree:** `src/routeTree.gen.ts` is auto-generated by TanStack Router. If you add a new route file, the tree may need regeneration (`bun run dev` triggers it). Don't edit it manually.
+
+---
+
+## 14. CRISIS HISTORY (lessons learned)
+
+| Incident | Root Cause | Fix | Lesson |
+|---|---|---|---|
+| Entire site broke, all users blocked | Auth/payment gate defaulted `?? "pending"` which blocked everyone including admins | `git reset --hard` to last good commit + force push to `main` | Never change auth gates without testing every role |
+| Infinite redirect loop on `/login` | Auth state change caused redirect logic to loop | Reverted the problematic auth check | Test redirect logic for every auth state |
+| GitHub disconnected from Lovable | Force push rewrote history, breaking Lovable's sync | Re-connected via Lovable dashboard | Avoid `--force` on `main`; use `git push origin main` (non-force) when possible |
+
+**Master lesson: one page at a time. Diagnose first. Always push to `main`.**
