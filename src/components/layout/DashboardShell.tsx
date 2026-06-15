@@ -148,9 +148,10 @@ export function DashboardShell({ children, title, subtitle, actions, onLightning
       <aside className="fixed inset-y-0 left-0 hidden w-64 flex-col border-r border-sidebar-border bg-sidebar md:flex">
         <div className="px-5 py-5"><Logo /></div>
         {NavList}
-        <button onClick={handleLogout} className="mx-3 mb-4 flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground">
+        <button onClick={handleLogout} className="mx-3 mb-2 flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground">
           <LogOut className="h-4 w-4" /> Sair
         </button>
+        <div className="px-5 pb-4 text-[10px] text-muted-foreground/60">v1.0</div>
       </aside>
 
       <div className="md:pl-64">
