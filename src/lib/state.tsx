@@ -1424,7 +1424,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const getCommissionSum = (mp: Marketplace, range: "today" | "7d" | "30d") => {
     const now = new Date();
-    const start = new Date();
+    const start = new Date(
+      new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" })
+    );
     start.setHours(0, 0, 0, 0);
     if (range === "7d") start.setDate(start.getDate() - 6);
     else if (range === "30d") start.setDate(start.getDate() - 29);
