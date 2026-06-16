@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as RegisterRouteImport } from './routes/register'
+import { Route as ReembolsoRouteImport } from './routes/reembolso'
 import { Route as Planos2RouteImport } from './routes/planos2'
 import { Route as PlanosRouteImport } from './routes/planos'
 import { Route as PagamentoBloqueadoRouteImport } from './routes/pagamento-bloqueado'
@@ -43,6 +44,11 @@ import { Route as DashboardImpulsionarVendasBackupRouteImport } from './routes/d
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
   path: '/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReembolsoRoute = ReembolsoRouteImport.update({
+  id: '/reembolso',
+  path: '/reembolso',
   getParentRoute: () => rootRouteImport,
 } as any)
 const Planos2Route = Planos2RouteImport.update({
@@ -203,6 +209,7 @@ export interface FileRoutesByFullPath {
   '/pagamento-bloqueado': typeof PagamentoBloqueadoRoute
   '/planos': typeof PlanosRoute
   '/planos2': typeof Planos2Route
+  '/reembolso': typeof ReembolsoRoute
   '/register': typeof RegisterRoute
   '/dashboard/adicionar-adms': typeof DashboardAdicionarAdmsRoute
   '/dashboard/conectar-contas': typeof DashboardConectarContasRoute
@@ -233,6 +240,7 @@ export interface FileRoutesByTo {
   '/pagamento-bloqueado': typeof PagamentoBloqueadoRoute
   '/planos': typeof PlanosRoute
   '/planos2': typeof Planos2Route
+  '/reembolso': typeof ReembolsoRoute
   '/register': typeof RegisterRoute
   '/dashboard/adicionar-adms': typeof DashboardAdicionarAdmsRoute
   '/dashboard/conectar-contas': typeof DashboardConectarContasRoute
@@ -266,6 +274,7 @@ export interface FileRoutesById {
   '/pagamento-bloqueado': typeof PagamentoBloqueadoRoute
   '/planos': typeof PlanosRoute
   '/planos2': typeof Planos2Route
+  '/reembolso': typeof ReembolsoRoute
   '/register': typeof RegisterRoute
   '/dashboard/adicionar-adms': typeof DashboardAdicionarAdmsRoute
   '/dashboard/conectar-contas': typeof DashboardConectarContasRoute
@@ -300,6 +309,7 @@ export interface FileRouteTypes {
     | '/pagamento-bloqueado'
     | '/planos'
     | '/planos2'
+    | '/reembolso'
     | '/register'
     | '/dashboard/adicionar-adms'
     | '/dashboard/conectar-contas'
@@ -330,6 +340,7 @@ export interface FileRouteTypes {
     | '/pagamento-bloqueado'
     | '/planos'
     | '/planos2'
+    | '/reembolso'
     | '/register'
     | '/dashboard/adicionar-adms'
     | '/dashboard/conectar-contas'
@@ -362,6 +373,7 @@ export interface FileRouteTypes {
     | '/pagamento-bloqueado'
     | '/planos'
     | '/planos2'
+    | '/reembolso'
     | '/register'
     | '/dashboard/adicionar-adms'
     | '/dashboard/conectar-contas'
@@ -395,6 +407,7 @@ export interface RootRouteChildren {
   PagamentoBloqueadoRoute: typeof PagamentoBloqueadoRoute
   PlanosRoute: typeof PlanosRoute
   Planos2Route: typeof Planos2Route
+  ReembolsoRoute: typeof ReembolsoRoute
   RegisterRoute: typeof RegisterRoute
 }
 
@@ -405,6 +418,13 @@ declare module '@tanstack/react-router' {
       path: '/register'
       fullPath: '/register'
       preLoaderRoute: typeof RegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reembolso': {
+      id: '/reembolso'
+      path: '/reembolso'
+      fullPath: '/reembolso'
+      preLoaderRoute: typeof ReembolsoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/planos2': {
@@ -695,6 +715,7 @@ const rootRouteChildren: RootRouteChildren = {
   PagamentoBloqueadoRoute: PagamentoBloqueadoRoute,
   PlanosRoute: PlanosRoute,
   Planos2Route: Planos2Route,
+  ReembolsoRoute: ReembolsoRoute,
   RegisterRoute: RegisterRoute,
 }
 export const routeTree = rootRouteImport
