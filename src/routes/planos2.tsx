@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { BackgroundVideo } from "../components/BackgroundVideo";
+import { VslVideo } from "../components/VslVideo";
 
 export const Route = createFileRoute("/planos2")({ component: PlanosPage });
 
@@ -276,7 +276,7 @@ function Hero() {
       overflow: "hidden",
       paddingTop: 80,
       paddingBottom: 60,
-      background: "transparent",
+      background: "#080808",
     }}>
       <style>{`
         @media (min-width: 900px) {
@@ -1378,24 +1378,22 @@ function PlanosPage() {
   }, []);
 
   return (
-    <div style={{ position: "relative", fontFamily: "'Barlow', -apple-system, BlinkMacSystemFont, sans-serif", background: "#080808", color: "#F2F2F2", minHeight: "100vh", overflowX: "hidden" }}>
-      <BackgroundVideo />
-      <div style={{ position: "relative", zIndex: 1 }}>
-        <LPStyles />
-        <Navbar />
-        <Hero />
-        <MarqueeSection />
-        <StatementSection />
-        <EcosystemSection />
-        <FeaturesSection />
-        <HowItWorksSection />
-        <PricingSection />
-        <GuaranteeSection />
-        <TestimonialsSection />
-        <FAQSection />
-        <FinalCTASection />
-        <FooterSection />
-      </div>
+    <div style={{ fontFamily: "'Barlow', -apple-system, BlinkMacSystemFont, sans-serif", background: "#080808", color: "#F2F2F2", minHeight: "100vh", overflowX: "hidden" }}>
+      <LPStyles />
+      <Navbar />
+      <Hero />
+      <MarqueeSection />
+      <StatementSection />
+      <EcosystemSection />
+      <FeaturesSection />
+      <HowItWorksSection />
+      <VslVideo />
+      <PricingSection />
+      <GuaranteeSection />
+      <TestimonialsSection />
+      <FAQSection />
+      <FinalCTASection />
+      <FooterSection />
     </div>
   );
 }
