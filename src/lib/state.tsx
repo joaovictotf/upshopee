@@ -1387,17 +1387,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const saveMeuProduto = (p: SavedProduct) => {
-    // New regular-user products must be pending admin validation. Admin's own
-    // (preloaded) products bypass this and stay approved.
+    // New products go live instantly — no admin validation required. They are
+    // created already approved and ready for sale. The product is still pushed
+    // to the central user_products table (RPC below) so it stays visible in the
+    // admin panel; admin approval is simply no longer a prerequisite for selling.
+    const finalProduct: SavedProduct = {
+      ...p,
+      status: "Pronto para venda",
+      currentStep: "Produto disponível na loja",
+      productValidationStatus: "approved",
+    };
     const isAdminUserNow = !!user && isAdminEmail(user.email);
-    const finalProduct: SavedProduct = isAdminUserNow
-      ? { ...p, productValidationStatus: "approved" }
-      : {
-          ...p,
-          status: "Em configuração",
-          currentStep: "Aguardando validação da equipe ShopeSync",
-          productValidationStatus: "pending_validation",
-        };
     setData((s) => ({ ...s, meusProdutos: [finalProduct, ...s.meusProdutos] }));
     // Central tracking so admin can see/validate from any device.
     if (currentUserId && !isAdminUserNow) {
