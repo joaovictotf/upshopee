@@ -14,6 +14,7 @@ export const Route = createFileRoute("/dashboard/robo-divulgador")({ component: 
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const CREDITS_KEY = (email: string) => `shopesync.robo.credits.v3.${email}`;
+const LASTRESET_KEY = (email: string) => `shopesync.robo.credits.lastreset.${email}`;
 const INITIAL_CREDITS = 10000;
 const CREDITS_MIN = 30;
 const CREDITS_MAX = 50;
@@ -93,6 +94,21 @@ function pick<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
+// São Paulo "today" as YYYY-MM-DD, using the SAME idiom as getCommissionSum in
+// src/lib/state.tsx: round-trip through toLocaleString("en-US", { timeZone:
+// "America/Sao_Paulo" }) so the date reflects São Paulo wall-clock, not raw
+// browser local time. (Do NOT use todayKey()/dateKey() here — those run on raw
+// browser local time and are the known correctness trap.)
+function saoPauloToday(): string {
+  const sp = new Date(
+    new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" })
+  );
+  const y = sp.getFullYear();
+  const m = String(sp.getMonth() + 1).padStart(2, "0");
+  const d = String(sp.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 function buildAdminHistory(): { log: LogEntry[]; salesCount: number; creditsSpent: number; revenue: number } {
   const now = Date.now();
   const entries: LogEntry[] = [
@@ -165,6 +181,34 @@ function RoboDivulgador() {
     try { localStorage.setItem(CREDITS_KEY(email), String(credits)); } catch {}
   }, [credits, email]);
 
+  // Live mirror of `credits` so long-running loops (sale loop) can read the
+  // current value instead of a stale closure captured when they started. This
+  // is what lets a loop running across midnight pick up the daily reset value.
+  const creditsRef = useRef(credits);
+  useEffect(() => { creditsRef.current = credits; }, [credits]);
+
+  // ── Daily credit reset (client-side, São Paulo-anchored) ──────────────────
+  // For EVERY user (not gated on isAdmin): on a new São Paulo day, credits reset
+  // to exactly INITIAL_CREDITS (10000). Same-day re-renders/reloads do nothing,
+  // so same-day consumption is preserved. The per-user lastreset key in
+  // localStorage is the strict guard: once today's SP date is written, no
+  // further reset happens until the SP date changes (also makes this safe under
+  // StrictMode double-invoke). Declared BEFORE the admin seed effect so the
+  // reset settles to 10000 first and the admin one-time seed deducts on top of
+  // the reset value rather than fighting/wiping it.
+  useEffect(() => {
+    if (!email) return;
+    let last: string | null = null;
+    try { last = localStorage.getItem(LASTRESET_KEY(email)); } catch {}
+    const today = saoPauloToday();
+    if (last !== today) {
+      setCredits(INITIAL_CREDITS);
+      try { localStorage.setItem(LASTRESET_KEY(email), today); } catch {}
+    }
+    // same São Paulo day → do nothing (preserve consumption)
+  }, [email]);
+
+
   const [active, setActive] = useState(false);
   const [channels, setChannels] = useState<Channel[]>(["whatsapp", "contacts", "facebook"]);
   const [selectedProdIds, setSelectedProdIds] = useState<string[]>([]);
@@ -217,7 +261,7 @@ function RoboDivulgador() {
     const scheduleSale = () => {
       const delay = rand(SALE_INTERVAL_MIN, SALE_INTERVAL_MAX);
       saleTimeoutRef.current = setTimeout(async () => {
-        if (credits <= 0) { setActive(false); return; }
+        if (creditsRef.current <= 0) { setActive(false); return; }
         const cost = rand(CREDITS_MIN, CREDITS_MAX);
         let result: { amount: number; marketplace: string } | null = null;
         const eligible = selectedProdIds.filter((id) => products.some((p) => p.id === id));
@@ -240,7 +284,7 @@ function RoboDivulgador() {
         setRevenue((prev) => prev + result!.amount);
         addLog({ type: "sale", msg: saleMsg, amount: result.amount, channel: ch });
         toast.success(`🤖 Venda do Robô`, { description: saleMsg });
-        if (credits - cost <= 0) {
+        if (creditsRef.current - cost <= 0) {
           setActive(false);
           toast.error("Robô parado — créditos esgotados.");
         } else {
