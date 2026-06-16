@@ -1611,7 +1611,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const getApprovedMarketplaces = (): Marketplace[] => {
     if (isAdmin) return MARKETPLACES.filter((m) => adminDemoMap[m] === "approved");
-    return MARKETPLACES.filter((m) => myConnections[m] === "approved");
+    // Connection is automatic/instant: as soon as the user connects, it counts as
+    // ready. A "pending_validation" row (what the DB stores on connect) is treated
+    // as connected here — no admin validation of the connection is required.
+    return MARKETPLACES.filter(
+      (m) => myConnections[m] === "approved" || myConnections[m] === "pending_validation",
+    );
   };
 
   const getUserConnectionsByEmail = (email: string): UserConnections => {

@@ -19,9 +19,10 @@ const DURATION_MS = 30000;
 type DisplayStatus = Integration["status"];
 
 function deriveStatus(connStatus: "pending_validation" | "approved" | "rejected" | undefined): DisplayStatus {
-  if (connStatus === "approved") return "Conexão validada";
+  // Connection is automatic/instant — both "approved" and the freshly-written
+  // "pending_validation" row render as validated. No admin step in between.
+  if (connStatus === "approved" || connStatus === "pending_validation") return "Conexão validada";
   if (connStatus === "rejected") return "Conexão recusada";
-  if (connStatus === "pending_validation") return "Conexão em análise";
   return "Disponível para conexão";
 }
 
@@ -33,7 +34,7 @@ type ViewProps = {
 };
 
 function Conectar() {
-  const { myConnections, requestMarketplaceConnection, isAdmin } = useApp();
+  const { myConnections, requestMarketplaceConnection } = useApp();
   const [active, setActive] = useState<Integration | null>(null);
 
   const items: Integration[] = useMemo(
@@ -47,15 +48,9 @@ function Conectar() {
     try {
       const r = await requestMarketplaceConnection(id as Marketplace);
       if (!r.ok) { toast.error(r.error || "Não foi possível solicitar a conexão."); return; }
-      if (isAdmin) {
-        toast.success("Conexão validada com sucesso.", {
-          description: "Sua conta de marketplace está pronta para envio de produtos.",
-        });
-      } else {
-        toast.success("Conexão solicitada com sucesso.", {
-          description: "Seu acesso está em análise pela equipe ShopeSync. Prazo médio: até 3 dias úteis.",
-        });
-      }
+      toast.success("Conexão validada com sucesso.", {
+        description: "Sua conta de marketplace está pronta para envio de produtos.",
+      });
     } catch (err) {
       console.error("[handleFinish] requestMarketplaceConnection threw:", err);
       toast.error("Não foi possível solicitar a conexão. Tente novamente.");
