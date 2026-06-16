@@ -5,6 +5,7 @@ import {
   Mail,
   KeyRound,
   IdCard,
+  MessageSquare,
   Loader2,
   CheckCircle2,
   ShieldCheck,
@@ -12,6 +13,7 @@ import {
 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
+import { Textarea } from "../components/ui/textarea";
 import { Label } from "../components/ui/label";
 import {
   Card,
@@ -27,11 +29,17 @@ const FONT_STACK = "Inter, Arial, Helvetica, sans-serif";
 
 // ─── Validation ─────────────────────────────────────────────────────────────
 
-type FieldName = "nome" | "email" | "pix" | "documento";
+type FieldName = "nome" | "email" | "pix" | "documento" | "motivo";
 
 type FormValues = Record<FieldName, string>;
 
-const EMPTY_FORM: FormValues = { nome: "", email: "", pix: "", documento: "" };
+const EMPTY_FORM: FormValues = {
+  nome: "",
+  email: "",
+  pix: "",
+  documento: "",
+  motivo: "",
+};
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -57,6 +65,11 @@ function validateField(name: FieldName, value: string): string | null {
         return "CPF deve ter 11 dígitos ou CNPJ 14 dígitos.";
       return null;
     }
+    case "motivo": {
+      if (!v) return "Descreva o motivo do reembolso.";
+      if (v.length < 10) return "O motivo deve ter ao menos 10 caracteres.";
+      return null;
+    }
     default:
       return null;
   }
@@ -68,6 +81,7 @@ function validateAll(values: FormValues): Record<FieldName, string | null> {
     email: validateField("email", values.email),
     pix: validateField("pix", values.pix),
     documento: validateField("documento", values.documento),
+    motivo: validateField("motivo", values.motivo),
   };
 }
 
@@ -146,7 +160,74 @@ function Field({
   );
 }
 
-// ─── Page ───────────────────────────────────────────────────────────────────
+// ─── Textarea field component ───────────────────────────────────────────────
+
+interface TextareaFieldProps {
+  id: FieldName;
+  label: string;
+  placeholder: string;
+  rows?: number;
+  icon: React.ReactNode;
+  value: string;
+  error: string | null;
+  touched: boolean;
+  disabled: boolean;
+  onChange: (value: string) => void;
+  onBlur: () => void;
+}
+
+function TextareaField({
+  id,
+  label,
+  placeholder,
+  rows = 4,
+  icon,
+  value,
+  error,
+  touched,
+  disabled,
+  onChange,
+  onBlur,
+}: TextareaFieldProps) {
+  const showError = touched && !!error;
+  const errorId = `${id}-error`;
+
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor={id} className="flex items-center gap-2 text-foreground">
+        <span className="text-primary">{icon}</span>
+        {label}
+      </Label>
+      <Textarea
+        id={id}
+        rows={rows}
+        placeholder={placeholder}
+        value={value}
+        disabled={disabled}
+        aria-invalid={showError}
+        aria-describedby={showError ? errorId : undefined}
+        onChange={(e) => onChange(e.target.value)}
+        onBlur={onBlur}
+        className={
+          "rounded-lg transition-colors " +
+          (showError
+            ? "border-destructive focus-visible:ring-destructive"
+            : "focus-visible:ring-primary")
+        }
+      />
+      <p
+        id={errorId}
+        role="alert"
+        className={
+          "text-xs text-destructive transition-all duration-200 " +
+          (showError ? "max-h-8 opacity-100" : "max-h-0 overflow-hidden opacity-0")
+        }
+      >
+        {error}
+      </p>
+    </div>
+  );
+}
 
 function ReembolsoPage() {
   const [values, setValues] = useState<FormValues>(EMPTY_FORM);
@@ -155,6 +236,7 @@ function ReembolsoPage() {
     email: false,
     pix: false,
     documento: false,
+    motivo: false,
   });
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
@@ -173,7 +255,7 @@ function ReembolsoPage() {
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setTouched({ nome: true, email: true, pix: true, documento: true });
+    setTouched({ nome: true, email: true, pix: true, documento: true, motivo: true });
     if (!isValid || submitting) return;
 
     setSubmitting(true);
@@ -186,7 +268,7 @@ function ReembolsoPage() {
 
   const handleReset = () => {
     setValues(EMPTY_FORM);
-    setTouched({ nome: false, email: false, pix: false, documento: false });
+    setTouched({ nome: false, email: false, pix: false, documento: false, motivo: false });
     setDone(false);
   };
 
@@ -277,6 +359,18 @@ function ReembolsoPage() {
                     onChange={setField("documento")}
                     onBlur={blurField("documento")}
                   />
+                  <TextareaField
+                    id="motivo"
+                    label="Motivo do reembolso"
+                    placeholder="Explique o motivo da sua solicitação de reembolso"
+                    icon={<MessageSquare className="h-4 w-4" />}
+                    value={values.motivo}
+                    error={errors.motivo}
+                    touched={touched.motivo}
+                    disabled={submitting}
+                    onChange={setField("motivo")}
+                    onBlur={blurField("motivo")}
+                  />
 
                   <Button
                     type="submit"
@@ -342,7 +436,7 @@ function SuccessView({ onReset }: { onReset: () => void }) {
         Pedido enviado!
       </h2>
       <p className="rb-fade mt-2 max-w-sm text-base text-muted-foreground">
-        Seu reembolso foi enviado e já vai cair na sua conta.
+        Recebemos sua solicitação de reembolso. Pedimos até 5 dias úteis para o processamento. O valor será creditado na sua conta dentro desse prazo.
       </p>
 
       <Button
