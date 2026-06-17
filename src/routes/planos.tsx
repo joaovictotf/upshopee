@@ -957,11 +957,11 @@ function HowItWorksSection() {
 
 const LINKS = {
   mensal: {
-    cartao: 'https://go.perfectpay.com.br/PPU38CQC838',
+    cartao: 'https://checkout.wiven.com.br/checkout/cmqhil5uf00uk01pkrfkcg47g?offer=9FP58KU',
     pix: 'https://go.ironpayapp.com.br/knwcyeiala',
   },
   vitalicio: {
-    cartao: 'https://go.perfectpay.com.br/PPU38CQC83E',
+    cartao: 'https://checkout.wiven.com.br/checkout/cmqhil5uf00uk01pkrfkcg47g?offer=YO807KG',
     pix: 'https://go.ironpayapp.com.br/jxzfsyhoci',
   },
 } as const;
