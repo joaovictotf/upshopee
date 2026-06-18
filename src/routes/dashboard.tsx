@@ -23,8 +23,8 @@ function DashboardGate() {
   }, [authReady, user, navigate, accountStatus, isAdmin]);
   // Re-evaluate banking info whenever the logged-in user changes.
   useEffect(() => {
-    setBankInfoDone(hasBankInfo(user?.email));
-  }, [user?.email]);
+    setBankInfoDone(isAdmin || hasBankInfo(user?.email));
+  }, [user?.email, isAdmin]);
   if (!authReady) {
     return (
       <div className="grid min-h-screen place-items-center bg-background text-sm text-muted-foreground">
