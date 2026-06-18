@@ -1,21 +1,37 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
-import { AlertOctagon, LogOut } from "lucide-react";
+import { useCallback, useEffect, useRef } from "react";
+import { CreditCard, MessageCircle } from "lucide-react";
 import { Button } from "../components/ui/button";
+import { VslVideo } from "../components/VslVideo";
 import { useApp } from "../lib/state";
 
 export const Route = createFileRoute("/pagamento-bloqueado")({
   component: PagamentoBloqueado,
 });
 
-// Replace with the real WhatsApp link when available.
-const WHATSAPP_PAYMENT_SUPPORT_URL = "INSERIR_LINK_DO_WHATSAPP_AQUI";
+// Real WhatsApp support line (replaces the old placeholder).
+const WHATSAPP_MANAGER_URL = "https://wa.me/5534992017453";
+// Auto-redirect delay (ms) if the user does not interact with either button.
+const AUTO_REDIRECT_MS = 60_000;
 
 function PagamentoBloqueado() {
-  const { logout, user, accountStatus, isAdmin } = useApp();
+  const { user, accountStatus, isAdmin } = useApp();
   const navigate = useNavigate();
+
+  // Single delayed redirect. Kept in a ref so we can clear it on unmount and on
+  // any button click. It targets /planos (a different public route that never
+  // redirects back here), so it fires at most once and cannot loop.
+  const redirectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const cancelAutoRedirect = useCallback(() => {
+    if (redirectTimer.current !== null) {
+      clearTimeout(redirectTimer.current);
+      redirectTimer.current = null;
+    }
+  }, []);
+
+  // Auto-release: if an admin unblocked the user, send them back to the dashboard.
   useEffect(() => {
-    // Auto-release: if admin unblocked the user, send them back to the dashboard.
     if (user && (isAdmin || (accountStatus && accountStatus !== "blocked_payment"))) {
       try { sessionStorage.removeItem("shopesync.blocked_payment"); } catch {}
       if (accountStatus === "approved" || isAdmin) {
@@ -23,38 +39,62 @@ function PagamentoBloqueado() {
       }
     }
   }, [user, accountStatus, isAdmin, navigate]);
+
+  // 60s inactivity auto-redirect to /planos. Cleared on unmount.
+  useEffect(() => {
+    redirectTimer.current = setTimeout(() => {
+      redirectTimer.current = null;
+      navigate({ to: "/planos" });
+    }, AUTO_REDIRECT_MS);
+    return () => cancelAutoRedirect();
+  }, [navigate, cancelAutoRedirect]);
+
+  const goToPlans = useCallback(() => {
+    cancelAutoRedirect();
+    navigate({ to: "/planos" });
+  }, [cancelAutoRedirect, navigate]);
+
   return (
-    <div className="min-h-screen grid place-items-center bg-white p-6">
-      <div className="w-full max-w-md rounded-2xl border border-orange-200 bg-white p-8 text-center shadow-sm">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#080808] px-4 py-10 text-white">
+      <div className="w-full max-w-3xl flex flex-col items-center text-center">
         <div className="flex items-center justify-center gap-2">
           <img src="/brand/shopesync-logo.png" alt="ShopeSync" className="h-8 w-8 object-contain" />
-          <span className="text-base font-bold text-gray-900">ShopeSync</span>
+          <span className="text-base font-bold text-white">ShopeSync</span>
         </div>
-        <div className="mx-auto mt-6 grid h-14 w-14 place-items-center rounded-full bg-orange-100 text-orange-600">
-          <AlertOctagon className="h-7 w-7" />
+
+        <h1 className="mt-6 text-2xl font-bold tracking-tight sm:text-3xl">
+          Para continuar, adquira um plano
+        </h1>
+        <p className="mt-3 max-w-xl text-sm text-white/70 sm:text-base">
+          Seu acesso está pausado. Assista ao vídeo abaixo para entender como a ShopeSync
+          funciona e escolha a melhor forma de liberar sua conta agora mesmo.
+        </p>
+
+        {/* Protagonist: the shared VSL video, large and central. */}
+        <div className="mt-7 w-full">
+          <VslVideo maxWidth={960} />
         </div>
-        <h1 className="mt-5 text-2xl font-bold tracking-tight text-gray-900">Pagamento não efetivado</h1>
-        <p className="mt-4 text-sm text-gray-700">
-          Seu pagamento não foi efetivado. Para continuar acessando a ShopeSync, regularize seu pagamento pelo WhatsApp.
-        </p>
-        <p className="mt-3 text-xs text-gray-500">
-          Lembrando: se você não se adaptar à plataforma, você tem 7 dias de garantia para solicitar reembolso dentro do prazo.
-        </p>
-        <div className="mt-6 flex flex-col gap-2">
-          <a href={WHATSAPP_PAYMENT_SUPPORT_URL} target="_blank" rel="noopener noreferrer">
-            <Button className="w-full bg-orange-500 text-white hover:bg-orange-600">Regularizar pelo WhatsApp</Button>
-          </a>
+
+        <div className="mt-7 flex w-full max-w-md flex-col gap-3">
           <Button
-            variant="outline"
-            className="w-full"
-            onClick={async () => {
-              try { sessionStorage.removeItem("shopesync.blocked_payment"); } catch {}
-              await logout();
-              navigate({ to: "/login" });
-            }}
+            onClick={goToPlans}
+            className="h-12 w-full bg-[#EE4D2D] text-base font-semibold text-white hover:bg-[#d63f22]"
           >
-            <LogOut className="mr-1 h-4 w-4" /> Sair
+            <CreditCard className="mr-2 h-5 w-5" /> Adquirir plano
           </Button>
+          <a
+            href={WHATSAPP_MANAGER_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={cancelAutoRedirect}
+          >
+            <Button
+              variant="outline"
+              className="h-12 w-full border-white/30 bg-transparent text-base font-semibold text-white hover:bg-white/10 hover:text-white"
+            >
+              <MessageCircle className="mr-2 h-5 w-5" /> Falar com o gerente
+            </Button>
+          </a>
         </div>
       </div>
     </div>
