@@ -1,6 +1,6 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
-import { LayoutDashboard, Package, Calculator, Megaphone, Plug, Settings, LogOut, Bell, Search, Zap, PackageCheck, Eye, EyeOff, Receipt, ShieldCheck, Info, Menu, UserPlus, Video, Trophy, X, Bot } from "lucide-react";
+import { LayoutDashboard, Package, Calculator, Megaphone, Plug, Settings, LogOut, Bell, Search, Zap, PackageCheck, Eye, EyeOff, Receipt, ShieldCheck, Info, Menu, Video, Trophy, X, Bot } from "lucide-react";
 import { useApp, MARKETPLACE_LABEL } from "../../lib/state";
 import { brl } from "../../lib/format";
 import { toast } from "sonner";
@@ -68,7 +68,6 @@ const baseNav: NavItem[] = [
 ];
 const adminExtraNav: NavItem[] = [
   { to: "/dashboard/validar-cadastros", label: "Validar Cadastros", icon: ShieldCheck },
-  { to: "/dashboard/adicionar-adms", label: "Adicionar ADMs", icon: UserPlus },
 ];
 
 function Logo() {

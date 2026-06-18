@@ -38,7 +38,6 @@ import { Route as DashboardImpulsionarVendasRouteImport } from './routes/dashboa
 import { Route as DashboardGruposRouteImport } from './routes/dashboard.grupos'
 import { Route as DashboardConfiguracoesRouteImport } from './routes/dashboard.configuracoes'
 import { Route as DashboardConectarContasRouteImport } from './routes/dashboard.conectar-contas'
-import { Route as DashboardAdicionarAdmsRouteImport } from './routes/dashboard.adicionar-adms'
 import { Route as DashboardImpulsionarVendasBackupRouteImport } from './routes/dashboard.impulsionar-vendas.backup'
 
 const RegisterRoute = RegisterRouteImport.update({
@@ -188,11 +187,6 @@ const DashboardConectarContasRoute = DashboardConectarContasRouteImport.update({
   path: '/conectar-contas',
   getParentRoute: () => DashboardRoute,
 } as any)
-const DashboardAdicionarAdmsRoute = DashboardAdicionarAdmsRouteImport.update({
-  id: '/adicionar-adms',
-  path: '/adicionar-adms',
-  getParentRoute: () => DashboardRoute,
-} as any)
 const DashboardImpulsionarVendasBackupRoute =
   DashboardImpulsionarVendasBackupRouteImport.update({
     id: '/backup',
@@ -211,7 +205,6 @@ export interface FileRoutesByFullPath {
   '/planos2': typeof Planos2Route
   '/reembolso': typeof ReembolsoRoute
   '/register': typeof RegisterRoute
-  '/dashboard/adicionar-adms': typeof DashboardAdicionarAdmsRoute
   '/dashboard/conectar-contas': typeof DashboardConectarContasRoute
   '/dashboard/configuracoes': typeof DashboardConfiguracoesRoute
   '/dashboard/grupos': typeof DashboardGruposRoute
@@ -242,7 +235,6 @@ export interface FileRoutesByTo {
   '/planos2': typeof Planos2Route
   '/reembolso': typeof ReembolsoRoute
   '/register': typeof RegisterRoute
-  '/dashboard/adicionar-adms': typeof DashboardAdicionarAdmsRoute
   '/dashboard/conectar-contas': typeof DashboardConectarContasRoute
   '/dashboard/configuracoes': typeof DashboardConfiguracoesRoute
   '/dashboard/grupos': typeof DashboardGruposRoute
@@ -276,7 +268,6 @@ export interface FileRoutesById {
   '/planos2': typeof Planos2Route
   '/reembolso': typeof ReembolsoRoute
   '/register': typeof RegisterRoute
-  '/dashboard/adicionar-adms': typeof DashboardAdicionarAdmsRoute
   '/dashboard/conectar-contas': typeof DashboardConectarContasRoute
   '/dashboard/configuracoes': typeof DashboardConfiguracoesRoute
   '/dashboard/grupos': typeof DashboardGruposRoute
@@ -311,7 +302,6 @@ export interface FileRouteTypes {
     | '/planos2'
     | '/reembolso'
     | '/register'
-    | '/dashboard/adicionar-adms'
     | '/dashboard/conectar-contas'
     | '/dashboard/configuracoes'
     | '/dashboard/grupos'
@@ -342,7 +332,6 @@ export interface FileRouteTypes {
     | '/planos2'
     | '/reembolso'
     | '/register'
-    | '/dashboard/adicionar-adms'
     | '/dashboard/conectar-contas'
     | '/dashboard/configuracoes'
     | '/dashboard/grupos'
@@ -375,7 +364,6 @@ export interface FileRouteTypes {
     | '/planos2'
     | '/reembolso'
     | '/register'
-    | '/dashboard/adicionar-adms'
     | '/dashboard/conectar-contas'
     | '/dashboard/configuracoes'
     | '/dashboard/grupos'
@@ -616,13 +604,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardConectarContasRouteImport
       parentRoute: typeof DashboardRoute
     }
-    '/dashboard/adicionar-adms': {
-      id: '/dashboard/adicionar-adms'
-      path: '/adicionar-adms'
-      fullPath: '/dashboard/adicionar-adms'
-      preLoaderRoute: typeof DashboardAdicionarAdmsRouteImport
-      parentRoute: typeof DashboardRoute
-    }
     '/dashboard/impulsionar-vendas/backup': {
       id: '/dashboard/impulsionar-vendas/backup'
       path: '/backup'
@@ -649,7 +630,6 @@ const DashboardImpulsionarVendasRouteWithChildren =
   )
 
 interface DashboardRouteChildren {
-  DashboardAdicionarAdmsRoute: typeof DashboardAdicionarAdmsRoute
   DashboardConectarContasRoute: typeof DashboardConectarContasRoute
   DashboardConfiguracoesRoute: typeof DashboardConfiguracoesRoute
   DashboardGruposRoute: typeof DashboardGruposRoute
@@ -666,7 +646,6 @@ interface DashboardRouteChildren {
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
-  DashboardAdicionarAdmsRoute: DashboardAdicionarAdmsRoute,
   DashboardConectarContasRoute: DashboardConectarContasRoute,
   DashboardConfiguracoesRoute: DashboardConfiguracoesRoute,
   DashboardGruposRoute: DashboardGruposRoute,
