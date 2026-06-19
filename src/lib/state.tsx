@@ -873,9 +873,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       // Fetch profile + role. CRITICAL: on network/transient errors we must NOT
       // sign the user out — keeping the session lets the listener retry. Only an
       // explicit pending/rejected profile result triggers a sign-out.
+      // NOTE: is_demo / demo_expires_at are intentionally NOT selected here yet.
+      // Those columns don't exist in the live DB until the Phase 1 migration
+      // (20260617120000_demo_phase1_timer.sql) is applied. Selecting a missing
+      // column makes PostgREST return HTTP 400, which would make every hydrate
+      // fail. Re-add them to this select ONLY after the migration is live.
       const profileRes = await supabase
         .from("profiles")
-        .select("full_name, approval_status, created_at, approved_at, is_demo, demo_expires_at")
+        .select("full_name, approval_status, created_at, approved_at")
         .eq("user_id", sessionUser.id)
         .maybeSingle();
       const rolesRes = await supabase
