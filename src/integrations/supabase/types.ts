@@ -148,10 +148,8 @@ export type Database = {
           approved_at: string | null
           approved_by: string | null
           created_at: string
-          demo_expires_at: string | null
           email: string
           full_name: string
-          is_demo: boolean
           phone: string | null
           user_id: string
         }
@@ -160,10 +158,8 @@ export type Database = {
           approved_at?: string | null
           approved_by?: string | null
           created_at?: string
-          demo_expires_at?: string | null
           email: string
           full_name: string
-          is_demo?: boolean
           phone?: string | null
           user_id: string
         }
@@ -172,10 +168,8 @@ export type Database = {
           approved_at?: string | null
           approved_by?: string | null
           created_at?: string
-          demo_expires_at?: string | null
           email?: string
           full_name?: string
-          is_demo?: boolean
           phone?: string | null
           user_id?: string
         }
