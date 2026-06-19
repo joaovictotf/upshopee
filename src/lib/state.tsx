@@ -647,6 +647,11 @@ export type WithdrawalRequest = {
 type CtxExtras = {
   accountCreatedAt: number | null;
   accountApprovedAt: number | null;
+  // Demo flow (Phase 1): server-authoritative timer fields read from profiles.
+  // isDemo marks a time-limited demo user; demoExpiresAt is when access should
+  // auto-block (enforcement lands in Phase 2 — here we only surface the values).
+  isDemo: boolean;
+  demoExpiresAt: number | null;
   submitWithdrawalRequest: (amount: number, pixKey: string, pixKeyType: string, holderName: string) => Promise<{ ok: boolean; error?: string; id?: string }>;
   listMyWithdrawalRequests: () => WithdrawalRequest[];
 };
@@ -803,6 +808,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [adminDemoConns, setAdminDemoConns] = useState<Marketplace[]>([]);
   const [accountCreatedAt, setAccountCreatedAt] = useState<number | null>(null);
   const [accountApprovedAt, setAccountApprovedAt] = useState<number | null>(null);
+  const [isDemo, setIsDemo] = useState<boolean>(false);
+  const [demoExpiresAt, setDemoExpiresAt] = useState<number | null>(null);
   const [myWithdrawals, setMyWithdrawals] = useState<WithdrawalRequest[]>([]);
   const [accountStatus, setAccountStatus] = useState<ApprovalStatus | null>(null);
   const [isPresentationAdmin, setIsPresentationAdmin] = useState<boolean>(false);
@@ -868,7 +875,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       // explicit pending/rejected profile result triggers a sign-out.
       const profileRes = await supabase
         .from("profiles")
-        .select("full_name, approval_status, created_at, approved_at")
+        .select("full_name, approval_status, created_at, approved_at, is_demo, demo_expires_at")
         .eq("user_id", sessionUser.id)
         .maybeSingle();
       const rolesRes = await supabase
@@ -907,6 +914,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setCurrentUserId(sessionUser.id);
       setAccountCreatedAt(profile?.created_at ? new Date(profile.created_at).getTime() : null);
       setAccountApprovedAt(profile?.approved_at ? new Date(profile.approved_at).getTime() : null);
+      // Demo timer (Phase 1): surface server-side values. Admins are never demos.
+      setIsDemo(!admin && profile?.is_demo === true);
+      setDemoExpiresAt(
+        !admin && profile?.demo_expires_at ? new Date(profile.demo_expires_at).getTime() : null,
+      );
       // Admin: load demo connections from sessionStorage (survives page refresh
       // within the same browser tab/session, cleared on logout).
       if (admin) {
@@ -2425,7 +2437,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [user, currentUserId, isAdmin]);
 
   return (
-    <C.Provider value={{ user, isAdmin, authReady, login, register, logout, selectedMarketplace, setSelectedMarketplace, data, triggerDemoSale, saveMeuProduto, addSalesOrderForProduct, vendasHoje: vendasHojeStore.values, privacy, setPrivacy, adminPresentationMode, toggleAdminPresentationMode, getCommissionSum, listAccounts, refreshAccounts, approveAccount, rejectAccount, blockAccountPayment, unblockAccountPayment, addManualCommissionToUser, bulkAdminDemoCommissionShopee, approveAllPendingAccounts, adminCreateBoostCampaign, adminCancelBoostCampaign, getActiveBoostByUserId, myActiveBoost, getUserConnectedMarketplaces, getUserProducts, myConnections: isAdmin ? adminDemoMap : myConnections, getApprovedMarketplaces, requestMarketplaceConnection, getUserConnectionsByEmail, getUserApprovedMarketplaces, validateMarketplaceConnection, rejectMarketplaceConnection, allUserProducts, refreshAllUserProducts, getUserCommissionTotal, validateUserProduct, validateAllPendingProducts, validateUserPendingProducts, validateAllPendingConnections, validateUserPendingConnections, bulkApproveAllProductsAndMakeReady, accountCreatedAt, accountApprovedAt, submitWithdrawalRequest, listMyWithdrawalRequests, accountStatus, isPresentationAdmin, hasLightningAccess, recordLightningClick, resetTodaySales, isTodayReset, listAllProfiles, grantPresentationAdmin, revokePresentationAdmin }}>
+    <C.Provider value={{ user, isAdmin, authReady, login, register, logout, selectedMarketplace, setSelectedMarketplace, data, triggerDemoSale, saveMeuProduto, addSalesOrderForProduct, vendasHoje: vendasHojeStore.values, privacy, setPrivacy, adminPresentationMode, toggleAdminPresentationMode, getCommissionSum, listAccounts, refreshAccounts, approveAccount, rejectAccount, blockAccountPayment, unblockAccountPayment, addManualCommissionToUser, bulkAdminDemoCommissionShopee, approveAllPendingAccounts, adminCreateBoostCampaign, adminCancelBoostCampaign, getActiveBoostByUserId, myActiveBoost, getUserConnectedMarketplaces, getUserProducts, myConnections: isAdmin ? adminDemoMap : myConnections, getApprovedMarketplaces, requestMarketplaceConnection, getUserConnectionsByEmail, getUserApprovedMarketplaces, validateMarketplaceConnection, rejectMarketplaceConnection, allUserProducts, refreshAllUserProducts, getUserCommissionTotal, validateUserProduct, validateAllPendingProducts, validateUserPendingProducts, validateAllPendingConnections, validateUserPendingConnections, bulkApproveAllProductsAndMakeReady, accountCreatedAt, accountApprovedAt, isDemo, demoExpiresAt, submitWithdrawalRequest, listMyWithdrawalRequests, accountStatus, isPresentationAdmin, hasLightningAccess, recordLightningClick, resetTodaySales, isTodayReset, listAllProfiles, grantPresentationAdmin, revokePresentationAdmin }}>
       {children}
     </C.Provider>
   );

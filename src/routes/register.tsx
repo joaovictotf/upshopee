@@ -50,10 +50,10 @@ function RegisterPage() {
             }
 
             if (signUpData.user) {
-              await supabase
-                .from("profiles" as never)
-                .update({ approval_status: "approved" } as never)
-                .eq("id", signUpData.user.id);
+              // Approval is handled server-side by the handle_new_user() trigger
+              // (every new user is created 'approved'). The previous client-side
+              // UPDATE here was a no-op: it filtered .eq("id", ...) but the PK is
+              // user_id, and RLS only allows admins to UPDATE profiles. Removed.
               await supabase.auth.signOut();
             }
 
