@@ -880,7 +880,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       // fail. Re-add them to this select ONLY after the migration is live.
       const profileRes = await supabase
         .from("profiles")
-        .select("full_name, approval_status, created_at, approved_at")
+        .select("full_name, approval_status, created_at, approved_at, is_demo, demo_expires_at")
         .eq("user_id", sessionUser.id)
         .maybeSingle();
       const rolesRes = await supabase
