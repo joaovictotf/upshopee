@@ -944,6 +944,9 @@ function LegacyView({
         </div>
       </div>
 
+      {/* ── RESULTS GALLERY ──────────────────────────────────────────────── */}
+      <ResultadosReaisSection />
+
       <section className="rounded-2xl border border-gray-100 bg-white p-8 shadow-sm mb-6">
         <div className="mb-8 text-center">
           <h3 className="text-xl font-bold text-gray-900">Como funciona o impulsionamento?</h3>
