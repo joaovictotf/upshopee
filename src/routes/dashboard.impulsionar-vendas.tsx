@@ -11,13 +11,11 @@ import {
 import {
   Flame, TrendingUp, Zap, ShieldCheck, Rocket, BarChart3,
   CheckCircle2, Lock, Activity, Wallet, CalendarDays, Layers,
-  ChevronDown, Sparkles,
+  ChevronDown, Sparkles, Copy, Check,
 } from "lucide-react";
 
-const BOOST_PACK_24_CHECKOUT_URL  = "https://go.ironpayapp.com.br/rnaqezkbld";
-const BOOST_PACK_50_CHECKOUT_URL  = "https://go.ironpayapp.com.br/a7brsesrse";
-const BOOST_PACK_150_CHECKOUT_URL = "https://go.ironpayapp.com.br/kteiyf8epw";
-const BOOST_PACK_400_CHECKOUT_URL = "https://go.ironpayapp.com.br/bsyspglspg";
+const EVOPAY_CREATE_PIX_URL =
+  "https://ndawyrqzqhzbyjdmkdge.supabase.co/functions/v1/evopay-create-pix";
 
 export const Route = createFileRoute("/dashboard/impulsionar-vendas")({
   component: ImpulsionarVendasPage,
@@ -36,7 +34,6 @@ type Pack = {
   roi: string;
   roiAmount: string;
   guaranteeMin: string;
-  checkoutUrl: string;
   badge?: string;
 };
 
@@ -53,7 +50,7 @@ const PACKS: Pack[] = [
     roi: "Invista R$ 40,00 e tenha potencial de gerar até R$ 200,00 em comissões.",
     roiAmount: "até R$ 200,00",
     guaranteeMin: "R$ 80,00",
-    checkoutUrl: BOOST_PACK_24_CHECKOUT_URL,
+
   },
   {
     id: "aceleracao",
@@ -67,7 +64,7 @@ const PACKS: Pack[] = [
     roi: "Invista R$ 64,90 e tenha potencial de gerar até R$ 324,50 em comissões.",
     roiAmount: "até R$ 324,50",
     guaranteeMin: "R$ 129,80",
-    checkoutUrl: BOOST_PACK_50_CHECKOUT_URL,
+
     badge: "Melhor para começar",
   },
   {
@@ -83,7 +80,7 @@ const PACKS: Pack[] = [
     roi: "Invista R$ 150,00 e tenha potencial de gerar até R$ 2.000,00 em comissões.",
     roiAmount: "até R$ 2.000,00",
     guaranteeMin: "R$ 300,00",
-    checkoutUrl: BOOST_PACK_150_CHECKOUT_URL,
+
     badge: "Mais escolhido",
   },
   {
@@ -98,7 +95,7 @@ const PACKS: Pack[] = [
     roi: "Invista R$ 400,00 e tenha potencial de gerar até R$ 5.000,00 em comissões.",
     roiAmount: "até R$ 5.000,00",
     guaranteeMin: "R$ 800,00",
-    checkoutUrl: BOOST_PACK_400_CHECKOUT_URL,
+
     badge: "Maior alcance",
   },
 ];
@@ -109,6 +106,12 @@ const METRIC_PCT: Record<string, number> = {
   escala: 75,
   maximo: 100,
 };
+
+type QrState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "success"; qrCodeText: string; qrCodeUrl: string; qrCodeBase64: string; transactionId: string; clientReference: string }
+  | { status: "error"; message: string };
 
 type BoostInfo = {
   packName: string; packValue: number; startsAt: string; endsAt: string;
@@ -131,6 +134,8 @@ function ImpulsionarVendasPage() {
   const [selectedPack, setSelectedPack] = useState<Pack | null>(null);
   const [stage, setStage] = useState<"guarantee" | "how" | "confirm">("guarantee");
   const [policyAccepted, setPolicyAccepted] = useState(false);
+  const [paymentPack, setPaymentPack] = useState<Pack | null>(null);
+  const [qrState, setQrState] = useState<QrState>({ status: "idle" });
 
   useEffect(() => {
     if (!user) navigate({ to: "/login" });
@@ -139,7 +144,41 @@ function ImpulsionarVendasPage() {
   if (!user) return null;
 
   const startActivate = (pack: Pack) => { setSelectedPack(pack); setStage("guarantee"); };
-  const goToPayment = () => { if (selectedPack) window.location.href = selectedPack.checkoutUrl; };
+  const goToPayment = async () => {
+    if (!selectedPack || !user) return;
+    setPaymentPack(selectedPack);
+    setStage("guarantee"); // reset dialog for next time
+    setSelectedPack(null); // close ActivationDialog
+    setQrState({ status: "loading" });
+
+    try {
+      const res = await fetch(EVOPAY_CREATE_PIX_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: selectedPack.price,
+          packName: selectedPack.id,
+          userId: user.id,
+          userEmail: user.email ?? "",
+        }),
+      });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || "Erro ao gerar PIX");
+      setQrState({
+        status: "success",
+        qrCodeText: data.qrCodeText,
+        qrCodeUrl: data.qrCodeUrl,
+        qrCodeBase64: data.qrCodeBase64,
+        transactionId: data.transactionId,
+        clientReference: data.clientReference,
+      });
+    } catch (err) {
+      setQrState({
+        status: "error",
+        message: err instanceof Error ? err.message : "Erro desconhecido ao gerar PIX",
+      });
+    }
+  };
   const boost = myActiveBoost as BoostInfo | null;
 
   const dialogProps: DialogProps = { selectedPack, stage, setSelectedPack, setStage, goToPayment };
@@ -157,11 +196,37 @@ function ImpulsionarVendasPage() {
           startActivate={startActivate}
           goToPayment={goToPayment}
         />
+        {qrState.status !== "idle" && (
+          <PixQrModal
+            qrState={qrState}
+            pack={paymentPack}
+            onClose={() => { setQrState({ status: "idle" }); setPaymentPack(null); }}
+            onRetry={() => {
+              setQrState({ status: "idle" });
+              if (paymentPack) { setSelectedPack(paymentPack); setStage("confirm"); }
+            }}
+          />
+        )}
       </>
     );
   }
 
-  return <NewView boost={boost} startActivate={startActivate} dialogProps={dialogProps} />;
+  return (
+    <>
+      <NewView boost={boost} startActivate={startActivate} dialogProps={dialogProps} />
+      {qrState.status !== "idle" && (
+        <PixQrModal
+          qrState={qrState}
+          pack={paymentPack}
+          onClose={() => { setQrState({ status: "idle" }); setPaymentPack(null); }}
+          onRetry={() => {
+            setQrState({ status: "idle" });
+            if (paymentPack) { setSelectedPack(paymentPack); setStage("confirm"); }
+          }}
+        />
+      )}
+    </>
+  );
 }
 
 // ─── Policy modal (non-admin, every visit) ────────────────────────────────────
@@ -846,7 +911,7 @@ function ActivationDialog({ selectedPack, stage, setSelectedPack, setStage, goTo
                 Se não houver retorno mínimo equivalente ao dobro do valor investido em comissões registradas no painel, você poderá solicitar a devolução do valor investido, conforme as regras da garantia.
               </div>
               <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
-                <Lock className="h-3 w-3" /> Checkout seguro via IronPay
+                <Lock className="h-3 w-3" /> Pagamento seguro via PIX
               </div>
               <Button
                 onClick={goToPayment}
@@ -1154,5 +1219,170 @@ function BStat({ icon, label, value, accent }: { icon: React.ReactNode; label: s
       </div>
       <div className={`mt-1 truncate text-base font-bold ${accent ? "text-amber-600" : ""}`}>{value}</div>
     </div>
+  );
+}
+
+// ─── PIX QR Code Modal ─────────────────────────────────────────────────────────
+function PixQrModal({
+  qrState,
+  pack,
+  onClose,
+  onRetry,
+}: {
+  qrState: QrState;
+  pack: Pack | null;
+  onClose: () => void;
+  onRetry: () => void;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    if (qrState.status !== "success") return;
+    try {
+      await navigator.clipboard.writeText(qrState.qrCodeText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 3000);
+    } catch {
+      // fallback for insecure contexts
+      const ta = document.createElement("textarea");
+      ta.value = qrState.qrCodeText;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 3000);
+    }
+  };
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="max-h-[95vh] overflow-y-auto sm:max-w-md">
+        {/* ── Loading ─────────────────────────────────────────────────── */}
+        {qrState.status === "loading" && (
+          <div className="flex flex-col items-center py-8">
+            <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-[#EE4D2D]/20 border-t-[#EE4D2D]" />
+            <p className="text-sm font-medium text-gray-700">Gerando PIX...</p>
+            <p className="mt-1 text-xs text-gray-400">Conectando ao EvoPay</p>
+            {pack && (
+              <div className="mt-4 rounded-xl bg-gray-50 px-4 py-2 text-center">
+                <span className="text-xs text-gray-500">
+                  {pack.name} • {brl(pack.price)}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Error ───────────────────────────────────────────────────── */}
+        {qrState.status === "error" && (
+          <div className="flex flex-col items-center py-6">
+            <div className="mb-4 grid h-12 w-12 place-items-center rounded-full bg-red-100 text-red-500">
+              <span className="text-xl font-bold">!</span>
+            </div>
+            <p className="text-sm font-semibold text-gray-900">Erro ao gerar PIX</p>
+            <p className="mt-1 text-center text-xs text-gray-500">{qrState.message}</p>
+            <div className="mt-6 flex w-full gap-3">
+              <button
+                onClick={onClose}
+                className="flex-1 rounded-xl border border-gray-200 py-3 text-sm font-semibold text-gray-600 hover:bg-gray-50"
+              >
+                Fechar
+              </button>
+              <button
+                onClick={onRetry}
+                className="flex-1 rounded-xl bg-[#EE4D2D] py-3 text-sm font-semibold text-white hover:bg-[#d93e22]"
+              >
+                Tentar novamente
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Success ─────────────────────────────────────────────────── */}
+        {qrState.status === "success" && pack && (
+          <div className="flex flex-col items-center">
+            <DialogHeader className="w-full">
+              <DialogTitle className="text-center text-lg">
+                Pagamento PIX — {pack.name}
+              </DialogTitle>
+              <DialogDescription className="text-center">
+                Escaneie o QR Code ou copie o código PIX para pagar
+              </DialogDescription>
+            </DialogHeader>
+
+            {/* QR Code image */}
+            <div className="my-4 flex justify-center rounded-2xl border border-gray-100 bg-white p-3 shadow-sm">
+              <img
+                src={`data:image/png;base64,${qrState.qrCodeBase64}`}
+                alt="QR Code PIX"
+                className="h-48 w-48 object-contain sm:h-56 sm:w-56"
+              />
+            </div>
+
+            {/* Pack info */}
+            <div className="mb-4 w-full rounded-xl bg-[#FFF4EF] border border-orange-100 px-4 py-3">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600">Valor</span>
+                <span className="font-bold text-gray-900">{brl(pack.price)}</span>
+              </div>
+              <div className="mt-1 flex items-center justify-between text-sm">
+                <span className="text-gray-600">Pacote</span>
+                <span className="font-semibold text-[#EE4D2D]">{pack.name}</span>
+              </div>
+            </div>
+
+            {/* PIX code text (truncated) */}
+            <div className="mb-3 w-full">
+              <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+                Código PIX (copia e cola)
+              </p>
+              <div className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5">
+                <p className="break-all text-[11px] leading-relaxed text-gray-700 font-mono select-all">
+                  {qrState.qrCodeText}
+                </p>
+              </div>
+            </div>
+
+            {/* Copy button */}
+            <button
+              onClick={handleCopy}
+              className={`mb-3 flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold transition-all ${
+                copied
+                  ? "bg-emerald-500 text-white"
+                  : "bg-[#EE4D2D] text-white hover:bg-[#d93e22]"
+              }`}
+            >
+              {copied ? (
+                <>
+                  <Check className="h-4 w-4" /> Código copiado!
+                </>
+              ) : (
+                <>
+                  <Copy className="h-4 w-4" /> Copiar código PIX
+                </>
+              )}
+            </button>
+
+            {/* Auto-activation message */}
+            <div className="mb-4 rounded-xl border border-emerald-500/20 bg-emerald-50 px-4 py-3 text-center">
+              <p className="text-xs text-emerald-800">
+                Após o pagamento, seu impulsionamento será{" "}
+                <strong>ativado automaticamente</strong>.
+              </p>
+            </div>
+
+            <button
+              onClick={onClose}
+              className="w-full rounded-xl border border-gray-200 py-3 text-sm font-semibold text-gray-500 hover:bg-gray-50"
+            >
+              Fechar
+            </button>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }
