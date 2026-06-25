@@ -2,7 +2,6 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "cleanUrls": true,
-  "functions": {},
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ]
