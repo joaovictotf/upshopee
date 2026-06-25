@@ -52,7 +52,7 @@
 
 | # | Página | Arquivo |
 |---|--------|---------|
-| 1 | Login | src/routes/login.tsx |
+| 1 | Login | src/routes/login.tsx | ✅ COMPLETA (commit `d13e119` — 2026-06-25) |
 | 2 | Cadastro | src/routes/register.tsx |
 | 3 | Dashboard principal | src/routes/dashboard.index.tsx |
 | 4 | Produtos | src/routes/dashboard.produtos.tsx |
