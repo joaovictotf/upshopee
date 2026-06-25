@@ -67,7 +67,7 @@ function LoginPage() {
               <ShoppingBag className="h-6 w-6 text-white" />
             </div>
             <span className="text-xl font-bold tracking-tight text-white">
-              ShopSync
+              UpShopee
             </span>
           </div>
         </div>
@@ -86,7 +86,7 @@ function LoginPage() {
 
         <div className="relative z-10">
           <p className="text-sm text-white/50">
-            &copy; ShopSync &middot; Painel do vendedor
+            &copy; UpShopee &middot; Painel do vendedor
           </p>
         </div>
       </div>
@@ -100,7 +100,7 @@ function LoginPage() {
               <ShoppingBag className="h-6 w-6 text-[#EE4D2D]" />
             </div>
             <span className="text-xl font-bold tracking-tight text-foreground">
-              ShopSync
+              UpShopee
             </span>
           </div>
 
