@@ -129,7 +129,7 @@ type DialogProps = {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 function ImpulsionarVendasPage() {
-  const { user, myActiveBoost, isAdmin } = useApp();
+  const { user, myActiveBoost, isAdmin, currentUserId } = useApp();
   const navigate = useNavigate();
   const [selectedPack, setSelectedPack] = useState<Pack | null>(null);
   const [stage, setStage] = useState<"guarantee" | "how" | "confirm">("guarantee");
@@ -145,7 +145,7 @@ function ImpulsionarVendasPage() {
 
   const startActivate = (pack: Pack) => { setSelectedPack(pack); setStage("guarantee"); };
   const goToPayment = async () => {
-    if (!selectedPack || !user) return;
+    if (!selectedPack || !user || !currentUserId) return;
     setPaymentPack(selectedPack);
     setStage("guarantee"); // reset dialog for next time
     setSelectedPack(null); // close ActivationDialog
@@ -158,7 +158,7 @@ function ImpulsionarVendasPage() {
         body: JSON.stringify({
           amount: selectedPack.price,
           packName: selectedPack.id,
-          userId: user.id,
+          userId: currentUserId,
           userEmail: user.email ?? "",
         }),
       });
