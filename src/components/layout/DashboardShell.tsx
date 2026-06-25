@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "../ui/sheet";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { WhatsAppSupportButton } from "../WhatsAppSupportButton";
+import { WhatsAppChannelPopup } from "../WhatsAppChannelPopup";
 
 const COPA_POPUP_KEY = "shopesync.copa_new_products_v1";
 
@@ -237,6 +238,9 @@ export function DashboardShell({ children, title, subtitle, actions, onLightning
 
       {/* WhatsApp Support — visível em todas as páginas do dashboard */}
       <WhatsAppSupportButton />
+
+      {/* WhatsApp Channel Popup — apenas para usuários logados no dashboard */}
+      <WhatsAppChannelPopup />
 
       {/* Copa popup — aparece 1x em qualquer página */}
       {showCopaPopup && <CopaPopup onClose={handleCopaClose} onView={handleCopaView} />}

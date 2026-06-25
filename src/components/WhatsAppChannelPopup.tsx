@@ -1,19 +1,14 @@
 import { useState } from "react";
-import { useRouterState } from "@tanstack/react-router";
 import { X, MessageCircle } from "lucide-react";
 
 /**
  * Pop-up do canal oficial no WhatsApp para os alunos.
- * Restrito à área logada (dashboard). NÃO deve aparecer nas páginas
- * públicas de venda/landing (/, /planos, /planos2, /login, etc.).
+ * Montado APENAS dentro do DashboardShell — nunca aparece em páginas
+ * públicas (/planos, /login, etc.).
  * Sem persistência.
  */
 export function WhatsAppChannelPopup() {
   const [open, setOpen] = useState(true);
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
-
-  // Só renderiza dentro do dashboard (área logada).
-  if (!pathname.startsWith("/dashboard")) return null;
 
   if (!open) return null;
 
