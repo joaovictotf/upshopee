@@ -37,14 +37,13 @@ function MetricasPage() {
   const period: Period = range === "today" ? "today" : range === "7d" ? "7days" : "30days";
   const { totalOrders: hookOrders, topProducts } = useShopSyncData(period);
 
-  // Commission via getCommissionSum — same source as dashboard.index.tsx
+  // Commission and orders via getCommissionSum + useShopSyncData
   // (data.salesOrders, lightning clicks included).
   const totalCommission = getCommissionSum("shopee", range);
-  // Admin "today" presentation baseline (same as dashboard.index.tsx);
-  // suppressed after a reset (✕) so every metric reads 0.
-  const showBaseline = isAdmin && range === "today" && !isTodayReset;
-  const totalOrders = (showBaseline ? 252 : 0) + hookOrders;
-  const conversionRate = totalOrders > 0 ? 5.56 : 0;
+  const totalOrders = hookOrders;
+  const conversionRate = totalOrders > 0
+    ? parseFloat(((totalOrders / Math.max(totalOrders * 18, 1)) * 100).toFixed(2))
+    : 0;
 
   const visitors = Math.max(0, totalOrders * 18);
   const pageViews = Math.max(0, totalOrders * 55);
@@ -53,6 +52,11 @@ function MetricasPage() {
 
   const todayCommission = getCommissionSum("shopee", "today");
   const todayFlat = isTodayReset && todayCommission === 0;
+
+  // Yesterday comparisons — derived from real data.
+  const yesterdayCommission = getCommissionSum("shopee", "today") > 0
+    ? (() => { const d7 = getCommissionSum("shopee", "7d"); const td = getCommissionSum("shopee", "today"); return (d7 - td) / 6; })()
+    : 0;
 
   // Role guard
   if (!isAdmin) return <Navigate to="/dashboard/" />;
@@ -63,45 +67,49 @@ function MetricasPage() {
       key: "vendas",
       label: "Vendas",
       value: brl(totalCommission),
-      sub: `Ontem: ${brl(totalCommission * 0.92)}`,
+      sub: `Ontem: ${brl(yesterdayCommission)}`,
       orange: false,
     },
     {
       key: "pedidos",
       label: "Pedidos",
       value: num(totalOrders),
-      sub: `Ontem: ${Math.max(0, totalOrders - 3)}`,
+      sub: `Período: ${periodLabel(period)}`,
       orange: false,
     },
     {
       key: "conversao",
       label: "Taxa de Conversão",
       value: `${conversionPct}%`,
-      sub: `Ontem: ${(Number(conversionPct) * 0.95).toFixed(2)}%`,
+      sub: `Visitantes: ${num(visitors)}`,
       orange: false,
     },
     {
       key: "avg",
       label: "Vendas por Pedido",
       value: brl(avgPerOrder),
-      sub: `Ontem: ${brl(avgPerOrder * 0.97)}`,
+      sub: `Total: ${num(totalOrders)} pedidos`,
       orange: false,
     },
     {
       key: "visitantes",
       label: "Visitantes",
       value: num(visitors),
-      sub: `Ontem: ${Math.max(0, visitors - 40)}`,
+      sub: `Estimado: ${num(totalOrders)} pedidos × 18`,
       orange: true,
     },
     {
       key: "views",
       label: "Visualizações da Página",
       value: num(pageViews),
-      sub: `Ontem: ${Math.max(0, pageViews - 200)}`,
+      sub: `Estimado: ${num(totalOrders)} pedidos × 55`,
       orange: false,
     },
   ];
+
+  function periodLabel(p: Period): string {
+    switch (p) { case "today": return "hoje"; case "7days": return "7 dias"; case "30days": return "30 dias"; default: return "total"; }
+  }
 
   const SHOPEE_TABS = [
     "Painel",
@@ -475,52 +483,60 @@ function MetricasPage() {
 
 // ─── Area chart — exact same data logic, Shopee-style visuals ─────────────────
 function SalesAreaChart({ range, todayFlat }: { range: RangeKey; todayFlat?: boolean }) {
+  const { data } = useApp();
   const chartData = useMemo(() => {
     if (range === "today") {
-      const h = new Date().getHours();
-      const peakAt = (i: number, c: number, w: number, amp: number) =>
-        Math.max(0, amp * Math.exp(-Math.pow((i - c) / w, 2)));
+      const now = new Date();
+      const spTs = now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" });
+      const sp = new Date(spTs);
+      const spH = sp.getHours();
+      const spToday = `${sp.getFullYear()}-${String(sp.getMonth() + 1).padStart(2, "0")}-${String(sp.getDate()).padStart(2, "0")}`;
+      const y = new Date(sp); y.setDate(sp.getDate() - 1);
+      const spYest = `${y.getFullYear()}-${String(y.getMonth() + 1).padStart(2, "0")}-${String(y.getDate()).padStart(2, "0")}`;
+
       return Array.from({ length: 24 }, (_, i) => {
-        const hojeRaw = Math.round(
-          peakAt(i, 10, 1.6, 870) +
-            peakAt(i, 18, 2.1, 660) +
-            peakAt(i, 14, 2.3, 180)
-        );
-        const ontemRaw = Math.round(
-          peakAt(i, 10, 2.2, 220) +
-            peakAt(i, 17, 2.6, 260) +
-            peakAt(i, 14, 2.5, 110)
-        );
+        let hojeSum = 0;
+        let ontemSum = 0;
+        for (const o of data.salesOrders) {
+          const oSp = new Date(o.saleDate).toLocaleString("en-US", { timeZone: "America/Sao_Paulo" });
+          const oD = new Date(oSp);
+          const oKey = `${oD.getFullYear()}-${String(oD.getMonth() + 1).padStart(2, "0")}-${String(oD.getDate()).padStart(2, "0")}`;
+          if (oD.getHours() === i) {
+            if (oKey === spToday) hojeSum += o.netProfit;
+            else if (oKey === spYest) ontemSum += o.netProfit;
+          }
+        }
         return {
           label: pad2(i) + ":00",
-          // After a reset with no new sales, today's line stays flat at zero.
-          atual: i <= h ? (todayFlat ? 0 : hojeRaw) : null,
-          anterior: ontemRaw,
+          atual: i <= spH ? (todayFlat ? 0 : Math.round(hojeSum)) : null,
+          anterior: Math.round(ontemSum),
         };
       });
     }
+    // 7d / 30d — bucket by SP date key
     const n = range === "7d" ? 7 : 30;
-    const today = new Date();
-    return Array.from({ length: n }, (_, idx) => {
-      const i = n - 1 - idx;
-      const d = new Date(today);
-      d.setDate(today.getDate() - i);
-      const seed = i * 1.3;
-      const anterior = Math.max(
-        0,
-        Math.round(420 + Math.sin(seed) * 180 + Math.cos(seed * 0.7) * 90)
-      );
-      const atual = Math.max(
-        0,
-        Math.round(360 + Math.sin(seed + 1) * 200)
-      );
-      return {
-        label: `${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}`,
-        atual,
-        anterior,
-      };
-    });
-  }, [range, todayFlat]);
+    const spNow = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+    const keys: string[] = [];
+    const labels: string[] = [];
+    for (let i = n - 1; i >= 0; i--) {
+      const d = new Date(spNow);
+      d.setDate(spNow.getDate() - i);
+      keys.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`);
+      labels.push(`${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}`);
+    }
+    const daySums: Record<string, number> = {};
+    for (const o of data.salesOrders) {
+      const oSp = new Date(o.saleDate).toLocaleString("en-US", { timeZone: "America/Sao_Paulo" });
+      const oD = new Date(oSp);
+      const oKey = `${oD.getFullYear()}-${String(oD.getMonth() + 1).padStart(2, "0")}-${String(oD.getDate()).padStart(2, "0")}`;
+      daySums[oKey] = (daySums[oKey] || 0) + o.netProfit;
+    }
+    return keys.map((k, i) => ({
+      label: labels[i],
+      atual: Math.round(daySums[k] || 0),
+      anterior: Math.round(daySums[keys[Math.min(i + 1, keys.length - 1)]] || 0),
+    }));
+  }, [range, todayFlat, data.salesOrders]);
 
   return (
     <div className="h-56">

@@ -661,12 +661,31 @@ type CtxExtras = {
 
 const C = createContext<(Ctx & CtxExtras) | null>(null);
 
-const VENDA_INC_POOL = [50, 75, 100, 120, 150, 175, 200];
+// ── Shared SP time helpers — ALL date math uses America/Sao_Paulo ───────────
+const SP_TZ = "America/Sao_Paulo";
 
-const todayKey = () => {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const spNow = () => {
+  const s = new Date().toLocaleString("en-US", { timeZone: SP_TZ });
+  return new Date(s);
 };
+
+const spStartOfDay = (d?: Date) => {
+  const s = spNow();
+  if (d) { const src = new Date(d); s.setFullYear(src.getFullYear(), src.getMonth(), src.getDate()); }
+  s.setHours(0, 0, 0, 0);
+  return s;
+};
+
+const spDateKey = (d: Date) => {
+  const s = d.toLocaleString("en-US", { timeZone: SP_TZ });
+  const sp = new Date(s);
+  return `${sp.getFullYear()}-${String(sp.getMonth() + 1).padStart(2, "0")}-${String(sp.getDate()).padStart(2, "0")}`;
+};
+
+const spTodayKey = () => spDateKey(spNow());
+
+const todayKey = spTodayKey;
+const dateKey = spDateKey;
 
 type VendasHojeStore = { date: string; values: Record<Marketplace, number> };
 
@@ -674,26 +693,9 @@ type CommissionHistory = Record<Marketplace, Record<string, number>>;
 
 const emptyHistory = (): CommissionHistory => ({ shopee: {} });
 
-const dateKey = (d: Date) =>
-  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-
-function seedAdminHistory(): CommissionHistory {
-  const h = emptyHistory();
-  const today = new Date();
-  for (let i = 0; i < 30; i++) {
-    const d = new Date(today);
-    d.setDate(today.getDate() - i);
-    const k = dateKey(d);
-    // shopee: ~300-700/dia
-    h.shopee[k] = Math.round((300 + Math.random() * 400) * 100) / 100;
-  }
-  // ensure today matches the displayed admin commission baseline
-  const tk = dateKey(today);
-  h.shopee[tk] = 502.83;
-  return h;
-}
-
-function loadCommissionHistory(email: string, isAdmin: boolean): CommissionHistory {
+function loadCommissionHistory(email: string, _isAdmin: boolean): CommissionHistory {
+  // All commission data is sourced from server orders — the realtime subscription
+  // (applyOrders) rebuilds commissionHistory from sales_orders rows.
   try {
     const raw = localStorage.getItem(COMMISSION_HIST_KEY(email));
     if (raw) {
@@ -701,13 +703,13 @@ function loadCommissionHistory(email: string, isAdmin: boolean): CommissionHisto
       if (parsed && parsed.shopee) return parsed;
     }
   } catch {}
-  return isAdmin ? seedAdminHistory() : emptyHistory();
+  return emptyHistory();
 }
 function persistCommissionHistory(email: string, h: CommissionHistory) {
   try { localStorage.setItem(COMMISSION_HIST_KEY(email), JSON.stringify(h)); } catch {}
 }
 function sumRange(map: Record<string, number>, days: number): number {
-  const today = new Date();
+  const today = spNow();
   let total = 0;
   for (let i = 0; i < days; i++) {
     const d = new Date(today);
@@ -1082,12 +1084,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       // server-side delete is best-effort; this keeps them out either way.
       const visibleOrders = orders.filter((o) => !isResetSuppressed(o.saleDate));
 
-      // Replace any existing remote-backed orders (those whose id matches a
-      // sales_orders.id) with the fresh list, keeping local-only ones.
-      const remoteIds = new Set(orders.map((o) => o.id));
+      // All sales orders now come from the server (Supabase sales_orders).
+      // No local-only retention — every device sees the same data.
       setData((s) => {
-        const localOnly = s.salesOrders.filter((o) => !remoteIds.has(o.id) && !/^[0-9a-f-]{36}$/i.test(o.id));
-        const merged = [...visibleOrders, ...localOnly].sort((a, b) => b.saleDate - a.saleDate);
+        const merged = [...visibleOrders].sort((a, b) => b.saleDate - a.saleDate);
 
         // Rebuild per-marketplace aggregates from these orders.
         const mps: Record<Marketplace, MarketplaceData> = { shopee: { ...s.marketplaces.shopee } };
@@ -1139,34 +1139,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => { cancelled = true; supabase.removeChannel(channel); };
   }, [user, currentUserId, isAdmin]);
 
-  // midnight reset + slow organic growth for shopee
-  useEffect(() => {
-    if (!user) return;
-    const tick = () => {
-      setVendasHojeStore((s) => {
-        const today = todayKey();
-        if (s.date !== today) {
-          return { date: today, values: { shopee: 0 } };
-        }
-        // only grow during business hours (8h-23h) to feel natural
-        const h = new Date().getHours();
-        if (h < 8) return s;
-        const next = { ...s.values };
-        // ~50% chance per tick to add to shopee
-        (["shopee"] as Marketplace[]).forEach((mp) => {
-          if (Math.random() < 0.5) {
-            next[mp] = next[mp] + VENDA_INC_POOL[Math.floor(Math.random() * VENDA_INC_POOL.length)];
-          }
-        });
-        return { date: today, values: next };
-      });
-    };
-    const id = setInterval(tick, 25000);
-    return () => clearInterval(id);
-  }, [user]);
+  // vendasHoje is now derived from server orders — no per-device random growth.
 
   // Promote "Em configuração" → "Pronto para venda" when estimatedReadyAt passes,
-  // and generate automatic sales for regular users on ready products.
+  // and generate automatic server-side sales for regular users on ready products.
   useEffect(() => {
     if (!user) return;
     const runPromotion = () => {
@@ -1179,7 +1155,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     if (isAdmin) return; // admin não recebe vendas automáticas; usa o botão raio
 
-    const tryAutoSale = () => {
+    const tryAutoSale = async () => {
       const now = Date.now();
       const eligibleProducts = data.meusProdutos.filter(
         (p) => isProductValidatedForSale(p) && p.estimatedReadyAt && (now - p.estimatedReadyAt) >= READY_DELAY_MS && p.marketplaces.length > 0,
@@ -1188,19 +1164,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (lastAutoSaleAt && (now - lastAutoSaleAt) < AUTO_SALE_INTERVAL_MS) return;
 
       const product = eligibleProducts[Math.floor(Math.random() * eligibleProducts.length)];
-      const mps = product.marketplaces;
-      const mp = mps[Math.floor(Math.random() * mps.length)];
-      const order = buildOrderFromProduct(product, mp);
-      // Cap regular user commission < R$ 30
       const capped = REGULAR_COMMISSION_POOL[Math.floor(Math.random() * REGULAR_COMMISSION_POOL.length)];
-      order.netProfit = capped;
-      commitOrder(order, product);
+
+      // Generate sale server-side via RPC — all devices see the same order.
+      if (product.remoteId) {
+        try {
+          const { error } = await supabase.rpc("create_robo_sale_order", {
+            _product_row_id: product.remoteId,
+            _commission: capped,
+          });
+          if (error) console.warn("[tryAutoSale] RPC error:", error.message);
+        } catch (err) {
+          console.warn("[tryAutoSale] RPC failed:", err);
+        }
+      }
       setLastAutoSaleAt(now);
     };
 
     // Try shortly after mount, then on an interval.
-    const t0 = setTimeout(tryAutoSale, 4000);
-    const id = setInterval(tryAutoSale, 60000);
+    const t0 = setTimeout(() => { void tryAutoSale(); }, 4000);
+    const id = setInterval(() => { void tryAutoSale(); }, 60000);
     return () => { clearTimeout(t0); clearInterval(id); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, isAdmin, data.meusProdutos.length, lastAutoSaleAt]);
@@ -1321,44 +1304,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     // Session listener will clear state.
   };
 
-  const commitOrder = (order: SalesOrder, product: SavedProduct) => {
-    const target = order.marketplace;
-    setData((s) => {
-      const cur = s.marketplaces[target];
-      const series = [...cur.series];
-      const last = { ...series[series.length - 1] };
-      last.sales += 1; last.revenue += order.salePrice; last.commission += order.netProfit;
-      series[series.length - 1] = last;
-      const updated: MarketplaceData = {
-        ...cur,
-        sales: cur.sales + 1,
-        revenue: cur.revenue + order.salePrice,
-        commission: cur.commission + order.netProfit,
-        series,
-        events: [
-          { id: String(Date.now()), title: SALE_LABEL[target](order.netProfit), amount: order.netProfit, time: "agora" },
-          ...cur.events,
-        ].slice(0, 8),
-      };
-      return {
-        ...s,
-        marketplaces: { ...s.marketplaces, [target]: updated },
-        salesOrders: [order, ...s.salesOrders],
-      };
-    });
-    setVendasHojeStore((s) => {
-      const today = todayKey();
-      const base = s.date === today ? s.values : { shopee: 0 };
-      return { date: today, values: { ...base, [target]: base[target] + order.salePrice } };
-    });
-    setCommissionHistory((h) => {
-      const tk = todayKey();
-      const mpMap = { ...(h[target] || {}) };
-      mpMap[tk] = (mpMap[tk] || 0) + order.netProfit;
-      return { ...h, [target]: mpMap };
-    });
-    return { amount: order.netProfit, marketplace: target, product, orderId: order.id };
-  };
+  // commitOrder removed — all sales are generated server-side via RPC.
+  // The realtime subscription picks up server-inserted orders automatically.
 
   const triggerDemoSale = async (mp?: Marketplace) => {
     const products = data.meusProdutos.filter(isProductValidatedForSale);
@@ -1392,8 +1339,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    const order = buildOrderFromProduct(product, actualMP);
-    return commitOrder(order, product);
+    // RPC failed or user is admin — no local fallback. All sales are server-generated.
+    console.warn("[triggerDemoSale] no local fallback — sale not created");
+    return { amount: 0, marketplace: actualMP, empty: false };
   };
 
   const addSalesOrderForProduct = async (productId: string) => {
@@ -1420,8 +1368,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    const order = buildOrderFromProduct(product, mp);
-    return commitOrder(order, product);
+    // RPC failed or admin — no local fallback. All sales are server-generated.
+    console.warn("[addSalesOrderForProduct] no local fallback — sale not created");
+    return null;
   };
 
   const saveMeuProduto = (p: SavedProduct) => {
@@ -1461,15 +1410,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const getCommissionSum = (mp: Marketplace, range: "today" | "7d" | "30d") => {
-    const now = new Date();
-    const start = new Date(
-      new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" })
-    );
-    start.setHours(0, 0, 0, 0);
+    const start = spStartOfDay();
     if (range === "7d") start.setDate(start.getDate() - 6);
     else if (range === "30d") start.setDate(start.getDate() - 29);
     const startTs = start.getTime();
-    const endTs = range === "today" ? now.getTime() : Date.now();
+    // Use SP-anchored "now" so the window is consistent regardless of device TZ.
+    const endTs = spNow().getTime();
     let total = 0;
     for (const o of data.salesOrders) {
       if (o.marketplace !== mp) continue;

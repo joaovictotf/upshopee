@@ -317,45 +317,68 @@ function NewSalesChart({
   onRangeChange: (r: RangeKey) => void;
   todayFlat?: boolean;
 }) {
+  const { data } = useApp();
   const chartData = useMemo(() => {
     if (range === "today") {
+      const now = new Date();
+      const spTs = now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" });
+      const sp = new Date(spTs);
+      const spH = sp.getHours();
+      const spToday = `${sp.getFullYear()}-${String(sp.getMonth() + 1).padStart(2, "0")}-${String(sp.getDate()).padStart(2, "0")}`;
+      // Yesterday key
+      const y = new Date(sp); y.setDate(sp.getDate() - 1);
+      const spYest = `${y.getFullYear()}-${String(y.getMonth() + 1).padStart(2, "0")}-${String(y.getDate()).padStart(2, "0")}`;
+
       const arr: { label: string; hoje: number | null; ontem: number }[] = [];
-      const h = new Date().getHours();
-      const peakAt = (i: number, c: number, w: number, amp: number) =>
-        Math.max(0, amp * Math.exp(-Math.pow((i - c) / w, 2)));
       for (let i = 0; i < 24; i++) {
-        const hojeRaw = Math.round(
-          peakAt(i, 10, 1.6, 870) + peakAt(i, 18, 2.1, 660) + peakAt(i, 14, 2.3, 180)
-        );
-        const ontemRaw = Math.round(
-          peakAt(i, 10, 2.2, 220) + peakAt(i, 17, 2.6, 260) + peakAt(i, 14, 2.5, 110)
-        );
-        // After a reset with no new sales, today's line stays flat at zero.
-        const hoje = i <= h ? (todayFlat ? 0 : hojeRaw) : null;
-        arr.push({ label: pad2(i), hoje, ontem: ontemRaw });
+        let hojeSum = 0;
+        let ontemSum = 0;
+        for (const o of data.salesOrders) {
+          const oTs = o.saleDate;
+          const oSp = oTs.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" });
+          const oD = new Date(oSp);
+          const oKey = `${oD.getFullYear()}-${String(oD.getMonth() + 1).padStart(2, "0")}-${String(oD.getDate()).padStart(2, "0")}`;
+          if (oD.getHours() === i) {
+            if (oKey === spToday) hojeSum += o.netProfit;
+            else if (oKey === spYest) ontemSum += o.netProfit;
+          }
+        }
+        const hoje = i <= spH ? (todayFlat ? 0 : Math.round(hojeSum)) : null;
+        arr.push({ label: pad2(i), hoje, ontem: Math.round(ontemSum) });
       }
       return arr;
     }
+    // 7d / 30d — bucket by SP date key
     const n = range === "7d" ? 7 : 30;
-    const today = new Date();
-    return Array.from({ length: n }, (_, idx) => {
-      const i = n - 1 - idx;
-      const d = new Date(today);
-      d.setDate(today.getDate() - i);
-      const seed = i * 1.3;
-      const ontem = Math.max(0, Math.round(420 + Math.sin(seed) * 180 + Math.cos(seed * 0.7) * 90));
-      const hoje = Math.max(0, Math.round(360 + Math.sin(seed + 1) * 200));
-      return {
-        label: `${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}`,
-        hoje,
-        ontem,
-      };
-    });
-  }, [range, todayFlat]);
+    const spNow = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+    const keys: string[] = [];
+    const labels: string[] = [];
+    for (let i = n - 1; i >= 0; i--) {
+      const d = new Date(spNow);
+      d.setDate(spNow.getDate() - i);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      keys.push(key);
+      labels.push(`${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}`);
+    }
+    const daySums: Record<string, number> = {};
+    for (const o of data.salesOrders) {
+      const oSp = new Date(o.saleDate).toLocaleString("en-US", { timeZone: "America/Sao_Paulo" });
+      const oD = new Date(oSp);
+      const oKey = `${oD.getFullYear()}-${String(oD.getMonth() + 1).padStart(2, "0")}-${String(oD.getDate()).padStart(2, "0")}`;
+      daySums[oKey] = (daySums[oKey] || 0) + o.netProfit;
+    }
+    const todayKey = keys[keys.length - 1];
+    return keys.map((k, i) => ({
+      label: labels[i],
+      hoje: Math.round(daySums[k] || 0),
+      ontem: Math.round(daySums[keys[Math.min(i + 1, keys.length - 1)]] || 0), // shifted comparison
+    }));
+  }, [range, todayFlat, data.salesOrders]);
 
   // Yesterday's date label for legend
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
+  const spNow = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+  const yesterday = new Date(spNow);
+  yesterday.setDate(spNow.getDate() - 1);
   const yesterdayLabel = `${pad2(yesterday.getDate())}/${pad2(yesterday.getMonth() + 1)}/${yesterday.getFullYear()}`;
 
   return (
