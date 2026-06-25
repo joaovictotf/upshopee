@@ -83,7 +83,7 @@ function Logo() {
 }
 
 export function DashboardShell({ children, title, subtitle, actions, onLightningClick, onResetMetrics }: { children: ReactNode; title: string; subtitle?: string; actions?: ReactNode; onLightningClick?: () => void; onResetMetrics?: () => void }) {
-  const { user, logout, isAdmin, selectedMarketplace, privacy, setPrivacy, adminPresentationMode, toggleAdminPresentationMode, hasLightningAccess, recordLightningClick, resetTodaySales } = useApp();
+  const { user, logout, isAdmin, selectedMarketplace, privacy, setPrivacy, adminPresentationMode, toggleAdminPresentationMode, hasLightningAccess, recordLightningClick, resetTodaySales, passwordResetRequired } = useApp();
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -105,6 +105,10 @@ export function DashboardShell({ children, title, subtitle, actions, onLightning
   useEffect(() => {
     if (!user) navigate({ to: "/login" });
   }, [user, navigate]);
+
+  useEffect(() => {
+    if (user && passwordResetRequired) navigate({ to: "/redefinir-senha", replace: true });
+  }, [user, passwordResetRequired, navigate]);
 
   useEffect(() => { setMobileOpen(false); }, [pathname]);
 

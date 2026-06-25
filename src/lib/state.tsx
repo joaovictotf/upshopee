@@ -559,7 +559,7 @@ type Ctx = {
   user: User | null;
   isAdmin: boolean;
   authReady: boolean;
-  login: (email: string, password: string) => Promise<{ ok: boolean; error?: string; pending?: boolean; blocked?: boolean }>;
+  login: (email: string, password: string) => Promise<{ ok: boolean; error?: string; pending?: boolean; blocked?: boolean; passwordReset?: boolean }>;
   register: (name: string, email: string, phone: string, password: string) => Promise<{ ok: boolean; error?: string; pending?: boolean }>;
   logout: () => void;
   selectedMarketplace: Marketplace;
@@ -625,6 +625,8 @@ type Ctx = {
   // Presentation-admin (limited admin) + lightning button persistence
   isPresentationAdmin: boolean;
   hasLightningAccess: boolean;
+  passwordResetRequired: boolean;
+  clearPasswordResetRequired: () => Promise<void>;
   recordLightningClick: () => Promise<{ ok: boolean; error?: string; amount?: number }>;
   resetTodaySales: () => Promise<{ ok: boolean; error?: string }>;
   isTodayReset: boolean;
@@ -813,6 +815,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [myWithdrawals, setMyWithdrawals] = useState<WithdrawalRequest[]>([]);
   const [accountStatus, setAccountStatus] = useState<ApprovalStatus | null>(null);
   const [isPresentationAdmin, setIsPresentationAdmin] = useState<boolean>(false);
+  const [passwordResetRequired, setPasswordResetRequired] = useState<boolean>(false);
   // Timestamp of the last "reset today" (✕ button) — only meaningful while it
   // is still the same local day. Persisted per user in localStorage.
   const [todayResetAt, setTodayResetAt] = useState<number | null>(null);
@@ -855,6 +858,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setUser(null);
         setIsAdminUser(false);
         setIsPresentationAdmin(false);
+        setPasswordResetRequired(false);
         setTodayResetAt(null);
         setCurrentUserId(null);
         setMyConnections({});
@@ -880,7 +884,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       // fail. Re-add them to this select ONLY after the migration is live.
       const profileRes = await supabase
         .from("profiles")
-        .select("full_name, approval_status, created_at, approved_at, is_demo, demo_expires_at")
+        .select("full_name, approval_status, created_at, approved_at, is_demo, demo_expires_at, password_reset_required")
         .eq("user_id", sessionUser.id)
         .maybeSingle();
       const rolesRes = await supabase
@@ -916,6 +920,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const u: User = { name, email };
       setUser(u); setIsAdminUser(admin);
       setIsPresentationAdmin(presAdmin && !admin);
+      setPasswordResetRequired(profile?.password_reset_required === true);
       setCurrentUserId(sessionUser.id);
       setAccountCreatedAt(profile?.created_at ? new Date(profile.created_at).getTime() : null);
       setAccountApprovedAt(profile?.approved_at ? new Date(profile.approved_at).getTime() : null);
@@ -1236,6 +1241,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
         res = await supabase.auth.signInWithPassword({ email: e, password });
         if (res.error) return { ok: false, error: "Senha incorreta." };
       }
+      // Check if admin needs password reset after migration
+      const { data: sessAdmin } = await supabase.auth.getUser();
+      if (sessAdmin.user) {
+        const { data: profAdmin } = await supabase
+          .from("profiles")
+          .select("password_reset_required")
+          .eq("user_id", sessAdmin.user.id)
+          .maybeSingle();
+        if (profAdmin?.password_reset_required === true) {
+          return { ok: true, passwordReset: true };
+        }
+      }
       return { ok: true };
     }
     const { error } = await supabase.auth.signInWithPassword({ email: e, password });
@@ -1249,7 +1266,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (sess.user) {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("approval_status")
+        .select("approval_status, password_reset_required")
         .eq("user_id", sess.user.id)
         .maybeSingle();
       const status = (profile?.approval_status as ApprovalStatus | undefined) ?? "pending";
@@ -1265,6 +1282,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         try { sessionStorage.setItem("shopesync.blocked_payment", "1"); } catch {}
         await supabase.auth.signOut();
         return { ok: false, blocked: true, error: "Acesso bloqueado por falta de pagamento." };
+      }
+      if (profile?.password_reset_required === true) {
+        return { ok: true, passwordReset: true };
       }
     }
     return { ok: true };
@@ -2441,8 +2461,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => { cancelled = true; clearInterval(id); window.removeEventListener("focus", onFocus); };
   }, [user, currentUserId, isAdmin]);
 
+  const clearPasswordResetRequired = async () => {
+    if (!currentUserId) return;
+    const { error } = await supabase
+      .from("profiles")
+      .update({ password_reset_required: false })
+      .eq("user_id", currentUserId);
+    if (error) {
+      console.error("[clearPasswordResetRequired] update failed:", error.message);
+      return;
+    }
+    setPasswordResetRequired(false);
+  };
+
   return (
-    <C.Provider value={{ user, isAdmin, authReady, login, register, logout, selectedMarketplace, setSelectedMarketplace, data, triggerDemoSale, saveMeuProduto, addSalesOrderForProduct, vendasHoje: vendasHojeStore.values, privacy, setPrivacy, adminPresentationMode, toggleAdminPresentationMode, getCommissionSum, listAccounts, refreshAccounts, approveAccount, rejectAccount, blockAccountPayment, unblockAccountPayment, addManualCommissionToUser, bulkAdminDemoCommissionShopee, approveAllPendingAccounts, adminCreateBoostCampaign, adminCancelBoostCampaign, getActiveBoostByUserId, myActiveBoost, getUserConnectedMarketplaces, getUserProducts, myConnections: isAdmin ? adminDemoMap : myConnections, getApprovedMarketplaces, requestMarketplaceConnection, getUserConnectionsByEmail, getUserApprovedMarketplaces, validateMarketplaceConnection, rejectMarketplaceConnection, allUserProducts, refreshAllUserProducts, getUserCommissionTotal, validateUserProduct, validateAllPendingProducts, validateUserPendingProducts, validateAllPendingConnections, validateUserPendingConnections, bulkApproveAllProductsAndMakeReady, accountCreatedAt, accountApprovedAt, isDemo, demoExpiresAt, submitWithdrawalRequest, listMyWithdrawalRequests, accountStatus, isPresentationAdmin, hasLightningAccess, recordLightningClick, resetTodaySales, isTodayReset, listAllProfiles, grantPresentationAdmin, revokePresentationAdmin }}>
+    <C.Provider value={{ user, isAdmin, authReady, login, register, logout, selectedMarketplace, setSelectedMarketplace, data, triggerDemoSale, saveMeuProduto, addSalesOrderForProduct, vendasHoje: vendasHojeStore.values, privacy, setPrivacy, adminPresentationMode, toggleAdminPresentationMode, getCommissionSum, listAccounts, refreshAccounts, approveAccount, rejectAccount, blockAccountPayment, unblockAccountPayment, addManualCommissionToUser, bulkAdminDemoCommissionShopee, approveAllPendingAccounts, adminCreateBoostCampaign, adminCancelBoostCampaign, getActiveBoostByUserId, myActiveBoost, getUserConnectedMarketplaces, getUserProducts, myConnections: isAdmin ? adminDemoMap : myConnections, getApprovedMarketplaces, requestMarketplaceConnection, getUserConnectionsByEmail, getUserApprovedMarketplaces, validateMarketplaceConnection, rejectMarketplaceConnection, allUserProducts, refreshAllUserProducts, getUserCommissionTotal, validateUserProduct, validateAllPendingProducts, validateUserPendingProducts, validateAllPendingConnections, validateUserPendingConnections, bulkApproveAllProductsAndMakeReady, accountCreatedAt, accountApprovedAt, isDemo, demoExpiresAt, submitWithdrawalRequest, listMyWithdrawalRequests, accountStatus, isPresentationAdmin, hasLightningAccess, recordLightningClick, resetTodaySales, isTodayReset, listAllProfiles, grantPresentationAdmin, revokePresentationAdmin, passwordResetRequired, clearPasswordResetRequired }}>
       {children}
     </C.Provider>
   );

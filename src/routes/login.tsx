@@ -39,6 +39,7 @@ function LoginPage() {
               toast.error(r.error || "Não foi possível entrar.");
               return;
             }
+            if (r.passwordReset) { navigate({ to: "/redefinir-senha" }); return; }
             navigate({ to: "/dashboard" });
           }}
           className="w-full max-w-sm space-y-5"

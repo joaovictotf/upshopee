@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as ReembolsoRouteImport } from './routes/reembolso'
+import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as Planos3RouteImport } from './routes/planos3'
 import { Route as Planos2RouteImport } from './routes/planos2'
 import { Route as PlanosRouteImport } from './routes/planos'
@@ -49,6 +50,11 @@ const RegisterRoute = RegisterRouteImport.update({
 const ReembolsoRoute = ReembolsoRouteImport.update({
   id: '/reembolso',
   path: '/reembolso',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RedefinirSenhaRoute = RedefinirSenhaRouteImport.update({
+  id: '/redefinir-senha',
+  path: '/redefinir-senha',
   getParentRoute: () => rootRouteImport,
 } as any)
 const Planos3Route = Planos3RouteImport.update({
@@ -210,6 +216,7 @@ export interface FileRoutesByFullPath {
   '/planos': typeof PlanosRoute
   '/planos2': typeof Planos2Route
   '/planos3': typeof Planos3Route
+  '/redefinir-senha': typeof RedefinirSenhaRoute
   '/reembolso': typeof ReembolsoRoute
   '/register': typeof RegisterRoute
   '/dashboard/conectar-contas': typeof DashboardConectarContasRoute
@@ -241,6 +248,7 @@ export interface FileRoutesByTo {
   '/planos': typeof PlanosRoute
   '/planos2': typeof Planos2Route
   '/planos3': typeof Planos3Route
+  '/redefinir-senha': typeof RedefinirSenhaRoute
   '/reembolso': typeof ReembolsoRoute
   '/register': typeof RegisterRoute
   '/dashboard/conectar-contas': typeof DashboardConectarContasRoute
@@ -275,6 +283,7 @@ export interface FileRoutesById {
   '/planos': typeof PlanosRoute
   '/planos2': typeof Planos2Route
   '/planos3': typeof Planos3Route
+  '/redefinir-senha': typeof RedefinirSenhaRoute
   '/reembolso': typeof ReembolsoRoute
   '/register': typeof RegisterRoute
   '/dashboard/conectar-contas': typeof DashboardConectarContasRoute
@@ -310,6 +319,7 @@ export interface FileRouteTypes {
     | '/planos'
     | '/planos2'
     | '/planos3'
+    | '/redefinir-senha'
     | '/reembolso'
     | '/register'
     | '/dashboard/conectar-contas'
@@ -341,6 +351,7 @@ export interface FileRouteTypes {
     | '/planos'
     | '/planos2'
     | '/planos3'
+    | '/redefinir-senha'
     | '/reembolso'
     | '/register'
     | '/dashboard/conectar-contas'
@@ -374,6 +385,7 @@ export interface FileRouteTypes {
     | '/planos'
     | '/planos2'
     | '/planos3'
+    | '/redefinir-senha'
     | '/reembolso'
     | '/register'
     | '/dashboard/conectar-contas'
@@ -408,6 +420,7 @@ export interface RootRouteChildren {
   PlanosRoute: typeof PlanosRoute
   Planos2Route: typeof Planos2Route
   Planos3Route: typeof Planos3Route
+  RedefinirSenhaRoute: typeof RedefinirSenhaRoute
   ReembolsoRoute: typeof ReembolsoRoute
   RegisterRoute: typeof RegisterRoute
 }
@@ -426,6 +439,13 @@ declare module '@tanstack/react-router' {
       path: '/reembolso'
       fullPath: '/reembolso'
       preLoaderRoute: typeof ReembolsoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/redefinir-senha': {
+      id: '/redefinir-senha'
+      path: '/redefinir-senha'
+      fullPath: '/redefinir-senha'
+      preLoaderRoute: typeof RedefinirSenhaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/planos3': {
@@ -715,6 +735,7 @@ const rootRouteChildren: RootRouteChildren = {
   PlanosRoute: PlanosRoute,
   Planos2Route: Planos2Route,
   Planos3Route: Planos3Route,
+  RedefinirSenhaRoute: RedefinirSenhaRoute,
   ReembolsoRoute: ReembolsoRoute,
   RegisterRoute: RegisterRoute,
 }

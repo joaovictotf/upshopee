@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       boost_campaigns: {
@@ -152,6 +177,7 @@ export type Database = {
           email: string
           full_name: string
           is_demo: boolean
+          password_reset_required: boolean
           phone: string | null
           user_id: string
         }
@@ -164,6 +190,7 @@ export type Database = {
           email: string
           full_name: string
           is_demo?: boolean
+          password_reset_required?: boolean
           phone?: string | null
           user_id: string
         }
@@ -176,6 +203,7 @@ export type Database = {
           email?: string
           full_name?: string
           is_demo?: boolean
+          password_reset_required?: boolean
           phone?: string | null
           user_id?: string
         }
@@ -496,6 +524,10 @@ export type Database = {
       approve_all_pending_accounts: { Args: never; Returns: number }
       approve_user: { Args: { _user_id: string }; Returns: undefined }
       block_user_payment: { Args: { _user_id: string }; Returns: undefined }
+      create_robo_sale_order: {
+        Args: { _commission: number; _product_row_id: string }
+        Returns: string
+      }
       create_withdrawal_request: {
         Args: {
           _amount: number
@@ -546,6 +578,7 @@ export type Database = {
         Returns: number
       }
       release_due_boost_events: { Args: { _user_id?: string }; Returns: number }
+      reset_today_sales: { Args: never; Returns: number }
       revoke_presentation_admin: {
         Args: { _user_id: string }
         Returns: undefined
@@ -716,6 +749,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       app_role: ["admin", "user", "presentation_admin"],
