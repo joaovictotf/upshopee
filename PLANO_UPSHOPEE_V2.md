@@ -19,6 +19,11 @@
 
 ### FASE 1 — Trocar nome e branding (rápido, baixo risco)
 
+**Status:** ✅ COMPLETA (commit `5cfb14b` — 2026-06-25)
+**Arquivos alterados:** 25 files, +93/-93 (balanced diff)
+**O que foi feito:** substituir "ShopeSync" / "ShopSync" / "SHOPSYNC" por "UpShopee" em todo texto visível ao usuário.
+**O que NÃO foi alterado:** localStorage keys, admin emails, Supabase refs, payment URLs, file paths, function names (useShopSyncData).
+
 **O que:** substituir "ShopeSync" / "ShopeSync" / "ShopSync" por "UpShopee" em todo o site.
 
 **Onde procurar:**
