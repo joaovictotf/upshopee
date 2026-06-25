@@ -32,7 +32,7 @@ Confirmed from `package.json`:
 | Package manager | Bun (preferred) / npm fallback | — |
 | CF plugin | @cloudflare/vite-plugin | ^1.25.5 (to be removed on Vercel migration) |
 
-**Supabase project ID:** `qtvvbtanpktcppspfofd`
+**Supabase project ID:** `ndawyrqzqhzbyjdmkdge`
 
 ---
 
