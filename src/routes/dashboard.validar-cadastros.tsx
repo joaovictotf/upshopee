@@ -188,7 +188,7 @@ function ValidarCadastros() {
   if (!isAdmin || adminPresentationMode) return null;
 
   return (
-    <DashboardShell title="Validar Cadastros" subtitle="Aprove, pesquise e gerencie usuários da ShopeSync.">
+    <DashboardShell title="Validar Cadastros" subtitle="Aprove, pesquise e gerencie usuários da UpShopee.">
       <div className="grid gap-3 sm:grid-cols-3">
         <Stat icon={<ShieldAlert className="h-4 w-4" />} label="Cadastros pendentes" value={String(counts.pending)} accent />
         <Stat icon={<ShieldCheck className="h-4 w-4" />} label="Cadastros aprovados" value={String(counts.approved)} />

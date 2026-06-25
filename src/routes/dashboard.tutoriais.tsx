@@ -28,7 +28,7 @@ function Tutoriais() {
         </div>
         <div>
           <h2 className="text-lg sm:text-xl font-bold tracking-tight">
-            Tutorial de configuração da ShopeSync
+            Tutorial de configuração da UpShopee
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
             Siga o passo a passo abaixo para configurar sua conta corretamente e começar a vender.
@@ -47,7 +47,7 @@ function Tutoriais() {
               <span className="h-3 w-3 rounded-full bg-emerald-500/70" />
             </div>
             <span className="text-xs font-medium text-muted-foreground">
-              ShopeSync · Tutorial de Configuração
+              UpShopee · Tutorial de Configuração
             </span>
           </div>
           <div className="flex items-center gap-1.5 rounded-full border border-border/60 bg-background/60 px-2.5 py-1 text-[10px] text-muted-foreground">

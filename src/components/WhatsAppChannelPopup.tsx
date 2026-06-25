@@ -50,7 +50,7 @@ export function WhatsAppChannelPopup() {
           <p className="mt-3 text-center text-sm leading-relaxed text-muted-foreground">
             Criamos um canal exclusivo no WhatsApp para avisos importantes,
             suporte, atualizações da plataforma e orientações para os alunos da
-            ShopSync.
+            UpShopee.
           </p>
 
           <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">

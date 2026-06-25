@@ -239,7 +239,7 @@ function ActivationDialog({ selectedPack, stage, setSelectedPack, setStage, goTo
             </DialogHeader>
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                A equipe da ShopSync organiza a divulgação dos produtos que você escolheu, aumentando a visibilidade, o alcance e as chances de venda dentro da sua operação.
+                A equipe da UpShopee organiza a divulgação dos produtos que você escolheu, aumentando a visibilidade, o alcance e as chances de venda dentro da sua operação.
               </p>
               <p className="text-sm text-muted-foreground">
                 Você não precisa se preocupar com a divulgação. O processo é organizado para que seus produtos recebam mais exposição e tenham mais potencial de conversão.
@@ -247,7 +247,7 @@ function ActivationDialog({ selectedPack, stage, setSelectedPack, setStage, goTo
               <ol className="space-y-2">
                 {[
                   { icon: <Flame className="h-4 w-4" />, t: "Você escolhe o pack" },
-                  { icon: <Rocket className="h-4 w-4" />, t: "A ShopSync impulsiona seus produtos" },
+                  { icon: <Rocket className="h-4 w-4" />, t: "A UpShopee impulsiona seus produtos" },
                   { icon: <BarChart3 className="h-4 w-4" />, t: "Você acompanha os resultados pelo painel" },
                 ].map((s, i) => (
                   <li key={i} className="flex items-center gap-3 rounded-xl border border-border bg-card p-3">
@@ -329,7 +329,7 @@ function OldView({ boost, selectedPack, setSelectedPack, stage, setStage, startA
   return (
     <DashboardShell
       title="Impulsionar vendas 🔥"
-      subtitle="Escolha um pacote para aumentar a visibilidade dos seus produtos, alcançar mais pessoas e melhorar sua conversão dentro da operação ShopeSync."
+      subtitle="Escolha um pacote para aumentar a visibilidade dos seus produtos, alcançar mais pessoas e melhorar sua conversão dentro da operação UpShopee."
     >
       <BoostPerformanceSection boost={boost} />
 
@@ -407,7 +407,7 @@ function OldView({ boost, selectedPack, setSelectedPack, stage, setStage, startA
           <Sparkles className="h-5 w-5 text-amber-500" /> Como funciona o impulsionamento?
         </h3>
         <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-          A ShopeSync organiza uma estratégia de aumento de visibilidade para os seus produtos, ajudando sua operação a alcançar mais pessoas, gerar mais visualizações e melhorar o potencial de conversão.
+          A UpShopee organiza uma estratégia de aumento de visibilidade para os seus produtos, ajudando sua operação a alcançar mais pessoas, gerar mais visualizações e melhorar o potencial de conversão.
         </p>
         <ol className="mt-5 grid gap-3 grid-cols-1 md:grid-cols-3">
           {["Escolha o pack", "Ative o impulsionamento", "Acompanhe o potencial de crescimento"].map((step, i) => (
@@ -459,7 +459,7 @@ function PremiumView({ boost, selectedPack, setSelectedPack, stage, setStage, st
   return (
     <DashboardShell
       title="Impulsionar vendas 🔥"
-      subtitle="Escolha um pacote para aumentar a visibilidade dos seus produtos, alcançar mais pessoas e melhorar sua conversão dentro da operação ShopeSync."
+      subtitle="Escolha um pacote para aumentar a visibilidade dos seus produtos, alcançar mais pessoas e melhorar sua conversão dentro da operação UpShopee."
     >
       <style>{`
         @keyframes glow-pulse {
@@ -539,7 +539,7 @@ function PremiumView({ boost, selectedPack, setSelectedPack, stage, setStage, st
         <div className="mb-8 text-center">
           <h3 className="text-xl font-bold text-gray-900">Como funciona o impulsionamento?</h3>
           <p className="mt-2 text-sm text-gray-400">
-            A ShopeSync organiza uma estratégia de visibilidade para seus produtos de forma automática.
+            A UpShopee organiza uma estratégia de visibilidade para seus produtos de forma automática.
           </p>
         </div>
 

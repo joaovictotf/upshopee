@@ -18,14 +18,14 @@ function LoginPage() {
     <div className="min-h-screen grid lg:grid-cols-2 bg-background">
       <div className="hidden lg:flex flex-col justify-between p-12 bg-gradient-to-br from-primary/15 via-card to-background border-r border-border">
         <div className="flex items-center gap-2">
-          <img src="/brand/shopesync-logo.png" alt="ShopeSync" className="h-10 w-10 object-contain" />
-          <span className="font-bold text-lg">ShopeSync</span>
+          <img src="/brand/shopesync-logo.png" alt="UpShopee" className="h-10 w-10 object-contain" />
+          <span className="font-bold text-lg">UpShopee</span>
         </div>
         <div>
           <h2 className="text-3xl font-bold leading-tight">Venda mais com um painel feito para operar.</h2>
           <p className="mt-3 text-muted-foreground">Conecte Shopee, Mercado Livre e Shein, encontre produtos validados e envie direto para sua loja.</p>
         </div>
-        <div className="text-xs text-muted-foreground">© ShopeSync · Painel do vendedor</div>
+        <div className="text-xs text-muted-foreground">© UpShopee · Painel do vendedor</div>
       </div>
 
       <div className="flex items-center justify-center p-6">
@@ -45,8 +45,8 @@ function LoginPage() {
           className="w-full max-w-sm space-y-5"
         >
           <div className="flex flex-col items-center gap-3 text-center lg:items-start lg:text-left">
-            <img src="/brand/shopesync-logo.png" alt="ShopeSync" className="h-16 w-16 object-contain lg:hidden" />
-            <h1 className="text-2xl font-bold tracking-tight">Entre na sua conta ShopeSync</h1>
+            <img src="/brand/shopesync-logo.png" alt="UpShopee" className="h-16 w-16 object-contain lg:hidden" />
+            <h1 className="text-2xl font-bold tracking-tight">Entre na sua conta UpShopee</h1>
             <p className="mt-1 text-sm text-muted-foreground">Gerencie produtos, fornecedores, precificação e vendas em um só painel.</p>
           </div>
           <div className="space-y-3">

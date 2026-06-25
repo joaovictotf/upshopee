@@ -40,7 +40,7 @@ export function BoostPromoModal() {
               <Rocket className="h-6 w-6" />
             </div>
             <div>
-              <div className="text-xs uppercase tracking-wider text-white/80">ShopSync</div>
+              <div className="text-xs uppercase tracking-wider text-white/80">UpShopee</div>
               <h2 className="text-xl font-bold">Conheça o Impulsionar Vendas</h2>
             </div>
           </div>
@@ -48,7 +48,7 @@ export function BoostPromoModal() {
 
         <div className="space-y-4 bg-white px-6 py-6 text-slate-800">
           <p className="text-sm leading-relaxed">
-            Você já começou a gerar comissões dentro da ShopSync. Agora pode aumentar a
+            Você já começou a gerar comissões dentro da UpShopee. Agora pode aumentar a
             visibilidade dos seus produtos com o <strong>Impulsionar Vendas</strong>.
           </p>
 

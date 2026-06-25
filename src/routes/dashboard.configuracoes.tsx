@@ -114,7 +114,7 @@ function Config() {
 
         <Card title="Financeiro">
           <p className="text-xs text-muted-foreground">
-            Solicite o saque das suas comissões. O pedido será enviado para análise da equipe ShopeSync.
+            Solicite o saque das suas comissões. O pedido será enviado para análise da equipe UpShopee.
           </p>
           <p className="text-[11px] text-muted-foreground">
             O saque ficará disponível após 30 dias de conta ativa. Os valores exibidos podem não representar saldo real disponível para saque.

@@ -199,7 +199,7 @@ export function GenerateListingFlow({ product, open, onClose }: { product: Produ
               <div className="rounded-xl border border-dashed border-border bg-card p-6 text-center">
                 <Plug className="mx-auto h-7 w-7 text-muted-foreground" />
                 <h4 className="mt-3 text-base font-semibold">Nenhuma conexão validada</h4>
-                <p className="mt-1 text-sm text-muted-foreground">Para enviar produtos para sua loja, aguarde a validação da sua conexão pela equipe ShopeSync.</p>
+                <p className="mt-1 text-sm text-muted-foreground">Para enviar produtos para sua loja, aguarde a validação da sua conexão pela equipe UpShopee.</p>
                 <Link to="/dashboard/conectar-contas"><Button className="mt-4">Ver conexões <ExternalLink className="ml-1 h-3.5 w-3.5" /></Button></Link>
               </div>
             ) : (

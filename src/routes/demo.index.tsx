@@ -104,7 +104,7 @@ function DemoIndex() {
   return (
     <DemoShell
       title="Dashboard"
-      subtitle="Painel ShopSync para Shopee"
+      subtitle="Painel UpShopee para Shopee"
       privacy={privacy}
       onTogglePrivacy={() => setPrivacy((p) => !p)}
     >

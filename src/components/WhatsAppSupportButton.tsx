@@ -6,7 +6,7 @@
 
 // ── Configuração ────────────────────────────────────────────────────────────
 const WHATSAPP_SUPPORT_URL =
-  "https://wa.me/5534997341182?text=Ol%C3%A1%2C%20preciso%20de%20suporte%20na%20ShopSync";
+  "https://wa.me/5534997341182?text=Ol%C3%A1%2C%20preciso%20de%20suporte%20na%20UpShopee";
 
 // ── Ícone WhatsApp SVG inline (sem dependência externa) ────────────────────
 function WhatsAppIcon({ className }: { className?: string }) {

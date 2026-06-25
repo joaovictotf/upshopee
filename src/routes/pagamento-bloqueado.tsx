@@ -58,15 +58,15 @@ function PagamentoBloqueado() {
     <div className="min-h-screen flex flex-col items-center justify-center bg-[#080808] px-4 py-10 text-white">
       <div className="w-full max-w-3xl flex flex-col items-center text-center">
         <div className="flex items-center justify-center gap-2">
-          <img src="/brand/shopesync-logo.png" alt="ShopeSync" className="h-8 w-8 object-contain" />
-          <span className="text-base font-bold text-white">ShopeSync</span>
+          <img src="/brand/shopesync-logo.png" alt="UpShopee" className="h-8 w-8 object-contain" />
+          <span className="text-base font-bold text-white">UpShopee</span>
         </div>
 
         <h1 className="mt-6 text-2xl font-bold tracking-tight sm:text-3xl">
           Para continuar, adquira um plano
         </h1>
         <p className="mt-3 max-w-xl text-sm text-white/70 sm:text-base">
-          Seu acesso está pausado. Assista ao vídeo abaixo para entender como a ShopeSync
+          Seu acesso está pausado. Assista ao vídeo abaixo para entender como a UpShopee
           funciona e escolha a melhor forma de liberar sua conta agora mesmo.
         </p>
 

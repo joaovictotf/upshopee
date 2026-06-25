@@ -74,9 +74,9 @@ const adminExtraNav: NavItem[] = [
 function Logo() {
   return (
     <div className="flex items-center gap-2">
-      <img src="/brand/shopesync-logo.png" alt="ShopeSync" className="h-9 w-9 object-contain" />
+      <img src="/brand/shopesync-logo.png" alt="UpShopee" className="h-9 w-9 object-contain" />
       <div className="leading-tight">
-        <div className="text-sm font-bold tracking-tight">ShopeSync</div>
+        <div className="text-sm font-bold tracking-tight">UpShopee</div>
         <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Painel do vendedor</div>
       </div>
     </div>
@@ -222,7 +222,7 @@ export function DashboardShell({ children, title, subtitle, actions, onLightning
                 <PopoverContent align="end" sideOffset={8} className="w-[280px] text-xs leading-relaxed">
                   <div className="mb-1 text-sm font-semibold text-foreground">Ambiente demonstrativo</div>
                   <p className="text-muted-foreground">
-                    Este painel é uma simulação da ShopeSync, demonstrando como será a integração prevista para agosto de 2026 com Shopee, Mercado Livre e Shein. Os resultados, métricas, pedidos e comissões exibidos aqui são demonstrativos e não representam resultados reais.
+                    Este painel é uma simulação da UpShopee, demonstrando como será a integração prevista para agosto de 2026 com Shopee, Mercado Livre e Shein. Os resultados, métricas, pedidos e comissões exibidos aqui são demonstrativos e não representam resultados reais.
                   </p>
                 </PopoverContent>
               </Popover>

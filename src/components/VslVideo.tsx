@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 
 export interface VslVideoProps {
-  /** Video source served from /public. Defaults to the ShopeSync VSL. */
+  /** Video source served from /public. Defaults to the UpShopee VSL. */
   src?: string;
   /** Extra class names forwarded to the centered card element. */
   className?: string;

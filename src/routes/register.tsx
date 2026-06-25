@@ -19,8 +19,8 @@ function RegisterPage() {
     <div className="min-h-screen grid place-items-center bg-background p-6">
       <div className="w-full max-w-sm space-y-5 rounded-2xl border border-border bg-card p-6">
         <div className="flex items-center gap-2">
-          <img src="/brand/shopesync-logo.png" alt="ShopeSync" className="h-14 w-14 object-contain" />
-          <span className="font-bold">ShopeSync</span>
+          <img src="/brand/shopesync-logo.png" alt="UpShopee" className="h-14 w-14 object-contain" />
+          <span className="font-bold">UpShopee</span>
         </div>
 
         <form
@@ -64,7 +64,7 @@ function RegisterPage() {
           className="space-y-4"
         >
           <div>
-            <h1 className="text-xl font-bold tracking-tight">Crie sua conta ShopeSync</h1>
+            <h1 className="text-xl font-bold tracking-tight">Crie sua conta UpShopee</h1>
           </div>
 
           <div className="space-y-3">

@@ -63,8 +63,8 @@ function PasswordResetPage() {
       {/* Left panel — brand */}
       <div className="hidden lg:flex flex-col justify-between p-12 bg-gradient-to-br from-primary/15 via-card to-background border-r border-border">
         <div className="flex items-center gap-2">
-          <img src="/brand/shopesync-logo.png" alt="ShopeSync" className="h-10 w-10 object-contain" />
-          <span className="font-bold text-lg">ShopeSync</span>
+          <img src="/brand/shopesync-logo.png" alt="UpShopee" className="h-10 w-10 object-contain" />
+          <span className="font-bold text-lg">UpShopee</span>
         </div>
         <div>
           <div className="inline-flex items-center gap-2 rounded-full bg-orange-100 px-4 py-1.5 text-sm font-semibold text-[#EE4D2D]">
@@ -77,7 +77,7 @@ function PasswordResetPage() {
             Essa é uma medida de segurança para manter seus dados protegidos.
           </p>
         </div>
-        <div className="text-xs text-muted-foreground">© ShopeSync · Painel do vendedor</div>
+        <div className="text-xs text-muted-foreground">© UpShopee · Painel do vendedor</div>
       </div>
 
       {/* Right panel — form */}
@@ -89,7 +89,7 @@ function PasswordResetPage() {
             </div>
             <h1 className="text-2xl font-bold tracking-tight">Criar nova senha</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Olá, {user?.name?.split(" ")[0] ?? "usuário"}! Por segurança, defina uma senha pessoal para continuar usando o ShopeSync.
+              Olá, {user?.name?.split(" ")[0] ?? "usuário"}! Por segurança, defina uma senha pessoal para continuar usando o UpShopee.
             </p>
           </div>
 

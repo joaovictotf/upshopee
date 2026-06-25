@@ -98,7 +98,7 @@ function ProductCard({ p, onDetail, onGen }: { p: SavedProduct; onDetail: () => 
             {p.status}
           </span>
           <span className="inline-flex items-center gap-1 text-muted-foreground">
-            <Clock className="h-3 w-3" /> {isReady ? "Produto disponível na loja" : isPending ? "Aguardando validação da equipe ShopeSync" : "Prazo estimado: até 1 dia útil"}
+            <Clock className="h-3 w-3" /> {isReady ? "Produto disponível na loja" : isPending ? "Aguardando validação da equipe UpShopee" : "Prazo estimado: até 1 dia útil"}
           </span>
         </div>
         <Progress ready={isReady} />

@@ -118,7 +118,7 @@ function IntegrationCard({ integration, onConnect }: { integration: Integration;
       ) : requested ? (
         <div className="mt-3 flex items-center gap-2 rounded-md border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
           <Clock className="h-3.5 w-3.5 text-primary" />
-          Solicitação enviada. Aguarde validação da equipe ShopeSync. Prazo médio: até 3 dias úteis.
+          Solicitação enviada. Aguarde validação da equipe UpShopee. Prazo médio: até 3 dias úteis.
         </div>
       ) : null}
       <Button onClick={onConnect} variant={requested ? "outline" : "default"} className="mt-4 w-full" disabled={validated}>
@@ -216,7 +216,7 @@ function ConnectionDialog({
             {phase === "done" ? validated ? "Conexão validada" : rejected ? "Conexão recusada" : "Conexão solicitada com sucesso" : `Conectando com ${integration.name}`}
           </DialogTitle>
           <DialogDescription className="text-center">
-            {phase === "done" ? validated ? `Sua conta ${integration.name} foi validada pela equipe ShopeSync. Você já pode enviar produtos para este marketplace.` : rejected ? `Esta conexão não foi validada. Entre em contato com o suporte.` : `Seu acesso está em análise pela equipe ShopeSync. Após a validação, você poderá enviar produtos para ${integration.name}. Prazo médio para finalização: até 3 dias úteis.` : "Estamos preparando sua integração. Isso pode levar até 30 segundos."}
+            {phase === "done" ? validated ? `Sua conta ${integration.name} foi validada pela equipe UpShopee. Você já pode enviar produtos para este marketplace.` : rejected ? `Esta conexão não foi validada. Entre em contato com o suporte.` : `Seu acesso está em análise pela equipe UpShopee. Após a validação, você poderá enviar produtos para ${integration.name}. Prazo médio para finalização: até 3 dias úteis.` : "Estamos preparando sua integração. Isso pode levar até 30 segundos."}
           </DialogDescription>
         </DialogHeader>
         {phase === "loading" ? (
@@ -314,11 +314,11 @@ function PremiumView({ items, active, setActive, onFinish }: ViewProps) {
             <div className="bg-gradient-to-b from-orange-50/70 to-white px-8 pb-6 pt-8">
               <div className="flex items-center gap-3">
 
-                {/* ShopSync logo */}
+                {/* UpShopee logo */}
                 <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border border-gray-100 bg-white shadow-sm">
                   <img
                     src="/brand/shopesync-logo.png"
-                    alt="ShopSync"
+                    alt="UpShopee"
                     className="h-10 w-10 object-contain"
                     onError={(e) => { e.currentTarget.style.display = "none"; }}
                   />

@@ -138,7 +138,7 @@ function NewDashboard() {
   }));
 
   return (
-    <DashboardShell title="Dashboard" subtitle="Painel ShopSync para Shopee">
+    <DashboardShell title="Dashboard" subtitle="Painel UpShopee para Shopee">
       <BoostActiveMiniCard />
       <BoostPromoModal />
       <NewShopeeHeroPanel
@@ -597,7 +597,7 @@ function OldDashboard() {
   const dayViews = isAdmin ? 12088 : Math.max(0, dayOrders * 55);
 
   return (
-    <DashboardShell title="Dashboard" subtitle="Painel ShopeSync para Shopee">
+    <DashboardShell title="Dashboard" subtitle="Painel UpShopee para Shopee">
       <BoostActiveMiniCard />
       <BoostPromoModal />
       <div className="relative pb-4">

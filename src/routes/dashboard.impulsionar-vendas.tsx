@@ -681,7 +681,7 @@ function NewView({
             },
             {
               q: "Como funciona a ativação?",
-              a: "Após o pagamento, a equipe ShopSync ativa o impulsionamento e você acompanha tudo pelo painel em tempo real — alcance, visualizações, interações e comissões geradas.",
+              a: "Após o pagamento, a equipe UpShopee ativa o impulsionamento e você acompanha tudo pelo painel em tempo real — alcance, visualizações, interações e comissões geradas.",
             },
             {
               q: "Posso contratar mais de um pack?",
@@ -845,12 +845,12 @@ function ActivationDialog({ selectedPack, stage, setSelectedPack, setStage, goTo
             </DialogHeader>
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                A equipe da ShopSync organiza a divulgação dos produtos que você escolheu, aumentando a visibilidade, o alcance e as chances de venda dentro da sua operação.
+                A equipe da UpShopee organiza a divulgação dos produtos que você escolheu, aumentando a visibilidade, o alcance e as chances de venda dentro da sua operação.
               </p>
               <ol className="space-y-2">
                 {[
                   { icon: <Flame className="h-4 w-4" />, t: "Você escolhe o pack" },
-                  { icon: <Rocket className="h-4 w-4" />, t: "A ShopSync impulsiona seus produtos" },
+                  { icon: <Rocket className="h-4 w-4" />, t: "A UpShopee impulsiona seus produtos" },
                   { icon: <BarChart3 className="h-4 w-4" />, t: "Você acompanha os resultados pelo painel" },
                 ].map((s, i) => (
                   <li key={i} className="flex items-center gap-3 rounded-xl border border-border bg-card p-3">
@@ -946,7 +946,7 @@ function LegacyView({
   return (
     <DashboardShell
       title="Impulsionar vendas 🔥"
-      subtitle="Escolha um pacote para aumentar a visibilidade dos seus produtos, alcançar mais pessoas e melhorar sua conversão dentro da operação ShopeSync."
+      subtitle="Escolha um pacote para aumentar a visibilidade dos seus produtos, alcançar mais pessoas e melhorar sua conversão dentro da operação UpShopee."
     >
       <style>{`
         @keyframes legacy-glow {
@@ -1015,7 +1015,7 @@ function LegacyView({
       <section className="rounded-2xl border border-gray-100 bg-white p-8 shadow-sm mb-6">
         <div className="mb-8 text-center">
           <h3 className="text-xl font-bold text-gray-900">Como funciona o impulsionamento?</h3>
-          <p className="mt-2 text-sm text-gray-400">A ShopeSync organiza uma estratégia de visibilidade para seus produtos de forma automática.</p>
+          <p className="mt-2 text-sm text-gray-400">A UpShopee organiza uma estratégia de visibilidade para seus produtos de forma automática.</p>
         </div>
         <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start sm:justify-center">
           <LegacyStep icon={<Layers className="h-7 w-7 text-orange-500" />} label="Escolha o pack" sub="Selecione o nível de visibilidade ideal para sua operação" />

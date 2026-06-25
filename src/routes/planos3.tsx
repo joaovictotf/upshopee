@@ -191,8 +191,8 @@ function Navbar() {
     }}>
       <div style={{ maxWidth: 1180, margin: "0 auto", padding: "0 20px", height: 64, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
         <Link to="/planos" style={{ display: "flex", alignItems: "center", gap: 9, textDecoration: "none", flexShrink: 0 }}>
-          <img src="/brand/shopesync-logo.png" alt="ShopeSync" style={{ height: 34, width: 34, objectFit: "contain" }} />
-          <span style={{ fontWeight: 800, fontSize: 16, color: "#FFFFFF", letterSpacing: "-0.3px", fontFamily: "'Barlow', sans-serif" }}>ShopeSync</span>
+          <img src="/brand/shopesync-logo.png" alt="UpShopee" style={{ height: 34, width: 34, objectFit: "contain" }} />
+          <span style={{ fontWeight: 800, fontSize: 16, color: "#FFFFFF", letterSpacing: "-0.3px", fontFamily: "'Barlow', sans-serif" }}>UpShopee</span>
         </Link>
 
         <div className="lp-hide-mobile" style={{ display: "flex", gap: 28 }}>
@@ -465,7 +465,7 @@ function StatementSection() {
               <span style={{ color: "#FFFFFF" }}>Ganhe comissões enquanto dorme.</span>
             </p>
             <p style={{ marginTop: 24, fontSize: 16, color: "#888888", maxWidth: 500, fontFamily: "'Barlow', sans-serif", lineHeight: 1.65 }}>
-              Mais de 1.200 vendedores já automatizaram com ShopSync. A plataforma trabalha para você 24 horas por dia.
+              Mais de 1.200 vendedores já automatizaram com UpShopee. A plataforma trabalha para você 24 horas por dia.
             </p>
           </div>
         </div>
@@ -702,7 +702,7 @@ function DemoSlideshow({ mobile }: { mobile: boolean }) {
             <div style={{ flex: 1, background: "#1a1a18", borderRadius: 5, height: 22, display: "flex", alignItems: "center", paddingLeft: 10, gap: 5 }}>
               <div style={{ width: 7, height: 7, borderRadius: "50%", border: "1px solid #1F1F1F", flexShrink: 0 }} />
               <span style={{ fontSize: 9.5, color: "#888888" }}>
-                shopsync.com/{SCREEN_LABELS[screen].toLowerCase().replace(/ /g, "-")}
+                upshopee.com/{SCREEN_LABELS[screen].toLowerCase().replace(/ /g, "-")}
               </span>
             </div>
           </div>
@@ -856,7 +856,7 @@ function EcosystemSection() {
     <section id="demo-section" style={{ padding: "96px 0", background: "#080808", overflow: "hidden" }}>
       <div style={{ padding: "0 20px", marginBottom: 52, maxWidth: 1180, marginLeft: "auto", marginRight: "auto" }}>
         <p className="reveal" style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.2em", color: "#EE4D2D", textTransform: "uppercase" as const, marginBottom: 16, fontFamily: "'Barlow', sans-serif" }}>
-          TUDO QUE O SHOPSYNC FAZ POR VOCÊ
+          TUDO QUE O UPSHOPEE FAZ POR VOCÊ
         </p>
         <h2 style={{ fontSize: "clamp(32px,4.5vw,52px)", fontWeight: 900, lineHeight: 1.1, color: "#FFFFFF", margin: 0, fontFamily: "'Barlow Condensed', sans-serif", letterSpacing: "-1px", maxWidth: 520 }}>
           Um ecossistema completo
@@ -1247,11 +1247,11 @@ function GuaranteeSection() {
 // ─── FAQ ──────────────────────────────────────────────────────────────────────
 
 const FAQS = [
-  { q: "Preciso ter experiência com Shopee para usar?", a: "Não. O ShopSync foi desenvolvido para qualquer pessoa, desde iniciantes até vendedores experientes. A plataforma guia você em cada passo e o robô funciona de forma automática." },
+  { q: "Preciso ter experiência com Shopee para usar?", a: "Não. O UpShopee foi desenvolvido para qualquer pessoa, desde iniciantes até vendedores experientes. A plataforma guia você em cada passo e o robô funciona de forma automática." },
   { q: "O robô divulgador funciona automaticamente?", a: "Sim. Após configurar uma vez, o robô opera 24 horas por dia, 7 dias por semana, divulgando seus produtos nos grupos selecionados sem nenhuma intervenção manual." },
   { q: "Qual a diferença entre Mensal e Vitalício?", a: "O plano Mensal cobra R$145 por mês e pode ser cancelado a qualquer momento. O plano Vitalício é um pagamento único de R$285 que garante acesso completo para sempre, incluindo todas as atualizações futuras." },
   { q: "Como funciona a garantia de 7 dias?", a: "Simples: se dentro de 7 dias você não estiver satisfeito, entre em contato pelo suporte e devolveremos 100% do valor pago. Sem questionamentos." },
-  { q: "Consigo acessar em qualquer dispositivo?", a: "Sim. O ShopSync funciona perfeitamente em computador, celular e tablet. Seu painel fica disponível de qualquer lugar com acesso à internet." },
+  { q: "Consigo acessar em qualquer dispositivo?", a: "Sim. O UpShopee funciona perfeitamente em computador, celular e tablet. Seu painel fica disponível de qualquer lugar com acesso à internet." },
 ];
 
 function FAQSection() {
@@ -1299,7 +1299,7 @@ function FinalCTASection() {
           Pronto para Automatizar<br />suas Vendas?
         </h2>
         <p style={{ fontSize: 16, color: "#888888", margin: "0 0 36px", lineHeight: 1.6, fontFamily: "'Barlow', sans-serif" }}>
-          Junte-se a mais de 1.200 vendedores que já usam o ShopSync
+          Junte-se a mais de 1.200 vendedores que já usam o UpShopee
         </p>
         <a
           href="https://go.ironpayapp.com.br/paqjh?affh=tp145wlwm2"
@@ -1325,8 +1325,8 @@ function FooterSection() {
         <div style={{ display: "flex", flexWrap: "wrap", gap: 32, justifyContent: "space-between", alignItems: "flex-start", marginBottom: 40 }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 10 }}>
-              <img src="/brand/shopesync-logo.png" alt="ShopSync" style={{ height: 30, width: 30, objectFit: "contain" }} />
-              <span style={{ fontWeight: 800, fontSize: 15, color: "#FFFFFF", fontFamily: "'Barlow', sans-serif" }}>ShopSync</span>
+              <img src="/brand/shopesync-logo.png" alt="UpShopee" style={{ height: 30, width: 30, objectFit: "contain" }} />
+              <span style={{ fontWeight: 800, fontSize: 15, color: "#FFFFFF", fontFamily: "'Barlow', sans-serif" }}>UpShopee</span>
             </div>
             <p style={{ fontSize: 13, color: "#888888", margin: 0, maxWidth: 220, fontFamily: "'Barlow', sans-serif" }}>Automatize suas vendas na Shopee</p>
           </div>
@@ -1347,7 +1347,7 @@ function FooterSection() {
           </div>
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 16, justifyContent: "space-between", alignItems: "center", paddingTop: 24, borderTop: "1px solid #1F1F1F", fontSize: 12, color: "#888888" }}>
-          <span style={{ fontFamily: "'Barlow', sans-serif" }}>© 2026 ShopSync. Todos os direitos reservados.</span>
+          <span style={{ fontFamily: "'Barlow', sans-serif" }}>© 2026 UpShopee. Todos os direitos reservados.</span>
           <div style={{ display: "flex", gap: 20, alignItems: "center", fontFamily: "'Barlow', sans-serif" }}>
             <span>🔒 SSL SEGURO</span>
             <span>🛡️ PAGAMENTO PROTEGIDO</span>

@@ -25,10 +25,10 @@ const DEMO_NAV: DemoNavItem[] = [
 function LogoArea() {
   return (
     <div className="flex items-center gap-2">
-      <img src="/brand/shopesync-logo.png" alt="ShopSync" className="h-9 w-9 object-contain" />
+      <img src="/brand/shopesync-logo.png" alt="UpShopee" className="h-9 w-9 object-contain" />
       <div className="leading-tight">
         <div className="flex items-center gap-1.5">
-          <div className="text-sm font-bold tracking-tight">ShopeSync</div>
+          <div className="text-sm font-bold tracking-tight">UpShopee</div>
           <span
             className="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-white"
             style={{ background: "#EE4D2D" }}
@@ -167,7 +167,7 @@ export function DemoShell({
               </div>
               <div className="hidden min-w-0 max-w-[160px] text-xs leading-tight md:block">
                 <div className="truncate font-medium">Usuário Demo</div>
-                <div className="truncate text-muted-foreground">demo@shopsync.com</div>
+                <div className="truncate text-muted-foreground">demo@upshopee.com</div>
               </div>
             </div>
           </div>

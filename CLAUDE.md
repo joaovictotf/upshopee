@@ -1,13 +1,13 @@
-# ShopSync — Project Memory for Claude Code
+# UpShopee — Project Memory for Claude Code
 
 > This file is the permanent memory for any Claude Code session, including sessions on a different account.
-> Last updated: 2026-06-15
+> Last updated: 2026-06-25
 
 ---
 
 ## 1. PROJECT OVERVIEW
 
-- **Name:** ShopSync (also written ShopeSync)
+- **Name:** UpShopee (formerly ShopeSync)
 - **What it is:** SaaS dashboard for Shopee affiliates and sellers. Users connect Shopee accounts, track sales/commissions, boost products, manage affiliate groups, and use the "Robô Divulgador" automation tool.
 - **Status:** Functional presentation prototype. Real launch: August 2026.
 - **GOLDEN RULE:** All financial flows (sales, commissions, withdrawals, boost, payments) are VISUAL only. No real transactions ever happen. The product must look and behave like a real product at all times.
