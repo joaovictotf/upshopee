@@ -176,7 +176,7 @@ function VideoIaPage() {
   // ── Validation ──
   const step1Valid = productMode === "existing" ? !!selectedProduct
     : !!(manualProduct.name.trim() && manualProduct.url.trim());
-  const step2Valid = true; // Image upload is optional — user can always proceed
+  const step2Valid = !!(primaryImage.preview || primaryImage.storagePath);
   const step3Valid = !!(productInfo.name.trim() && productInfo.description.trim() && productInfo.benefits.trim());
   const step4Valid = !!styleConfig.style;
   // Step 5 auto-advances on success
@@ -697,7 +697,7 @@ function VideoIaPage() {
         <div>
           <div className="mb-2 flex items-center gap-2">
             <Label className="text-sm font-semibold text-foreground">Imagem principal</Label>
-            <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-500">Opcional</span>
+            <span className="rounded-full bg-[#EE4D2D]/10 px-2 py-0.5 text-[10px] font-bold text-[#EE4D2D]">Obrigatória</span>
           </div>
           <p className="mb-3 text-xs text-muted-foreground">Esta será a imagem de capa do vídeo. O upload é automático ao selecionar.</p>
           <ImageUploadSlot image={primaryImage} onSelect={handlePrimaryImageSelect} onRemove={removePrimaryImage} large
@@ -1127,6 +1127,9 @@ function VideoIaPage() {
                       <span className="flex items-center gap-2">{continueLabel[currentStep]}<ArrowRight className="h-4 w-4" /></span>
                     )}
                   </Button>
+                  {currentStep === 2 && !step2Valid && (
+                    <span className="text-[11px] text-muted-foreground">Envie pelo menos uma imagem para continuar</span>
+                  )}
                 </div>
               )}
             </div>
