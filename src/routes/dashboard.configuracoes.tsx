@@ -7,7 +7,7 @@ import { Label } from "../components/ui/label";
 import { Switch } from "../components/ui/switch";
 import { Button } from "../components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
-import { Zap } from "lucide-react";
+import { Zap, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { WithdrawalButton } from "../components/withdrawal/WithdrawalDialog";
 import { type BankInfo, type BankInfoErrors, loadBankInfo, saveBankInfo, validateBankInfo } from "../lib/bankinfo";
@@ -32,19 +32,12 @@ function Config() {
   const handleSaveBank = () => {
     if (!user?.email) return;
     const trimmed: BankInfo = {
-      nomeCompleto: bank.nomeCompleto.trim(),
-      documento: bank.documento.trim(),
-      chavePix: bank.chavePix.trim(),
-      banco: bank.banco.trim(),
-      agencia: bank.agencia.trim(),
-      conta: bank.conta.trim(),
+      nomeCompleto: bank.nomeCompleto.trim(), documento: bank.documento.trim(),
+      chavePix: bank.chavePix.trim(), banco: bank.banco.trim(),
+      agencia: bank.agencia.trim(), conta: bank.conta.trim(),
     };
     const v = validateBankInfo(trimmed);
-    if (Object.keys(v).length > 0) {
-      setBankErrors(v);
-      toast.error("Verifique os dados bancários.");
-      return;
-    }
+    if (Object.keys(v).length > 0) { setBankErrors(v); toast.error("Verifique os dados bancários."); return; }
     setBankErrors({});
     saveBankInfo(user.email, trimmed);
     setBank(trimmed);
@@ -53,15 +46,23 @@ function Config() {
 
   return (
     <DashboardShell title="Configurações" subtitle="Ajuste as preferências da sua operação.">
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card title="Loja">
-          <Field label="Nome da loja"><Input value={storeName} onChange={(e) => setStoreName(e.target.value)} /></Field>
-          <Field label="E-mail da conta"><Input value={user?.email || ""} disabled /></Field>
-          <Field label="Meta diária de vendas"><Input type="number" value={meta} onChange={(e) => setMeta(e.target.value)} /></Field>
-        </Card>
+      <div className="grid gap-5 lg:grid-cols-2">
+        {/* ═══ LOJA ═══ */}
+        <SettingsCard title="Loja">
+          <FormField label="Nome da loja">
+            <Input value={storeName} onChange={(e) => setStoreName(e.target.value)} className="h-10 rounded-xl border-gray-200 bg-white shadow-sm shadow-black/[0.02] focus-visible:ring-[#EE4D2D]/30" />
+          </FormField>
+          <FormField label="E-mail da conta">
+            <Input value={user?.email || ""} disabled className="h-10 rounded-xl border-gray-200 bg-gray-50 text-gray-500" />
+          </FormField>
+          <FormField label="Meta diária de vendas">
+            <Input type="number" value={meta} onChange={(e) => setMeta(e.target.value)} className="h-10 rounded-xl border-gray-200 bg-white shadow-sm shadow-black/[0.02] focus-visible:ring-[#EE4D2D]/30" />
+          </FormField>
+        </SettingsCard>
 
-        <Card title="Dados bancários para recebimento">
-          <p className="text-xs text-muted-foreground">
+        {/* ═══ DADOS BANCÁRIOS ═══ */}
+        <SettingsCard title="Dados bancários para recebimento">
+          <p className="text-xs text-gray-500">
             Usados para o recebimento das suas comissões. Ficam salvos apenas neste navegador.
           </p>
           <BankField label="Nome completo" value={bank.nomeCompleto} onChange={setBankField("nomeCompleto")} error={bankErrors.nomeCompleto} />
@@ -73,86 +74,146 @@ function Config() {
             <BankField label="Conta" value={bank.conta} onChange={setBankField("conta")} error={bankErrors.conta} />
           </div>
           <div className="pt-1">
-            <Button variant="outline" className="w-full sm:w-auto" onClick={handleSaveBank}>Salvar dados bancários</Button>
+            <Button
+              variant="outline"
+              className="h-10 rounded-xl border-gray-200 bg-white text-sm font-medium text-gray-700 shadow-sm shadow-black/[0.02] transition-all hover:border-[#EE4D2D]/30 hover:text-[#EE4D2D]"
+              onClick={handleSaveBank}
+            >
+              Salvar dados bancários
+            </Button>
           </div>
-        </Card>
+        </SettingsCard>
 
-        <Card title="Preferências comerciais">
-          <Field label="Margem padrão de lucro (%)"><Input type="number" value={margem} onChange={(e) => setMargem(e.target.value)} /></Field>
-          <Field label="Taxa estimada da Shopee (%)"><Input type="number" value={taxa} onChange={(e) => setTaxa(e.target.value)} /></Field>
-          <Field label="Preferência de fornecedores">
+        {/* ═══ PREFERÊNCIAS COMERCIAIS ═══ */}
+        <SettingsCard title="Preferências comerciais">
+          <FormField label="Margem padrão de lucro (%)">
+            <Input type="number" value={margem} onChange={(e) => setMargem(e.target.value)} className="h-10 rounded-xl border-gray-200 bg-white shadow-sm shadow-black/[0.02] focus-visible:ring-[#EE4D2D]/30" />
+          </FormField>
+          <FormField label="Taxa estimada da Shopee (%)">
+            <Input type="number" value={taxa} onChange={(e) => setTaxa(e.target.value)} className="h-10 rounded-xl border-gray-200 bg-white shadow-sm shadow-black/[0.02] focus-visible:ring-[#EE4D2D]/30" />
+          </FormField>
+          <FormField label="Preferência de fornecedores">
             <Select value={pref} onValueChange={setPref}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-10 rounded-xl border-gray-200 bg-white shadow-sm shadow-black/[0.02] focus-visible:ring-[#EE4D2D]/30">
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="RioStock">RioStock Distribuidora</SelectItem>
                 <SelectItem value="SP">SP Prime Atacado</SelectItem>
                 <SelectItem value="Auto">Automático (menor preço)</SelectItem>
               </SelectContent>
             </Select>
-          </Field>
-        </Card>
+          </FormField>
+        </SettingsCard>
 
-        <Card title="Aparência e notificações">
-          <Field label="Cor de destaque">
+        {/* ═══ APARÊNCIA E NOTIFICAÇÕES ═══ */}
+        <SettingsCard title="Aparência e notificações">
+          <FormField label="Cor de destaque">
             <Select value={cor} onValueChange={setCor}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-10 rounded-xl border-gray-200 bg-white shadow-sm shadow-black/[0.02] focus-visible:ring-[#EE4D2D]/30">
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="Laranja">Laranja</SelectItem>
                 <SelectItem value="Vermelho">Vermelho</SelectItem>
                 <SelectItem value="Azul">Azul</SelectItem>
               </SelectContent>
             </Select>
-          </Field>
-          <div className="flex items-center justify-between rounded-lg border border-border bg-background/40 p-3">
+          </FormField>
+          <div className="flex items-center justify-between rounded-xl border border-gray-200 bg-gray-50/50 p-4">
             <div>
-              <div className="text-sm font-medium">Notificações</div>
-              <div className="text-xs text-muted-foreground">Receba alertas de vendas e comissões.</div>
+              <div className="text-sm font-medium text-gray-900">Notificações</div>
+              <div className="text-xs text-gray-500">Receba alertas de vendas e comissões.</div>
             </div>
             <Switch checked={notif} onCheckedChange={setNotif} />
           </div>
-        </Card>
+        </SettingsCard>
 
-        <Card title="Financeiro">
-          <p className="text-xs text-muted-foreground">
+        {/* ═══ FINANCEIRO ═══ */}
+        <SettingsCard title="Financeiro">
+          <p className="text-xs text-gray-500">
             Solicite o saque das suas comissões. O pedido será enviado para análise da equipe UpShopee.
           </p>
-          <p className="text-[11px] text-muted-foreground">
-            O saque ficará disponível após 30 dias de conta ativa. Os valores exibidos podem não representar saldo real disponível para saque.
-          </p>
+          <div className="rounded-xl bg-[#FFF8F5] p-4 ring-1 ring-[#EE4D2D]/10">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EE4D2D]/10">
+                <Shield className="h-5 w-5 text-[#EE4D2D]" />
+              </div>
+              <div>
+                <p className="text-xs font-medium text-gray-700">
+                  O saque ficará disponível após 30 dias de conta ativa.
+                </p>
+                <p className="mt-1 text-[11px] text-gray-500">
+                  Os valores exibidos podem não representar saldo real disponível para saque.
+                </p>
+              </div>
+            </div>
+          </div>
           <div className="pt-1">
             <WithdrawalButton />
           </div>
-        </Card>
+        </SettingsCard>
 
+        {/* ═══ ADMINISTRAÇÃO ═══ */}
         {isAdmin && (
-          <Card title="Administração">
-            <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
-              <div className="flex items-center gap-2 text-sm font-medium"><Zap className="h-4 w-4 text-primary" /> Modo demonstração</div>
-              <p className="mt-1 text-xs text-muted-foreground">Botão de simulação ativo no canto inferior direito.</p>
+          <SettingsCard title="Administração">
+            <div className="rounded-xl bg-[#FFF8F5] p-4 ring-1 ring-[#EE4D2D]/20">
+              <div className="flex items-center gap-2 text-sm font-medium text-[#EE4D2D]">
+                <Zap className="h-4 w-4" /> Modo demonstração
+              </div>
+              <p className="mt-1 text-xs text-gray-500">
+                Botão de simulação ativo no canto inferior direito.
+              </p>
             </div>
-          </Card>
+          </SettingsCard>
         )}
 
-        <div className="lg:col-span-2 flex justify-end">
-          <Button className="w-full sm:w-auto" onClick={() => toast.success("Configurações salvas.")}>Salvar alterações</Button>
+        {/* ═══ FOOTER BUTTON ═══ */}
+        <div className="lg:col-span-2 flex justify-end pt-2">
+          <Button
+            className="h-10 rounded-xl bg-[#EE4D2D] px-8 text-sm font-semibold text-white shadow-sm shadow-[#EE4D2D]/25 transition-all hover:bg-[#EE4D2D]/90 hover:shadow-md hover:shadow-[#EE4D2D]/30 active:scale-[0.98]"
+            onClick={() => toast.success("Configurações salvas.")}
+          >
+            Salvar alterações
+          </Button>
         </div>
       </div>
     </DashboardShell>
   );
 }
 
-function Card({ title, children }: { title: string; children: React.ReactNode }) {
-  return <div className="rounded-xl border border-border bg-card p-5 space-y-3"><h3 className="text-sm font-semibold">{title}</h3>{children}</div>;
+// ═══════════════════════════════════════════════════════════════════════
+// SHARED COMPONENTS
+// ═══════════════════════════════════════════════════════════════════════
+
+function SettingsCard({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl bg-white p-5 shadow-sm shadow-black/[0.04] ring-1 ring-black/[0.06] space-y-3">
+      <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
+      {children}
+    </div>
+  );
 }
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return <div className="space-y-1.5"><Label className="text-xs text-muted-foreground">{label}</Label>{children}</div>;
+
+function FormField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-[11px] font-medium text-gray-400">{label}</Label>
+      {children}
+    </div>
+  );
 }
+
 function BankField({ label, error, ...props }: { label: string; error?: string } & React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <div className="space-y-1.5">
-      <Label className="text-xs text-muted-foreground">{label}</Label>
-      <Input aria-invalid={!!error} className={error ? "border-destructive focus-visible:ring-destructive" : ""} {...props} />
-      {error && <p className="text-[11px] font-medium text-destructive">{error}</p>}
+      <Label className="text-[11px] font-medium text-gray-400">{label}</Label>
+      <Input
+        aria-invalid={!!error}
+        className={`h-10 rounded-xl border bg-white shadow-sm shadow-black/[0.02] ${error ? "border-red-400 focus-visible:ring-red-300" : "border-gray-200 focus-visible:ring-[#EE4D2D]/30"}`}
+        {...props}
+      />
+      {error && <p className="text-[11px] font-medium text-red-500">{error}</p>}
     </div>
   );
 }
