@@ -34,7 +34,6 @@ import { Route as DashboardTutoriaisRouteImport } from './routes/dashboard.tutor
 import { Route as DashboardRoboDivulgadorRouteImport } from './routes/dashboard.robo-divulgador'
 import { Route as DashboardProdutosRouteImport } from './routes/dashboard.produtos'
 import { Route as DashboardPrecificacaoRouteImport } from './routes/dashboard.precificacao'
-import { Route as DashboardMeusProdutosRouteImport } from './routes/dashboard.meus-produtos'
 import { Route as DashboardMetricasRouteImport } from './routes/dashboard.metricas'
 import { Route as DashboardImpulsionarVendasRouteImport } from './routes/dashboard.impulsionar-vendas'
 import { Route as DashboardGruposRouteImport } from './routes/dashboard.grupos'
@@ -168,11 +167,6 @@ const DashboardPrecificacaoRoute = DashboardPrecificacaoRouteImport.update({
   path: '/precificacao',
   getParentRoute: () => DashboardRoute,
 } as any)
-const DashboardMeusProdutosRoute = DashboardMeusProdutosRouteImport.update({
-  id: '/meus-produtos',
-  path: '/meus-produtos',
-  getParentRoute: () => DashboardRoute,
-} as any)
 const DashboardMetricasRoute = DashboardMetricasRouteImport.update({
   id: '/metricas',
   path: '/metricas',
@@ -224,7 +218,6 @@ export interface FileRoutesByFullPath {
   '/dashboard/grupos': typeof DashboardGruposRoute
   '/dashboard/impulsionar-vendas': typeof DashboardImpulsionarVendasRouteWithChildren
   '/dashboard/metricas': typeof DashboardMetricasRoute
-  '/dashboard/meus-produtos': typeof DashboardMeusProdutosRoute
   '/dashboard/precificacao': typeof DashboardPrecificacaoRoute
   '/dashboard/produtos': typeof DashboardProdutosRoute
   '/dashboard/robo-divulgador': typeof DashboardRoboDivulgadorRoute
@@ -256,7 +249,6 @@ export interface FileRoutesByTo {
   '/dashboard/grupos': typeof DashboardGruposRoute
   '/dashboard/impulsionar-vendas': typeof DashboardImpulsionarVendasRouteWithChildren
   '/dashboard/metricas': typeof DashboardMetricasRoute
-  '/dashboard/meus-produtos': typeof DashboardMeusProdutosRoute
   '/dashboard/precificacao': typeof DashboardPrecificacaoRoute
   '/dashboard/produtos': typeof DashboardProdutosRoute
   '/dashboard/robo-divulgador': typeof DashboardRoboDivulgadorRoute
@@ -291,7 +283,6 @@ export interface FileRoutesById {
   '/dashboard/grupos': typeof DashboardGruposRoute
   '/dashboard/impulsionar-vendas': typeof DashboardImpulsionarVendasRouteWithChildren
   '/dashboard/metricas': typeof DashboardMetricasRoute
-  '/dashboard/meus-produtos': typeof DashboardMeusProdutosRoute
   '/dashboard/precificacao': typeof DashboardPrecificacaoRoute
   '/dashboard/produtos': typeof DashboardProdutosRoute
   '/dashboard/robo-divulgador': typeof DashboardRoboDivulgadorRoute
@@ -327,7 +318,6 @@ export interface FileRouteTypes {
     | '/dashboard/grupos'
     | '/dashboard/impulsionar-vendas'
     | '/dashboard/metricas'
-    | '/dashboard/meus-produtos'
     | '/dashboard/precificacao'
     | '/dashboard/produtos'
     | '/dashboard/robo-divulgador'
@@ -359,7 +349,6 @@ export interface FileRouteTypes {
     | '/dashboard/grupos'
     | '/dashboard/impulsionar-vendas'
     | '/dashboard/metricas'
-    | '/dashboard/meus-produtos'
     | '/dashboard/precificacao'
     | '/dashboard/produtos'
     | '/dashboard/robo-divulgador'
@@ -393,7 +382,6 @@ export interface FileRouteTypes {
     | '/dashboard/grupos'
     | '/dashboard/impulsionar-vendas'
     | '/dashboard/metricas'
-    | '/dashboard/meus-produtos'
     | '/dashboard/precificacao'
     | '/dashboard/produtos'
     | '/dashboard/robo-divulgador'
@@ -602,13 +590,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardPrecificacaoRouteImport
       parentRoute: typeof DashboardRoute
     }
-    '/dashboard/meus-produtos': {
-      id: '/dashboard/meus-produtos'
-      path: '/meus-produtos'
-      fullPath: '/dashboard/meus-produtos'
-      preLoaderRoute: typeof DashboardMeusProdutosRouteImport
-      parentRoute: typeof DashboardRoute
-    }
     '/dashboard/metricas': {
       id: '/dashboard/metricas'
       path: '/metricas'
@@ -675,7 +656,6 @@ interface DashboardRouteChildren {
   DashboardGruposRoute: typeof DashboardGruposRoute
   DashboardImpulsionarVendasRoute: typeof DashboardImpulsionarVendasRouteWithChildren
   DashboardMetricasRoute: typeof DashboardMetricasRoute
-  DashboardMeusProdutosRoute: typeof DashboardMeusProdutosRoute
   DashboardPrecificacaoRoute: typeof DashboardPrecificacaoRoute
   DashboardProdutosRoute: typeof DashboardProdutosRoute
   DashboardRoboDivulgadorRoute: typeof DashboardRoboDivulgadorRoute
@@ -691,7 +671,6 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardGruposRoute: DashboardGruposRoute,
   DashboardImpulsionarVendasRoute: DashboardImpulsionarVendasRouteWithChildren,
   DashboardMetricasRoute: DashboardMetricasRoute,
-  DashboardMeusProdutosRoute: DashboardMeusProdutosRoute,
   DashboardPrecificacaoRoute: DashboardPrecificacaoRoute,
   DashboardProdutosRoute: DashboardProdutosRoute,
   DashboardRoboDivulgadorRoute: DashboardRoboDivulgadorRoute,

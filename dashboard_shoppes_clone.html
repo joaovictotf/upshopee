@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard Gerencial — Shoppes</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --orange:#ff4b19;
+      --orange-2:#ff5a23;
+      --orange-dark:#db3510;
+      --green:#31b68a;
+      --ink:#1e1f21;
+      --muted:#6e7175;
+      --line:#dedede;
+      --panel:#fff;
+      --page:#f6f7f8;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;background:#eceff1;overflow-x:hidden;font-family:'Inter',Arial,sans-serif;color:var(--ink)}
+    body{min-height:100vh}
+    #stage{position:relative;margin:0 auto;transform-origin:top left}
+    #dashboard{
+      position:relative;width:1750px;height:899px;overflow:hidden;background:var(--page);
+      border:2px solid #dfe2e4;border-radius:30px;box-shadow:0 1px 3px rgba(0,0,0,.05);
+    }
+    .hero{
+      position:absolute;inset:0 0 auto 0;height:286px;
+      background:linear-gradient(180deg,#ff4716 0%,#ff5520 58%,#ff5e28 100%);
+      color:#fff;
+    }
+    .hero:after{
+      content:"";position:absolute;right:-35px;bottom:-4px;width:188px;height:174px;opacity:.16;
+      background:
+        radial-gradient(circle at 40% 36%, transparent 0 38px,#fff 39px 49px,transparent 50px),
+        linear-gradient(138deg,transparent 0 49%,#fff 50% 58%,transparent 59%);
+      transform:rotate(-14deg);border-radius:50%;
+    }
+    .topbar{height:95px;position:relative;display:flex;align-items:center;padding:0 48px;font-size:18px;font-weight:600;z-index:3}
+    .left-controls,.right-controls{display:flex;align-items:center;gap:22px}
+    .left-controls{position:absolute;left:50px;top:30px}
+    .right-controls{position:absolute;right:43px;top:30px}
+    .vertical-divider{width:1px;height:38px;background:rgba(255,255,255,.4)}
+    .icon-round{width:31px;height:31px;border-radius:50%;background:#fff;color:var(--orange);display:grid;place-items:center;font-size:20px;font-weight:800;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+    .calendar-icon,.menu-icon,.bag-icon{display:inline-grid;place-items:center;color:#fff}
+    .calendar-icon svg{width:28px;height:28px;stroke-width:2.2}
+    .menu-icon svg{width:28px;height:28px;stroke-width:2.2}
+    .left-controls .month{font-size:18px;white-space:nowrap}
+    .chev{width:11px;height:11px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg);margin-left:3px;margin-top:-5px}
+    .brand{position:absolute;left:50%;top:25px;transform:translateX(-50%);display:flex;align-items:center;gap:11px}
+    .brand:before,.brand:after{content:"";width:114px;height:2px;background:rgba(255,255,255,.85);margin:0 10px}
+    .brand-bag{width:38px;height:43px;border-radius:5px;background:#fff;color:var(--orange);display:grid;place-items:center;font-size:23px;font-weight:800;position:relative}
+    .brand-bag:before{content:"";position:absolute;top:-10px;left:10px;width:16px;height:14px;border:3px solid #fff;border-bottom:0;border-radius:12px 12px 0 0}
+    .brand-name{font-size:31px;font-weight:600;letter-spacing:-.5px}
+    .date-box{height:40px;min-width:271px;border:1.5px solid rgba(255,255,255,.85);border-radius:4px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;font-size:16px;font-weight:600}
+    .hero-center{position:absolute;left:0;right:0;top:119px;text-align:center;z-index:2}
+    .hero-title{font-size:30px;line-height:1.1;font-weight:700;margin:0 0 10px}
+    .live-pill{display:inline-block;background:rgba(203,45,8,.72);padding:5px 20px 6px;border-radius:5px;font-size:16px;font-weight:700;line-height:1}
+    .sales-card{
+      position:absolute;z-index:5;left:529px;top:199px;width:680px;height:131px;background:#fff;border-radius:12px;
+      box-shadow:0 8px 18px rgba(0,0,0,.14);display:flex;align-items:center;justify-content:center;color:var(--orange);
+    }
+    .currency{font-size:49px;font-weight:700;margin-right:14px;margin-top:13px}
+    .sales-value{font-size:99px;line-height:1;font-weight:700;letter-spacing:-4px}
+    .content{position:absolute;left:0;right:0;top:286px;bottom:0;background:linear-gradient(180deg,#fafafa 0%,#f5f6f7 100%);padding:61px 54px 52px;display:grid;grid-template-columns:405px 752px 448px;gap:14px}
+    .panel{height:499px;background:#fff;border:1px solid #e5e5e5;border-radius:9px;box-shadow:0 4px 14px rgba(0,0,0,.08);overflow:hidden}
+    .panel-title{font-size:21px;font-weight:700;padding:27px 24px 23px;margin:0}
+    .metrics{padding:0 16px 16px}
+    .metrics-rule{height:1px;background:#d5d7d8;margin:0 0 22px}
+    .metric-row{display:grid;grid-template-columns:1fr 1fr;position:relative;min-height:116px;align-items:center;border-bottom:1px solid #d5d7d8}
+    .metric-row:last-child{border-bottom:0}
+    .metric-row:after{content:"";position:absolute;left:50%;top:12px;bottom:12px;width:1px;background:#d6d6d6}
+    .metric{text-align:center;padding:0 12px}
+    .metric-label{font-size:16px;color:var(--orange);font-weight:600;white-space:nowrap;margin-bottom:14px}
+    .metric-value{font-size:22px;font-weight:500;color:#202124}
+    .chart-panel{position:relative;padding:0 13px}
+    .chart-panel .panel-title{padding-left:10px;padding-bottom:23px}
+    .chart-wrap{position:absolute;left:11px;right:10px;top:79px;height:388px}
+    .chart-head{display:flex;align-items:center;justify-content:space-between;padding:0 2px 8px;font-size:13px;font-weight:600}
+    .legend{display:flex;gap:27px;align-items:center;font-size:14px;font-weight:500;margin-right:17px}
+    .legend-item{display:flex;align-items:center;gap:8px}
+    .legend-line{width:28px;height:4px;border-radius:5px;background:var(--orange)}
+    .legend-line.green{height:2px;background:repeating-linear-gradient(90deg,var(--green) 0 8px,transparent 8px 13px)}
+    .chart-svg{display:block;width:100%;height:326px}
+    .chart-foot{position:absolute;left:0;right:0;bottom:3px;text-align:center;font-size:12px;color:#777}
+    .chart-foot b{color:#0179d6;font-weight:700}
+    .products{padding:0 19px}
+    .products .panel-title{padding-left:4px}
+    .product-row{height:83px;display:grid;grid-template-columns:30px 56px 1fr 93px;align-items:center;border-top:1px solid #dedede;gap:8px}
+    .product-row:first-of-type{border-top:0}
+    .rank{font-size:14px;text-align:center}
+    .thumb{width:56px;height:56px;background:#f2f2f2;border-radius:4px;display:grid;place-items:center;overflow:hidden}
+    .thumb svg{width:48px;height:48px}
+    .product-name{font-size:15px;font-weight:500;line-height:1.2;margin-bottom:5px}
+    .product-units{font-size:14px;color:#6b6b6b;line-height:1.2}
+    .product-price{text-align:right;color:var(--orange);font-size:15px;font-weight:700;padding-right:2px}
+    @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+  </style>
+</head>
+<body>
+  <div id="stage">
+    <main id="dashboard" aria-label="Dashboard gerencial Shoppes">
+      <header class="hero">
+        <div class="topbar">
+          <div class="left-controls">
+            <span class="icon-round">$</span>
+            <span>Dashboard Gerencial</span>
+            <span class="vertical-divider"></span>
+            <span class="calendar-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>
+            </span>
+            <span class="month">Maio/2024</span>
+            <span class="chev"></span>
+          </div>
+
+          <div class="brand" aria-label="Shoppes">
+            <span class="brand-bag">$</span>
+            <span class="brand-name">Shoppes</span>
+          </div>
+
+          <div class="right-controls">
+            <div class="date-box"><span>01/05/2024&nbsp; - &nbsp;31/05/2024</span><span class="chev"></span></div>
+            <span class="calendar-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>
+            </span>
+            <span class="menu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+            </span>
+          </div>
+        </div>
+
+        <div class="hero-center">
+          <h1 class="hero-title">Vendas Hoje</h1>
+          <div class="live-pill">Atualizado em tempo real</div>
+        </div>
+      </header>
+
+      <section class="sales-card" aria-label="Vendas de hoje">
+        <span class="currency">R$</span>
+        <span class="sales-value">43.673,71</span>
+      </section>
+
+      <section class="content">
+        <article class="panel">
+          <h2 class="panel-title">Métricas Principais</h2>
+          <div class="metrics">
+            <div class="metrics-rule"></div>
+            <div class="metric-row">
+              <div class="metric"><div class="metric-label">Pedidos</div><div class="metric-value">1.627</div></div>
+              <div class="metric"><div class="metric-label">Faturamento do Pedido</div><div class="metric-value">19.990</div></div>
+            </div>
+            <div class="metric-row">
+              <div class="metric"><div class="metric-label">Produtos</div><div class="metric-value">525</div></div>
+              <div class="metric"><div class="metric-label">Visitantes</div><div class="metric-value">685</div></div>
+            </div>
+            <div class="metric-row">
+              <div class="metric"><div class="metric-label">Taxa de Conversão</div><div class="metric-value">3,72</div></div>
+              <div class="metric"><div class="metric-label">Ticket Promédio</div><div class="metric-value">1,47%</div></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel chart-panel">
+          <h2 class="panel-title">Tendência de Vendas</h2>
+          <div class="chart-wrap">
+            <div class="chart-head">
+              <span>VENDAS (R$)</span>
+              <div class="legend">
+                <span class="legend-item"><span class="legend-line"></span>Hoje</span>
+                <span class="legend-item"><span class="legend-line green"></span>Mês Anterior</span>
+              </div>
+            </div>
+            <svg class="chart-svg" viewBox="0 0 720 326" role="img" aria-label="Gráfico de tendência de vendas">
+              <defs>
+                <linearGradient id="orangeFill" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0" stop-color="#ff5a21" stop-opacity=".24"/>
+                  <stop offset="1" stop-color="#ff5a21" stop-opacity=".03"/>
+                </linearGradient>
+                <linearGradient id="greenFill" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0" stop-color="#31b68a" stop-opacity=".12"/>
+                  <stop offset="1" stop-color="#31b68a" stop-opacity=".01"/>
+                </linearGradient>
+              </defs>
+              <g stroke="#e5e8ea" stroke-width="1">
+                <path d="M60 18V286M92 18V286M124 18V286M156 18V286M188 18V286M220 18V286M252 18V286M284 18V286M316 18V286M348 18V286M380 18V286M412 18V286M444 18V286M476 18V286M508 18V286M540 18V286M572 18V286M604 18V286M636 18V286M668 18V286"/>
+                <path d="M60 18H688M60 85H688M60 152H688M60 219H688M60 286H688"/>
+              </g>
+              <g fill="#323438" font-family="Inter,Arial" font-size="16">
+                <text x="12" y="24">50K</text><text x="12" y="91">40K</text><text x="12" y="158">30K</text><text x="12" y="225">20K</text><text x="21" y="291">0</text>
+                <text x="52" y="314">01</text><text x="103" y="314">04</text><text x="156" y="314">07</text><text x="208" y="314">10</text><text x="260" y="314">13</text><text x="313" y="314">16</text><text x="363" y="314">16</text><text x="417" y="314">19</text><text x="469" y="314">22</text><text x="522" y="314">25</text><text x="574" y="314">28</text><text x="632" y="314">31</text>
+              </g>
+              <path d="M60 198 L85 252 L112 258 L138 281 L165 275 L191 276 L217 276 L243 244 L269 245 L295 212 L321 146 L347 139 L373 108 L399 45 L425 77 L451 193 L477 227 L503 190 L529 180 L555 143 L581 67 L607 75 L633 145 L659 205 L659 286 L60 286 Z" fill="url(#orangeFill)"/>
+              <path d="M60 250 L86 252 L112 263 L138 276 L165 275 L191 277 L217 269 L243 239 L269 249 L295 213 L321 220 L347 225 L373 178 L399 184 L425 161 L451 226 L477 198 L503 239 L529 267 L555 258 L581 239 L607 263 L633 180 L659 249 L659 286 L60 286 Z" fill="url(#greenFill)"/>
+              <path d="M60 250 L86 252 L112 263 L138 276 L165 275 L191 277 L217 269 L243 239 L269 249 L295 213 L321 220 L347 225 L373 178 L399 184 L425 161 L451 226 L477 198 L503 239 L529 267 L555 258 L581 239 L607 263 L633 180 L659 249" fill="none" stroke="#31b68a" stroke-width="2" stroke-dasharray="7 6"/>
+              <path d="M60 198 L85 252 L112 258 L138 281 L165 275 L191 276 L217 276 L243 244 L269 245 L295 212 L321 146 L347 139 L373 108 L399 45 L425 77 L451 193 L477 227 L503 190 L529 180 L555 143 L581 67 L607 75 L633 145 L659 205" fill="none" stroke="#ff4b19" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+              <g fill="#ff4b19" stroke="#fff" stroke-width="2">
+                <circle cx="60" cy="198" r="5"/><circle cx="85" cy="252" r="5"/><circle cx="112" cy="258" r="5"/><circle cx="138" cy="281" r="5"/><circle cx="165" cy="275" r="5"/><circle cx="191" cy="276" r="5"/><circle cx="217" cy="276" r="5"/><circle cx="243" cy="244" r="5"/><circle cx="269" cy="245" r="5"/><circle cx="295" cy="212" r="5"/><circle cx="321" cy="146" r="5"/><circle cx="347" cy="139" r="5"/><circle cx="373" cy="108" r="5"/><circle cx="399" cy="45" r="6"/><circle cx="425" cy="77" r="5"/><circle cx="451" cy="193" r="5"/><circle cx="477" cy="227" r="5"/><circle cx="503" cy="190" r="5"/><circle cx="529" cy="180" r="5"/><circle cx="555" cy="143" r="5"/><circle cx="581" cy="67" r="6"/><circle cx="607" cy="75" r="5"/><circle cx="633" cy="145" r="5"/><circle cx="659" cy="205" r="6"/>
+              </g>
+            </svg>
+            <div class="chart-foot">Comparativo de vendas diárias entre hoje e o mesmo período do mês anterior. Dados atualizados <b>hoje às 16:00.</b></div>
+          </div>
+        </article>
+
+        <article class="panel products">
+          <h2 class="panel-title">Top 5 dos Produtos à Venda</h2>
+
+          <div class="product-row">
+            <div class="rank">1</div>
+            <div class="thumb">
+              <svg viewBox="0 0 60 60"><path d="M21 8l9 5 9-5 9 9-7 8-2 27H21l-2-27-7-8 9-9z" fill="#ded7d0" stroke="#a89e96"/><path d="M26 13l4 6 4-6M30 19v32" stroke="#8a817a" fill="none"/></svg>
+            </div>
+            <div><div class="product-name">Camisa Social Slim</div><div class="product-units">152 unidades vendidas</div></div>
+            <div class="product-price">R$ 89,90</div>
+          </div>
+
+          <div class="product-row">
+            <div class="rank">2</div>
+            <div class="thumb">
+              <svg viewBox="0 0 60 60"><path d="M7 38c10-2 18-9 24-18l8 8 12 7c4 2 3 7-1 8H13c-5 0-8-2-6-5z" fill="#c8b79b" stroke="#8e806a"/><path d="M21 31l10 3M17 35l11 3" stroke="#fff"/></svg>
+            </div>
+            <div><div class="product-name">Tênis Esportivo Pro</div><div class="product-units">129 unidades vendidas</div></div>
+            <div class="product-price">R$ 199,90</div>
+          </div>
+
+          <div class="product-row">
+            <div class="rank">3</div>
+            <div class="thumb">
+              <svg viewBox="0 0 60 60"><rect x="26" y="4" width="8" height="12" rx="2" fill="#222"/><rect x="26" y="44" width="8" height="12" rx="2" fill="#222"/><circle cx="30" cy="30" r="15" fill="#171717" stroke="#555"/><path d="M30 20v11l7 4" stroke="#eee" stroke-width="2" fill="none"/></svg>
+            </div>
+            <div><div class="product-name">Relógio Masculino</div><div class="product-units">98 unidades vendidas</div></div>
+            <div class="product-price">R$ 249,90</div>
+          </div>
+
+          <div class="product-row">
+            <div class="rank">4</div>
+            <div class="thumb">
+              <svg viewBox="0 0 60 60"><path d="M14 33V25a16 16 0 0132 0v8" fill="none" stroke="#30343a" stroke-width="5"/><rect x="9" y="30" width="12" height="20" rx="5" fill="#3e4248"/><rect x="39" y="30" width="12" height="20" rx="5" fill="#3e4248"/></svg>
+            </div>
+            <div><div class="product-name">Fone de Ouvido BT</div><div class="product-units">87 unidades vendidas</div></div>
+            <div class="product-price">R$ 159,90</div>
+          </div>
+
+          <div class="product-row">
+            <div class="rank">5</div>
+            <div class="thumb">
+              <svg viewBox="0 0 60 60"><path d="M20 7h20l-2 18 3 28H31l-1-22-1 22H19l3-28-2-18z" fill="#447294" stroke="#31576e"/><path d="M25 8l5 6 5-6M30 14v16" stroke="#d6e2e8"/></svg>
+            </div>
+            <div><div class="product-name">Calça Jeans Slim</div><div class="product-units">75 unidades vendidas</div></div>
+            <div class="product-price">R$ 129,90</div>
+          </div>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    (function(){
+      const BASE_W=1750, BASE_H=899, stage=document.getElementById('stage');
+      function fit(){
+        const scale=Math.min(window.innerWidth/BASE_W,1);
+        stage.style.width=(BASE_W*scale)+'px';
+        stage.style.height=(BASE_H*scale)+'px';
+        document.getElementById('dashboard').style.transform='scale('+scale+')';
+        document.getElementById('dashboard').style.transformOrigin='top left';
+      }
+      addEventListener('resize',fit,{passive:true}); fit();
+    })();
+  </script>
+</body>
+</html>

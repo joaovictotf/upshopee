@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard Shopee — Vendas Hoje</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+    :root {
+      --orange: #ff572d;
+      --orange-deep: #f14c29;
+      --text: #62483f;
+      --muted: #a08f88;
+      --line: #eee8e5;
+      --panel: #ffffff;
+      --page: #f4f4f5;
+      --red: #e25b3d;
+      --green: #bddccf;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      width: 100%;
+      min-height: 100%;
+      margin: 0;
+      font-family: "Inter", Arial, sans-serif;
+      background: var(--page);
+      color: var(--text);
+    }
+
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      overflow-x: hidden;
+    }
+
+    .stage {
+      position: relative;
+      width: min(100vw, calc(100vh * 589 / 297));
+      aspect-ratio: 589 / 297;
+      min-width: 589px;
+      min-height: 297px;
+      overflow: hidden;
+      container-type: inline-size;
+      background: var(--page);
+      border-radius: 0 0 1.5cqw 1.5cqw;
+      box-shadow: 0 0 0 0.08cqw rgba(0,0,0,.02);
+    }
+
+    .topbar {
+      position: absolute;
+      inset: 0 0 auto 0;
+      height: 16.30cqw;
+      background: linear-gradient(106deg, #ff642d 0%, #ff5629 56%, #fb4d28 100%);
+      overflow: hidden;
+    }
+
+    .topbar::before,
+    .topbar::after {
+      content: "";
+      position: absolute;
+      right: -2.9cqw;
+      border: .95cqw solid rgba(255,255,255,.16);
+      border-radius: 50%;
+    }
+
+    .topbar::before {
+      width: 8.7cqw;
+      height: 8.7cqw;
+      top: 4.1cqw;
+    }
+
+    .topbar::after {
+      width: 4.2cqw;
+      height: 4.2cqw;
+      top: 6.35cqw;
+      right: -.7cqw;
+      border-width: .75cqw;
+      border-color: rgba(255,255,255,.12);
+    }
+
+    .corner-shape {
+      position: absolute;
+      right: -.25cqw;
+      bottom: .5cqw;
+      width: 2.7cqw;
+      height: 2.7cqw;
+      border-left: 1.15cqw solid rgba(255,255,255,.17);
+      border-bottom: 1.15cqw solid rgba(255,255,255,.17);
+      transform: rotate(45deg);
+    }
+
+    .brand {
+      position: absolute;
+      top: .20cqw;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: .42cqw;
+      color: white;
+      font-size: 1.65cqw;
+      font-weight: 600;
+      letter-spacing: -.08cqw;
+      white-space: nowrap;
+    }
+
+    .brand::before,
+    .brand::after {
+      content: "";
+      width: 6.55cqw;
+      height: .12cqw;
+      background: rgba(255,255,255,.95);
+      display: block;
+    }
+
+    .brand::before { margin-right: .95cqw; }
+    .brand::after { margin-left: .95cqw; }
+
+    .brand-logo {
+      position: relative;
+      width: 2.28cqw;
+      height: 2.10cqw;
+      border: .13cqw solid rgba(255,255,255,.96);
+      border-radius: .12cqw;
+      display: grid;
+      place-items: center;
+      font-size: 1.35cqw;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .brand-logo::before {
+      content: "";
+      position: absolute;
+      width: .94cqw;
+      height: .50cqw;
+      top: -.48cqw;
+      border: .13cqw solid white;
+      border-bottom: 0;
+      border-radius: .55cqw .55cqw 0 0;
+    }
+
+    .manager {
+      position: absolute;
+      top: .70cqw;
+      left: 2.82cqw;
+      display: flex;
+      align-items: center;
+      gap: .56cqw;
+      color: rgba(255,255,255,.95);
+      font-size: .58cqw;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .manager .i {
+      width: 1.25cqw;
+      height: 1.25cqw;
+      border-radius: 50%;
+      background: white;
+      color: var(--orange);
+      display: grid;
+      place-items: center;
+      font-size: .78cqw;
+      font-weight: 800;
+    }
+
+    .manager .blurred {
+      width: 10.4cqw;
+      height: .95cqw;
+      border-radius: 1cqw;
+      background: rgba(255,255,255,.26);
+      filter: blur(.38cqw);
+    }
+
+    .filters {
+      position: absolute;
+      top: .75cqw;
+      right: 4.25cqw;
+      display: flex;
+      align-items: center;
+      gap: .48cqw;
+      color: rgba(255,255,255,.95);
+      font-size: .48cqw;
+    }
+
+    .select {
+      height: 1.32cqw;
+      padding: 0 .52cqw;
+      display: flex;
+      align-items: center;
+      gap: .3cqw;
+      border: .085cqw solid rgba(255,255,255,.7);
+      border-radius: .13cqw;
+      white-space: nowrap;
+    }
+
+    .chev {
+      width: 0;
+      height: 0;
+      border-left: .22cqw solid transparent;
+      border-right: .22cqw solid transparent;
+      border-top: .28cqw solid rgba(255,255,255,.9);
+      margin-top: .15cqw;
+    }
+
+    .top-icons {
+      position: absolute;
+      right: 1.22cqw;
+      top: .74cqw;
+      display: flex;
+      align-items: center;
+      gap: 1.28cqw;
+      color: white;
+      font-size: .95cqw;
+    }
+
+    .fullscreen {
+      width: 1.05cqw;
+      height: 1.05cqw;
+      position: relative;
+    }
+
+    .fullscreen span {
+      position: absolute;
+      width: .38cqw;
+      height: .38cqw;
+      border-color: white;
+      border-style: solid;
+    }
+    .fullscreen span:nth-child(1){left:0;top:0;border-width:.12cqw 0 0 .12cqw}
+    .fullscreen span:nth-child(2){right:0;top:0;border-width:.12cqw .12cqw 0 0}
+    .fullscreen span:nth-child(3){left:0;bottom:0;border-width:0 0 .12cqw .12cqw}
+    .fullscreen span:nth-child(4){right:0;bottom:0;border-width:0 .12cqw .12cqw 0}
+
+    .today-title {
+      position: absolute;
+      top: 5.65cqw;
+      left: 0;
+      right: 0;
+      text-align: center;
+      color: white;
+      font-size: 1.92cqw;
+      line-height: 1;
+      font-weight: 600;
+      text-shadow: 0 .06cqw .05cqw rgba(126,55,35,.18);
+    }
+
+    .timestamp {
+      position: absolute;
+      top: 8.72cqw;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: .24cqw .72cqw .27cqw;
+      background: rgba(160,45,20,.78);
+      border-radius: .18cqw;
+      color: white;
+      font-size: .72cqw;
+      line-height: 1;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .sales-card {
+      position: absolute;
+      top: 10.68cqw;
+      left: 29.2cqw;
+      width: 41.0cqw;
+      height: 7.78cqw;
+      background: white;
+      border-radius: .45cqw;
+      box-shadow: 0 .62cqw 1.05cqw rgba(86,63,55,.12);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 5;
+    }
+
+    .sales-card .currency {
+      font-size: 2.68cqw;
+      font-weight: 700;
+      color: var(--orange-deep);
+      margin-right: 1.05cqw;
+      transform: translateY(.15cqw);
+    }
+
+    .sales-card .value {
+      font-size: 5.15cqw;
+      line-height: 1;
+      font-weight: 700;
+      letter-spacing: -.28cqw;
+      color: var(--orange-deep);
+    }
+
+    .content {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 16.30cqw;
+      bottom: 0;
+      padding: 3.90cqw 2.72cqw .85cqw 2.72cqw;
+      display: grid;
+      grid-template-columns: 22.5cqw 45.0cqw 25.5cqw;
+      gap: 1.0cqw;
+      background: #f4f4f5;
+    }
+
+    .panel {
+      min-width: 0;
+      background: var(--panel);
+      border: .08cqw solid #f0eeed;
+      box-shadow: 0 .10cqw .58cqw rgba(67,47,38,.03);
+      overflow: hidden;
+    }
+
+    .panel-title {
+      height: 4.55cqw;
+      padding: 1.70cqw 1.38cqw 0;
+      font-size: .98cqw;
+      line-height: 1;
+      font-weight: 500;
+      color: #59443d;
+    }
+
+    .metrics {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .metrics-grid {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: repeat(3, 1fr);
+      border-top: .08cqw solid var(--line);
+    }
+
+    .metric {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-right: .08cqw solid var(--line);
+      border-bottom: .08cqw solid var(--line);
+      text-align: center;
+      padding-top: .3cqw;
+    }
+
+    .metric:nth-child(2n) { border-right: 0; }
+    .metric:nth-child(n+5) { border-bottom: 0; }
+
+    .metric-label {
+      color: #dc755d;
+      font-size: .72cqw;
+      line-height: 1.22;
+      margin-bottom: .88cqw;
+      white-space: nowrap;
+    }
+
+    .metric-value {
+      color: #654d45;
+      font-size: .95cqw;
+      line-height: 1;
+      font-weight: 500;
+    }
+
+    .trend {
+      position: relative;
+    }
+
+    .trend-head {
+      height: 5.85cqw;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      padding: 1.72cqw 1.45cqw 0;
+    }
+
+    .trend .panel-title {
+      padding: 0;
+      height: auto;
+    }
+
+    .legend {
+      margin-top: 2.65cqw;
+      display: flex;
+      align-items: center;
+      gap: 1.55cqw;
+      color: #765e55;
+      font-size: .59cqw;
+      white-space: nowrap;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: .48cqw;
+    }
+
+    .legend-line {
+      width: 1.3cqw;
+      height: .11cqw;
+      background: var(--red);
+    }
+
+    .legend-dot {
+      width: .55cqw;
+      height: .55cqw;
+      background: #aac9bd;
+      border-radius: 50%;
+    }
+
+    .legend-swatch {
+      width: .65cqw;
+      height: .65cqw;
+      border: .08cqw solid #c9d9d3;
+      background: #f5faf8;
+    }
+
+    .chart-wrap {
+      position: absolute;
+      left: 1.25cqw;
+      right: 1.3cqw;
+      top: 5.25cqw;
+      bottom: 2.15cqw;
+    }
+
+    .chart-unit {
+      position: absolute;
+      left: .15cqw;
+      top: -.10cqw;
+      color: #6d544c;
+      font-size: .57cqw;
+      z-index: 2;
+    }
+
+    .chart-axis-label {
+      position: absolute;
+      right: -.2cqw;
+      bottom: -.1cqw;
+      color: #6d544c;
+      font-size: .56cqw;
+    }
+
+    .chart-note {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: .30cqw;
+      text-align: center;
+      color: #8b7a74;
+      font-size: .49cqw;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: clip;
+    }
+
+    .products .panel-title {
+      padding-left: 1.22cqw;
+    }
+
+    .product-list {
+      height: calc(100% - 4.55cqw);
+      display: grid;
+      grid-template-rows: repeat(5, 1fr);
+      border-top: .08cqw solid var(--line);
+      padding: .52cqw .75cqw .35cqw 1.25cqw;
+    }
+
+    .product {
+      display: grid;
+      grid-template-columns: 4.35cqw 1fr 4.3cqw;
+      align-items: center;
+      column-gap: .82cqw;
+    }
+
+    .thumb {
+      width: 3.45cqw;
+      height: 3.45cqw;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 38% 36%, rgba(122,82,66,.75) 0 18%, transparent 19%),
+        linear-gradient(135deg, #c9b3a9 0 32%, #8f6d60 33% 58%, #d4c2b9 59% 100%);
+      filter: blur(.42cqw);
+      opacity: .82;
+      justify-self: center;
+    }
+
+    .product:nth-child(2) .thumb { background: linear-gradient(135deg,#a44c3d,#e2a28d 47%,#9b6a58); }
+    .product:nth-child(3) .thumb { background: linear-gradient(135deg,#b98b73,#7e5e4d 48%,#d8c0af); }
+    .product:nth-child(4) .thumb { background: linear-gradient(135deg,#b8a49a,#876d62 48%,#ddcfc7); }
+    .product:nth-child(5) .thumb { background: linear-gradient(135deg,#b59d8f,#754e42 48%,#d9c8bd); }
+
+    .pname {
+      height: 1.25cqw;
+      width: 9.9cqw;
+      border-radius: 1cqw;
+      background: #a78578;
+      opacity: .52;
+      filter: blur(.52cqw);
+    }
+
+    .pvalue {
+      justify-self: end;
+      height: .95cqw;
+      width: 3.55cqw;
+      border-radius: 1cqw;
+      background: #e5a18b;
+      opacity: .48;
+      filter: blur(.52cqw);
+    }
+
+    .soft-bottom {
+      position: absolute;
+      inset: auto 0 0 0;
+      height: .5cqw;
+      background: linear-gradient(90deg, #ececec, #f9f9f9, #ececec);
+      opacity: .55;
+    }
+
+    svg { width: 100%; height: 100%; display: block; overflow: visible; }
+
+    .gridline { stroke: #eee9e7; stroke-width: .36; }
+    .axis { stroke: #9f8f88; stroke-width: .42; }
+    .line-red { fill: none; stroke: #e25d40; stroke-width: 1.05; stroke-linecap: round; stroke-linejoin: round; }
+    .line-green { fill: rgba(186,218,205,.07); stroke: #c0dbd0; stroke-width: .8; stroke-linecap: round; stroke-linejoin: round; }
+    .point-red { fill: #e25d40; }
+    .point-green { fill: #b5d2c7; }
+    .axis-text { fill: #766159; font-family: Inter, Arial, sans-serif; font-size: 5.25px; }
+
+    @media (max-width: 589px) {
+      .stage { min-width: 100vw; min-height: calc(100vw * 297 / 589); }
+    }
+  </style>
+</head>
+<body>
+  <main class="stage" aria-label="Dashboard gerencial de vendas">
+    <header class="topbar">
+      <div class="manager"><span class="i">i</span><span>Informações Gerenciais:</span><span class="blurred"></span></div>
+
+      <div class="brand">
+        <span class="brand-logo">S</span>
+        <span>Shopee</span>
+      </div>
+
+      <div class="filters">
+        <div class="select">Tipo de Pedido <span class="chev"></span></div>
+        <div class="select">Pedidos Pagos <span class="chev"></span></div>
+      </div>
+
+      <div class="top-icons" aria-hidden="true">
+        <span style="font-size:.88cqw;transform:rotate(90deg);display:inline-block">↗</span>
+        <span class="fullscreen"><span></span><span></span><span></span><span></span></span>
+      </div>
+
+      <h1 class="today-title">Vendas Hoje</h1>
+      <div class="timestamp">15/03/2025 21:30:54 (GMT-03)</div>
+      <span class="corner-shape"></span>
+    </header>
+
+    <section class="sales-card" aria-label="Valor de vendas de hoje">
+      <span class="currency">R$</span>
+      <span class="value">43.673,71</span>
+    </section>
+
+    <section class="content">
+      <article class="panel metrics">
+        <div class="panel-title">Métricas Principais</div>
+        <div class="metrics-grid">
+          <div class="metric"><div class="metric-label">Visitantes</div><div class="metric-value">8.457</div></div>
+          <div class="metric"><div class="metric-label">Visualizações da Página</div><div class="metric-value">19.960</div></div>
+          <div class="metric"><div class="metric-label">Pedidos</div><div class="metric-value">576</div></div>
+          <div class="metric"><div class="metric-label">Unidades</div><div class="metric-value">635</div></div>
+          <div class="metric"><div class="metric-label">Total de Compradores</div><div class="metric-value">570</div></div>
+          <div class="metric"><div class="metric-label">Taxa de Conversão</div><div class="metric-value">6,74%</div></div>
+        </div>
+      </article>
+
+      <article class="panel trend">
+        <div class="trend-head">
+          <div class="panel-title">Tendência de Vendas</div>
+          <div class="legend">
+            <span class="legend-item"><i class="legend-line"></i>Hoje</span>
+            <span class="legend-item"><i class="legend-swatch"></i>14/03/2025</span>
+            <span class="legend-item"><i class="legend-dot"></i></span>
+          </div>
+        </div>
+
+        <div class="chart-wrap">
+          <span class="chart-unit">Vendas(R$)</span>
+          <svg viewBox="0 0 250 132" preserveAspectRatio="none" role="img" aria-label="Gráfico de tendência de vendas por hora">
+            <g>
+              <line class="gridline" x1="18" y1="14" x2="18" y2="112"/>
+              <line class="gridline" x1="36" y1="14" x2="36" y2="112"/>
+              <line class="gridline" x1="54" y1="14" x2="54" y2="112"/>
+              <line class="gridline" x1="72" y1="14" x2="72" y2="112"/>
+              <line class="gridline" x1="90" y1="14" x2="90" y2="112"/>
+              <line class="gridline" x1="108" y1="14" x2="108" y2="112"/>
+              <line class="gridline" x1="126" y1="14" x2="126" y2="112"/>
+              <line class="gridline" x1="144" y1="14" x2="144" y2="112"/>
+              <line class="gridline" x1="162" y1="14" x2="162" y2="112"/>
+              <line class="gridline" x1="180" y1="14" x2="180" y2="112"/>
+              <line class="gridline" x1="198" y1="14" x2="198" y2="112"/>
+              <line class="gridline" x1="216" y1="14" x2="216" y2="112"/>
+              <line class="gridline" x1="234" y1="14" x2="234" y2="112"/>
+
+              <line class="gridline" x1="18" y1="14" x2="234" y2="14"/>
+              <line class="gridline" x1="18" y1="34" x2="234" y2="34"/>
+              <line class="gridline" x1="18" y1="54" x2="234" y2="54"/>
+              <line class="gridline" x1="18" y1="74" x2="234" y2="74"/>
+              <line class="gridline" x1="18" y1="94" x2="234" y2="94"/>
+              <line class="axis" x1="18" y1="112" x2="234" y2="112"/>
+
+              <polyline class="line-green" points="18,104 27,102 36,101 45,104 54,101 63,105 72,100 81,103 90,96 99,91 108,89 117,75 126,85 135,76 144,88 153,76 162,95 171,102 180,91 189,96 198,84 207,103 216,89 225,99 234,71"/>
+              <polyline class="line-red" points="18,77 27,89 36,96 45,101 54,103 63,102 72,100 81,100 90,95 99,93 108,74 117,67 126,47 135,37 144,25 153,37 162,69 171,84 180,75 189,70 198,61 207,37 216,31 225,34 234,65"/>
+
+              <circle class="point-green" cx="234" cy="71" r="1.7"/>
+              <circle class="point-red" cx="234" cy="65" r="2.2"/>
+
+              <text class="axis-text" x="5" y="114">0</text>
+              <text class="axis-text" x="1" y="96">1,0K</text>
+              <text class="axis-text" x="1" y="76">2,0K</text>
+              <text class="axis-text" x="1" y="56">3,0K</text>
+              <text class="axis-text" x="1" y="36">4,0K</text>
+              <text class="axis-text" x="1" y="16">5,0K</text>
+
+              <text class="axis-text" x="16" y="124">00</text>
+              <text class="axis-text" x="34" y="124">02</text>
+              <text class="axis-text" x="52" y="124">04</text>
+              <text class="axis-text" x="70" y="124">06</text>
+              <text class="axis-text" x="88" y="124">08</text>
+              <text class="axis-text" x="105" y="124">10</text>
+              <text class="axis-text" x="123" y="124">12</text>
+              <text class="axis-text" x="141" y="124">14</text>
+              <text class="axis-text" x="159" y="124">16</text>
+              <text class="axis-text" x="177" y="124">18</text>
+              <text class="axis-text" x="195" y="124">20</text>
+              <text class="axis-text" x="213" y="124">22</text>
+              <text class="axis-text" x="231" y="124">24</text>
+            </g>
+          </svg>
+          <span class="chart-axis-label">Hora</span>
+        </div>
+        <div class="chart-note">Os vendedores que usam os Anúncios da Shopee estão crescendo 85% mais pedidos em média. Crie anúncios aqui!</div>
+      </article>
+
+      <article class="panel products">
+        <div class="panel-title">Top 5 dos Produtos à Venda</div>
+        <div class="product-list">
+          <div class="product"><span class="thumb"></span><span class="pname"></span><span class="pvalue"></span></div>
+          <div class="product"><span class="thumb"></span><span class="pname"></span><span class="pvalue"></span></div>
+          <div class="product"><span class="thumb"></span><span class="pname"></span><span class="pvalue"></span></div>
+          <div class="product"><span class="thumb"></span><span class="pname"></span><span class="pvalue"></span></div>
+          <div class="product"><span class="thumb"></span><span class="pname"></span><span class="pvalue"></span></div>
+        </div>
+      </article>
+    </section>
+
+    <div class="soft-bottom"></div>
+  </main>
+</body>
+</html>

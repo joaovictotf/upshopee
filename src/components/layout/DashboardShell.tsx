@@ -1,6 +1,6 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
-import { LayoutDashboard, Package, Calculator, Megaphone, Plug, Settings, LogOut, Bell, Search, Zap, PackageCheck, Eye, EyeOff, Receipt, ShieldCheck, Info, Menu, Video, Trophy, X, Bot } from "lucide-react";
+import { LayoutDashboard, Package, Calculator, Megaphone, Plug, Settings, LogOut, Bell, Search, Zap, Eye, EyeOff, Receipt, ShieldCheck, Info, Menu, Video, Trophy, X, Bot } from "lucide-react";
 import { useApp, MARKETPLACE_LABEL } from "../../lib/state";
 import { brl } from "../../lib/format";
 import { toast } from "sonner";
@@ -57,7 +57,7 @@ type NavItem = { to: string; label: string; icon: typeof LayoutDashboard; exact?
 const baseNav: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/dashboard/produtos", label: "Produtos", icon: Package },
-  { to: "/dashboard/meus-produtos", label: "Meus Produtos", icon: PackageCheck },
+
   { to: "/dashboard/vendas-clientes", label: "Vendas / Clientes", icon: Receipt },
   { to: "/dashboard/precificacao", label: "Precificação", icon: Calculator },
   { to: "/dashboard/impulsionar-vendas", label: "Impulsionar vendas", icon: Zap, special: "impulsionar" },
