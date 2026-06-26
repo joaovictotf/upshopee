@@ -28,7 +28,6 @@ import { Route as DemoRoboDivulgadorRouteImport } from './routes/demo.robo-divul
 import { Route as DemoProdutosRouteImport } from './routes/demo.produtos'
 import { Route as DemoPrecificacaoRouteImport } from './routes/demo.precificacao'
 import { Route as DemoGruposRouteImport } from './routes/demo.grupos'
-import { Route as DashboardVendasClientesRouteImport } from './routes/dashboard.vendas-clientes'
 import { Route as DashboardValidarCadastrosRouteImport } from './routes/dashboard.validar-cadastros'
 import { Route as DashboardTutoriaisRouteImport } from './routes/dashboard.tutoriais'
 import { Route as DashboardRoboDivulgadorRouteImport } from './routes/dashboard.robo-divulgador'
@@ -136,11 +135,6 @@ const DemoGruposRoute = DemoGruposRouteImport.update({
   path: '/grupos',
   getParentRoute: () => DemoRoute,
 } as any)
-const DashboardVendasClientesRoute = DashboardVendasClientesRouteImport.update({
-  id: '/vendas-clientes',
-  path: '/vendas-clientes',
-  getParentRoute: () => DashboardRoute,
-} as any)
 const DashboardValidarCadastrosRoute =
   DashboardValidarCadastrosRouteImport.update({
     id: '/validar-cadastros',
@@ -223,7 +217,6 @@ export interface FileRoutesByFullPath {
   '/dashboard/robo-divulgador': typeof DashboardRoboDivulgadorRoute
   '/dashboard/tutoriais': typeof DashboardTutoriaisRoute
   '/dashboard/validar-cadastros': typeof DashboardValidarCadastrosRoute
-  '/dashboard/vendas-clientes': typeof DashboardVendasClientesRoute
   '/demo/grupos': typeof DemoGruposRoute
   '/demo/precificacao': typeof DemoPrecificacaoRoute
   '/demo/produtos': typeof DemoProdutosRoute
@@ -254,7 +247,6 @@ export interface FileRoutesByTo {
   '/dashboard/robo-divulgador': typeof DashboardRoboDivulgadorRoute
   '/dashboard/tutoriais': typeof DashboardTutoriaisRoute
   '/dashboard/validar-cadastros': typeof DashboardValidarCadastrosRoute
-  '/dashboard/vendas-clientes': typeof DashboardVendasClientesRoute
   '/demo/grupos': typeof DemoGruposRoute
   '/demo/precificacao': typeof DemoPrecificacaoRoute
   '/demo/produtos': typeof DemoProdutosRoute
@@ -288,7 +280,6 @@ export interface FileRoutesById {
   '/dashboard/robo-divulgador': typeof DashboardRoboDivulgadorRoute
   '/dashboard/tutoriais': typeof DashboardTutoriaisRoute
   '/dashboard/validar-cadastros': typeof DashboardValidarCadastrosRoute
-  '/dashboard/vendas-clientes': typeof DashboardVendasClientesRoute
   '/demo/grupos': typeof DemoGruposRoute
   '/demo/precificacao': typeof DemoPrecificacaoRoute
   '/demo/produtos': typeof DemoProdutosRoute
@@ -323,7 +314,6 @@ export interface FileRouteTypes {
     | '/dashboard/robo-divulgador'
     | '/dashboard/tutoriais'
     | '/dashboard/validar-cadastros'
-    | '/dashboard/vendas-clientes'
     | '/demo/grupos'
     | '/demo/precificacao'
     | '/demo/produtos'
@@ -354,7 +344,6 @@ export interface FileRouteTypes {
     | '/dashboard/robo-divulgador'
     | '/dashboard/tutoriais'
     | '/dashboard/validar-cadastros'
-    | '/dashboard/vendas-clientes'
     | '/demo/grupos'
     | '/demo/precificacao'
     | '/demo/produtos'
@@ -387,7 +376,6 @@ export interface FileRouteTypes {
     | '/dashboard/robo-divulgador'
     | '/dashboard/tutoriais'
     | '/dashboard/validar-cadastros'
-    | '/dashboard/vendas-clientes'
     | '/demo/grupos'
     | '/demo/precificacao'
     | '/demo/produtos'
@@ -548,13 +536,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DemoGruposRouteImport
       parentRoute: typeof DemoRoute
     }
-    '/dashboard/vendas-clientes': {
-      id: '/dashboard/vendas-clientes'
-      path: '/vendas-clientes'
-      fullPath: '/dashboard/vendas-clientes'
-      preLoaderRoute: typeof DashboardVendasClientesRouteImport
-      parentRoute: typeof DashboardRoute
-    }
     '/dashboard/validar-cadastros': {
       id: '/dashboard/validar-cadastros'
       path: '/validar-cadastros'
@@ -661,7 +642,6 @@ interface DashboardRouteChildren {
   DashboardRoboDivulgadorRoute: typeof DashboardRoboDivulgadorRoute
   DashboardTutoriaisRoute: typeof DashboardTutoriaisRoute
   DashboardValidarCadastrosRoute: typeof DashboardValidarCadastrosRoute
-  DashboardVendasClientesRoute: typeof DashboardVendasClientesRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
 }
 
@@ -676,7 +656,6 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardRoboDivulgadorRoute: DashboardRoboDivulgadorRoute,
   DashboardTutoriaisRoute: DashboardTutoriaisRoute,
   DashboardValidarCadastrosRoute: DashboardValidarCadastrosRoute,
-  DashboardVendasClientesRoute: DashboardVendasClientesRoute,
   DashboardIndexRoute: DashboardIndexRoute,
 }
 
