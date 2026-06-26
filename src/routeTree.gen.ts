@@ -27,6 +27,7 @@ import { Route as DemoRoboDivulgadorRouteImport } from './routes/demo.robo-divul
 import { Route as DemoProdutosRouteImport } from './routes/demo.produtos'
 import { Route as DemoPrecificacaoRouteImport } from './routes/demo.precificacao'
 import { Route as DemoGruposRouteImport } from './routes/demo.grupos'
+import { Route as DashboardVideoIaRouteImport } from './routes/dashboard.video-ia'
 import { Route as DashboardValidarCadastrosRouteImport } from './routes/dashboard.validar-cadastros'
 import { Route as DashboardRoboDivulgadorRouteImport } from './routes/dashboard.robo-divulgador'
 import { Route as DashboardProdutosRouteImport } from './routes/dashboard.produtos'
@@ -127,6 +128,11 @@ const DemoGruposRoute = DemoGruposRouteImport.update({
   path: '/grupos',
   getParentRoute: () => DemoRoute,
 } as any)
+const DashboardVideoIaRoute = DashboardVideoIaRouteImport.update({
+  id: '/video-ia',
+  path: '/video-ia',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardValidarCadastrosRoute =
   DashboardValidarCadastrosRouteImport.update({
     id: '/validar-cadastros',
@@ -196,6 +202,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/produtos': typeof DashboardProdutosRoute
   '/dashboard/robo-divulgador': typeof DashboardRoboDivulgadorRoute
   '/dashboard/validar-cadastros': typeof DashboardValidarCadastrosRoute
+  '/dashboard/video-ia': typeof DashboardVideoIaRoute
   '/demo/grupos': typeof DemoGruposRoute
   '/demo/precificacao': typeof DemoPrecificacaoRoute
   '/demo/produtos': typeof DemoProdutosRoute
@@ -223,6 +230,7 @@ export interface FileRoutesByTo {
   '/dashboard/produtos': typeof DashboardProdutosRoute
   '/dashboard/robo-divulgador': typeof DashboardRoboDivulgadorRoute
   '/dashboard/validar-cadastros': typeof DashboardValidarCadastrosRoute
+  '/dashboard/video-ia': typeof DashboardVideoIaRoute
   '/demo/grupos': typeof DemoGruposRoute
   '/demo/precificacao': typeof DemoPrecificacaoRoute
   '/demo/produtos': typeof DemoProdutosRoute
@@ -253,6 +261,7 @@ export interface FileRoutesById {
   '/dashboard/produtos': typeof DashboardProdutosRoute
   '/dashboard/robo-divulgador': typeof DashboardRoboDivulgadorRoute
   '/dashboard/validar-cadastros': typeof DashboardValidarCadastrosRoute
+  '/dashboard/video-ia': typeof DashboardVideoIaRoute
   '/demo/grupos': typeof DemoGruposRoute
   '/demo/precificacao': typeof DemoPrecificacaoRoute
   '/demo/produtos': typeof DemoProdutosRoute
@@ -284,6 +293,7 @@ export interface FileRouteTypes {
     | '/dashboard/produtos'
     | '/dashboard/robo-divulgador'
     | '/dashboard/validar-cadastros'
+    | '/dashboard/video-ia'
     | '/demo/grupos'
     | '/demo/precificacao'
     | '/demo/produtos'
@@ -311,6 +321,7 @@ export interface FileRouteTypes {
     | '/dashboard/produtos'
     | '/dashboard/robo-divulgador'
     | '/dashboard/validar-cadastros'
+    | '/dashboard/video-ia'
     | '/demo/grupos'
     | '/demo/precificacao'
     | '/demo/produtos'
@@ -340,6 +351,7 @@ export interface FileRouteTypes {
     | '/dashboard/produtos'
     | '/dashboard/robo-divulgador'
     | '/dashboard/validar-cadastros'
+    | '/dashboard/video-ia'
     | '/demo/grupos'
     | '/demo/precificacao'
     | '/demo/produtos'
@@ -492,6 +504,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DemoGruposRouteImport
       parentRoute: typeof DemoRoute
     }
+    '/dashboard/video-ia': {
+      id: '/dashboard/video-ia'
+      path: '/video-ia'
+      fullPath: '/dashboard/video-ia'
+      preLoaderRoute: typeof DashboardVideoIaRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/validar-cadastros': {
       id: '/dashboard/validar-cadastros'
       path: '/validar-cadastros'
@@ -582,6 +601,7 @@ interface DashboardRouteChildren {
   DashboardProdutosRoute: typeof DashboardProdutosRoute
   DashboardRoboDivulgadorRoute: typeof DashboardRoboDivulgadorRoute
   DashboardValidarCadastrosRoute: typeof DashboardValidarCadastrosRoute
+  DashboardVideoIaRoute: typeof DashboardVideoIaRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
 }
 
@@ -594,6 +614,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardProdutosRoute: DashboardProdutosRoute,
   DashboardRoboDivulgadorRoute: DashboardRoboDivulgadorRoute,
   DashboardValidarCadastrosRoute: DashboardValidarCadastrosRoute,
+  DashboardVideoIaRoute: DashboardVideoIaRoute,
   DashboardIndexRoute: DashboardIndexRoute,
 }
 
