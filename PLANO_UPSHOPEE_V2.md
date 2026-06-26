@@ -78,49 +78,91 @@
 
 ---
 
-### FASE 3 — Nova aba: Shope Vídeos (gerador de vídeos com IA)
+### FASE 3 — Produtos para Afiliados (catálogo próprio, curadoria manual)
 
-**O que é:** uma nova página no dashboard onde o usuário envia a foto de um produto, escolhe um estilo de vídeo, e o sistema gera um vídeo curto que ele pode baixar e postar como afiliado.
+**Verédito técnico:** ✅ Totalmente viável com a stack atual. Sem API da Shopee, sem scraping, sem promessa de parceria oficial.
+
+**O que é:** uma nova aba onde admins cadastram manualmente produtos interessantes para afiliados. O usuário navega, filtra, vê análise ShopSync, copia o link do produto, abre a Shopee Afiliados oficial, gera seu link pessoal e salva na ferramenta.
 
 **Fluxo do usuário:**
-1. Acessa a aba "Shope Vídeos" no dashboard
-2. Faz upload da foto do produto
-3. Escolhe opções:
-   - Gênero do narrador (homem/mulher)
-   - Tom (feliz, triste, empolgada, neutro)
-   - Texto personalizado que vai ser falado no vídeo
-   - OU usa um texto gerado automaticamente pela IA
-4. Clica "Gerar vídeo"
-5. O sistema processa (pode levar alguns segundos)
-6. Aparece o vídeo pronto → botão "Baixar"
-7. A pessoa baixa e posta no TikTok/Shopee
+1. Acessa "Produtos para Afiliados" no dashboard
+2. Visualiza catálogo curado com busca, filtros e ordenação
+3. Escolhe um produto → vê detalhes e análise ShopSync (pontuação, vantagens, pontos de atenção)
+4. Clica em "Gerar meu link de afiliado" → modal com instruções
+5. Copia o link normal do produto → abre a Shopee Afiliados em nova aba
+6. Gera seu link pessoal na Shopee → volta pra ShopSync → cola o link
+7. Produto salvo com link afiliado → aparece na lista de salvos
 
-**Arquitetura técnica (recomendação):**
+**O que o admin pode fazer (painel administrativo):**
+- Cadastrar, editar, remover, desativar produtos
+- Upload de imagens, informar preço, comissão, avaliação
+- Categorias, tags, selos (Alta oportunidade, Bom para vídeo, etc.)
+- Pontuação ShopSync (score 0-100, calculado automaticamente)
+- Importar CSV (validação, preview, confirmação)
+- Revisão de produtos vencidos/desatualizados
 
+**Estrutura de dados (4 tabelas novas):**
+- `affiliate_product_catalog` — produtos do catálogo (nome, preço, comissão, score, tags, etc.)
+- `affiliate_product_images` — imagens do produto
+- `affiliate_product_categories` — categorias
+- `user_affiliate_products` — produtos salvos pelo usuário (com link afiliado dele)
+
+**Telas principais:**
+- Catálogo (busca + filtros + cards + paginação)
+- Detalhes do produto (galeria + análise + instruções)
+- Modal "Gerar meu link" (instruções + copiar link + abrir Shopee)
+- Painel admin (CRUD + CSV import)
+- Lista de produtos salvos do usuário
+
+**Etapas de implementação:**
+1. Banco (migrations: tabelas, RLS, storage buckets)
+2. Admin panel (cadastro, edição, CSV import)
+3. Catálogo público (busca, filtros, cards, detalhes)
+4. Fluxo de afiliação (copiar link, abrir Shopee, salvar link)
+5. Qualidade (mobile, validações, segurança, avisos)
+
+---
+
+### FASE 4 — ShopSync Vídeo IA (roteiro + prompt para Gemini do usuário)
+
+**Verédito técnico:** ✅ Viável e inteligente. A ShopSync NÃO gera o vídeo — ela prepara roteiro e prompt. O usuário gera o vídeo na conta Google DELE via Gemini.
+
+**O que é:** uma nova aba onde o usuário envia fotos de um produto, informa o estilo desejado, e a IA (Gemini API, via Edge Function) gera: ideia do vídeo, roteiro completo, cenas sugeridas, narração, textos na tela, chamada final, hashtags e um prompt profissional pronto pra colar no Gemini. O usuário então abre o Gemini na conta Google dele, cola o prompt, envia a imagem e gera o vídeo.
+
+**Fluxo do usuário (7 etapas guiadas):**
+1. **Selecionar produto** — escolhe de Meus Produtos, do catálogo, ou cadastra manualmente
+2. **Enviar imagens** — 1 principal + até 3 adicionais (JPG/PNG/WEBP)
+3. **Informações** — nome, benefícios, público-alvo, diferenciais (a IA sugere conteúdo)
+4. **Estilo do vídeo** — 13 estilos (Destaque, UGC, Unboxing, Antes/Depois, etc.), tom, duração, voz
+5. **Geração** — IA cria: gancho, roteiro, cenas, narração, textos, CTA, hashtags, prompt final
+6. **Revisão** — usuário edita, troca estilo, gera versão alternativa
+7. **Abrir no Gemini** — copia o prompt, abre gemini.google.com, cola, gera o vídeo
+
+**Arquitetura técnica:**
 | Etapa | Tecnologia | Custo |
 |-------|-----------|-------|
-| Geração de roteiro/texto | **Gemini API** (gratuito, tier free) | Grátis |
-| Narração / voz | **ElevenLabs** ou **Edge TTS** (gratuito) | Grátis |
-| Montagem do vídeo | **Remotion** (React pra vídeo, já usado) | Grátis |
-| Armazenamento | Supabase Storage | Incluso no Free |
+| Análise e geração de roteiro | **Gemini API** (Edge Function) | Tier gratuito |
+| Upload de imagens | Supabase Storage | Incluso |
+| Frontend multi-etapas | React + shadcn/ui (já no projeto) | — |
+| Salvamento de projetos | Supabase (tabelas novas) | Incluso |
 
-**OU (alternativa mais simples):**
-Usar **Gemini** pra tudo (texto + descrição) e renderizar o vídeo com **Remotion** (React), combinando a imagem do produto + texto animado + música de fundo. Sem avatar falando — só um vídeo de apresentação do produto com texto e efeitos.
+**Estrutura de dados (2-3 tabelas novas):**
+- `video_projects` — projetos de vídeo (status, estilo, roteiro, prompt final)
+- `video_project_images` — imagens enviadas por projeto
+- `video_prompt_versions` (opcional) — histórico de versões do prompt
 
-**Benefício da segunda opção:** não depende de API externa paga, usa tecnologia que você já domina (React/Remotion), pode ser gerado 100% no Supabase via Edge Function.
+**Segurança:**
+- Chave Gemini NUNCA no frontend (Edge Function apenas)
+- Imagens privadas por padrão (RLS, URLs assinadas)
+- Aviso claro: geração do vídeo ocorre na conta Google do usuário
+- Checkbox: usuário confirma autorização das imagens
 
-**O que precisa construir:**
-1. Nova rota: `src/routes/dashboard.shope-videos.tsx`
-2. Entrada na sidebar (DashboardShell, array NAV)
-3. Componente de upload de imagem
-4. Formulário de opções (gênero, tom, texto)
-5. Edge Function no Supabase que:
-   - Recebe a imagem + opções
-   - Chama Gemini API pra gerar roteiro (se não foi fornecido texto)
-   - Renderiza o vídeo com Remotion
-   - Retorna o link do vídeo pronto
-6. Player de preview + botão de download
-7. Supabase Storage pra guardar os vídeos gerados
+**Etapas de implementação:**
+1. Banco (migrations: tabelas, storage buckets, RLS)
+2. Frontend multi-etapas (seleção → upload → informações → estilo → geração → revisão → Gemini)
+3. Edge Function Gemini (análise + geração de roteiro e prompt)
+4. Histórico e salvamento de projetos
+5. Qualidade (mobile, validações, segurança, avisos legais)
 
 ---
 
@@ -138,13 +180,14 @@ Usar **Gemini** pra tudo (texto + descrição) e renderizar o vídeo com **Remot
 ## RESUMO DA ORDEM COMPLETA
 
 ```
-FASE 1 → Trocar nome "UpShopee" em tudo (rápido, ~1 prompt)
-FASE 2 → Redesenhar cada página, uma por vez (~16 prompts)
-FASE 3 → Construir Shope Vídeos (vários prompts, página + backend + IA)
+FASE 1 ✅ → Trocar nome "UpShopee" em tudo
+FASE 2 ✅ → Redesenhar cada página (Shopee style) + remover abas desnecessárias
+FASE 3 🔜 → Produtos para Afiliados (catálogo próprio, curadoria manual)
+FASE 4 🔜 → ShopSync Vídeo IA (roteiro + prompt, Gemini do usuário)
 ```
 
 ---
 
 ## PRÓXIMO PASSO IMEDIATO
 
-Se você aprovar este plano, começamos pela **FASE 1** (trocar o nome). É rápida e de baixo risco — serve como aquecimento e já vai deixar o site com o nome novo.
+Começar **FASE 3 — Produtos para Afiliados**: criar as migrations das 4 tabelas + storage buckets.
