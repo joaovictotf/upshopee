@@ -1116,16 +1116,21 @@ function VideoIaPage() {
                 <ChevronLeft className="mr-1.5 h-4 w-4" /> Voltar
               </Button>
 
-              {canContinue[currentStep] && continueLabel[currentStep] && (
-                <Button type="button" onClick={currentStep === 4 ? handleGenerate : handleContinue}
-                  disabled={!canContinue[currentStep] || submitting || generating}
-                  className="h-11 min-w-[140px] rounded-xl bg-[#EE4D2D] text-sm font-semibold text-white shadow-sm shadow-[#EE4D2D]/25 transition-all hover:bg-[#EE4D2D]/90 hover:shadow-md hover:shadow-[#EE4D2D]/30 active:scale-[0.98] disabled:opacity-40">
-                  {submitting || generating ? (
-                    <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Processando...</span>
-                  ) : (
-                    <span className="flex items-center gap-2">{continueLabel[currentStep]}<ArrowRight className="h-4 w-4" /></span>
+              {continueLabel[currentStep] && (
+                <div className="flex flex-col items-end gap-1">
+                  <Button type="button" onClick={currentStep === 4 ? handleGenerate : handleContinue}
+                    disabled={!canContinue[currentStep] || submitting || generating}
+                    className="h-11 min-w-[140px] rounded-xl bg-[#EE4D2D] text-sm font-semibold text-white shadow-sm shadow-[#EE4D2D]/25 transition-all hover:bg-[#EE4D2D]/90 hover:shadow-md hover:shadow-[#EE4D2D]/30 active:scale-[0.98] disabled:opacity-40">
+                    {submitting || generating ? (
+                      <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Processando...</span>
+                    ) : (
+                      <span className="flex items-center gap-2">{continueLabel[currentStep]}<ArrowRight className="h-4 w-4" /></span>
+                    )}
+                  </Button>
+                  {currentStep === 2 && !step2Valid && (
+                    <span className="text-[11px] text-muted-foreground">Envie pelo menos uma imagem para continuar</span>
                   )}
-                </Button>
+                </div>
               )}
             </div>
           )}
@@ -1223,11 +1228,11 @@ function ImageUploadSlot({ image, onSelect, onRemove, large = false, dragOver = 
   return (
     <div onClick={() => { if (!hasImage && !image.uploading) inputRef.current?.click(); }}
       onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}
-      className={`group relative ${heightClass} cursor-pointer overflow-hidden rounded-xl border-2 border-dashed transition-all ${
-        hasImage ? "border-emerald-300"
-        : image.uploading ? "border-[#EE4D2D]/50"
-        : dragOver ? "border-[#EE4D2D] bg-[#FFF8F5]"
-        : "border-gray-200 bg-gray-50 hover:border-[#EE4D2D]/40 hover:bg-[#FFF8F5]/50"}`}>
+      className={`group relative ${heightClass} cursor-pointer overflow-hidden rounded-xl border-2 transition-all ${
+        hasImage ? "border-solid border-emerald-300"
+        : image.uploading ? "border-dashed border-[#EE4D2D]/50"
+        : dragOver ? "border-dashed border-[#EE4D2D] bg-[#FFF8F5]"
+        : "border-dotted border-gray-300 bg-gray-50/80 hover:border-[#EE4D2D]/40 hover:bg-[#FFF8F5]/50"}`}>
       {image.uploading && (
         <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white/90">
           <Loader2 className="mb-2 h-6 w-6 animate-spin text-[#EE4D2D]" />
@@ -1245,7 +1250,9 @@ function ImageUploadSlot({ image, onSelect, onRemove, large = false, dragOver = 
           </div>)}
       </>) : (
         <div className="flex h-full flex-col items-center justify-center px-3 text-center">
-          <Upload className={`mb-1.5 ${large ? "h-8 w-8" : "h-5 w-5"} text-gray-300 transition-colors group-hover:text-[#EE4D2D]/60`} />
+          <div className={`mb-1.5 flex items-center justify-center rounded-full bg-gray-100 transition-colors group-hover:bg-[#EE4D2D]/10 ${large ? "h-12 w-12" : "h-8 w-8"}`}>
+            <Upload className={`${large ? "h-5 w-5" : "h-3.5 w-3.5"} text-gray-400 transition-colors group-hover:text-[#EE4D2D]/60`} />
+          </div>
           <span className={`${large ? "text-xs" : "text-[11px]"} font-medium text-gray-400`}>
             {large ? "Clique ou arraste a imagem principal" : "Adicionar imagem"}
           </span>
