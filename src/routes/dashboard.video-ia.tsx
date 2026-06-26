@@ -176,7 +176,7 @@ function VideoIaPage() {
   // ── Validation ──
   const step1Valid = productMode === "existing" ? !!selectedProduct
     : !!(manualProduct.name.trim() && manualProduct.url.trim());
-  const step2Valid = !!(primaryImage.preview || primaryImage.storagePath);
+  const step2Valid = true; // Image upload is always optional — user can skip
   const step3Valid = !!(productInfo.name.trim() && productInfo.description.trim() && productInfo.benefits.trim());
   const step4Valid = !!styleConfig.style;
   // Step 5 auto-advances on success
@@ -543,10 +543,9 @@ function VideoIaPage() {
   const updateGenerated = (field: keyof GeneratedContent, value: string) =>
     setGeneratedContent((prev) => ({ ...prev, [field]: value }));
 
-  // ── Validation map ──
+  // Navigation is always allowed — user can skip any step
   const canContinue: Record<number, boolean> = {
-    1: step1Valid, 2: step2Valid, 3: step3Valid,
-    4: step4Valid, 5: true, 6: step6Valid, 7: true,
+    1: true, 2: true, 3: true, 4: true, 5: true, 6: true, 7: true,
   };
   const continueLabel: Record<number, string> = {
     1: "Continuar", 2: "Continuar", 3: "Criar projeto de vídeo",
@@ -697,7 +696,7 @@ function VideoIaPage() {
         <div>
           <div className="mb-2 flex items-center gap-2">
             <Label className="text-sm font-semibold text-foreground">Imagem principal</Label>
-            <span className="rounded-full bg-[#EE4D2D]/10 px-2 py-0.5 text-[10px] font-bold text-[#EE4D2D]">Obrigatória</span>
+            <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-500">Opcional</span>
           </div>
           <p className="mb-3 text-xs text-muted-foreground">Esta será a imagem de capa do vídeo. O upload é automático ao selecionar.</p>
           <ImageUploadSlot image={primaryImage} onSelect={handlePrimaryImageSelect} onRemove={removePrimaryImage} large
@@ -1117,20 +1116,15 @@ function VideoIaPage() {
               </Button>
 
               {continueLabel[currentStep] && (
-                <div className="flex flex-col items-end gap-1">
-                  <Button type="button" onClick={currentStep === 4 ? handleGenerate : handleContinue}
-                    disabled={!canContinue[currentStep] || submitting || generating}
-                    className="h-11 min-w-[140px] rounded-xl bg-[#EE4D2D] text-sm font-semibold text-white shadow-sm shadow-[#EE4D2D]/25 transition-all hover:bg-[#EE4D2D]/90 hover:shadow-md hover:shadow-[#EE4D2D]/30 active:scale-[0.98] disabled:opacity-40">
-                    {submitting || generating ? (
-                      <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Processando...</span>
-                    ) : (
-                      <span className="flex items-center gap-2">{continueLabel[currentStep]}<ArrowRight className="h-4 w-4" /></span>
-                    )}
-                  </Button>
-                  {currentStep === 2 && !step2Valid && (
-                    <span className="text-[11px] text-muted-foreground">Envie pelo menos uma imagem para continuar</span>
+                <Button type="button" onClick={currentStep === 4 ? handleGenerate : handleContinue}
+                  disabled={submitting || generating}
+                  className="h-11 min-w-[140px] rounded-xl bg-[#EE4D2D] text-sm font-semibold text-white shadow-sm shadow-[#EE4D2D]/25 transition-all hover:bg-[#EE4D2D]/90 hover:shadow-md hover:shadow-[#EE4D2D]/30 active:scale-[0.98] disabled:opacity-40">
+                  {submitting || generating ? (
+                    <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Processando...</span>
+                  ) : (
+                    <span className="flex items-center gap-2">{continueLabel[currentStep]}<ArrowRight className="h-4 w-4" /></span>
                   )}
-                </div>
+                </Button>
               )}
             </div>
           )}
