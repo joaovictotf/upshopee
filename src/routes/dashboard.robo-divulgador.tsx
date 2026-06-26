@@ -30,17 +30,13 @@ const CHANNEL_CONFIG: Array<{
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   color: string;
-  bgColor: string;
-  borderColor: string;
   messages: string[];
 }> = [
   {
     id: "whatsapp",
     label: "Grupos de WhatsApp",
     icon: MessageCircle,
-    color: "text-green-400",
-    bgColor: "bg-green-500/10",
-    borderColor: "border-green-500/40",
+    color: "text-emerald-600",
     messages: [
       "Divulgando no Grupo Ofertas SP 🔥",
       "Postando em 12 grupos de WhatsApp...",
@@ -55,9 +51,7 @@ const CHANNEL_CONFIG: Array<{
     id: "contacts",
     label: "Lista de Contatos",
     icon: Users,
-    color: "text-blue-400",
-    bgColor: "bg-blue-500/10",
-    borderColor: "border-blue-500/40",
+    color: "text-blue-600",
     messages: [
       "Enviando para lista de contatos...",
       "Mensagem enviada para 47 contatos ✓",
@@ -71,9 +65,7 @@ const CHANNEL_CONFIG: Array<{
     id: "facebook",
     label: "Grupos do Facebook",
     icon: Wifi,
-    color: "text-indigo-400",
-    bgColor: "bg-indigo-500/10",
-    borderColor: "border-indigo-500/40",
+    color: "text-indigo-600",
     messages: [
       "Postando em grupos do Facebook...",
       "Compartilhando em 8 grupos ativos",
@@ -87,22 +79,11 @@ const CHANNEL_CONFIG: Array<{
 
 type LogEntry = { id: string; ts: number; type: "sale" | "activity"; msg: string; amount?: number; channel?: Channel };
 
-function rand(min: number, max: number) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-function pick<T>(arr: T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)];
-}
+function rand(min: number, max: number) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+function pick<T>(arr: T[]): T { return arr[Math.floor(Math.random() * arr.length)]; }
 
-// São Paulo "today" as YYYY-MM-DD, using the SAME idiom as getCommissionSum in
-// src/lib/state.tsx: round-trip through toLocaleString("en-US", { timeZone:
-// "America/Sao_Paulo" }) so the date reflects São Paulo wall-clock, not raw
-// browser local time. (Do NOT use todayKey()/dateKey() here — those run on raw
-// browser local time and are the known correctness trap.)
 function saoPauloToday(): string {
-  const sp = new Date(
-    new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" })
-  );
+  const sp = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
   const y = sp.getFullYear();
   const m = String(sp.getMonth() + 1).padStart(2, "0");
   const d = String(sp.getDate()).padStart(2, "0");
@@ -130,38 +111,26 @@ function buildAdminHistory(): { log: LogEntry[]; salesCount: number; creditsSpen
   ];
   const sales = entries.filter((e) => e.type === "sale");
   const totalRevenue = sales.reduce((s, e) => s + (e.amount ?? 0), 0);
-  return {
-    log: entries,
-    salesCount: sales.length,
-    creditsSpent: sales.length * rand(CREDITS_MIN, CREDITS_MAX),
-    revenue: Math.round(totalRevenue * 100) / 100,
-  };
+  return { log: entries, salesCount: sales.length, creditsSpent: sales.length * rand(CREDITS_MIN, CREDITS_MAX), revenue: Math.round(totalRevenue * 100) / 100 };
 }
 
-// ─── Shared props type ────────────────────────────────────────────────────────
 type ProductItem = { id: string; name: string; image: string; status: string };
 type ViewProps = {
-  active: boolean;
-  channels: Channel[];
-  selectedProdIds: string[];
+  active: boolean; channels: Channel[]; selectedProdIds: string[];
   currentMsg: { text: string; channel: Channel } | null;
   currentConf: (typeof CHANNEL_CONFIG)[number] | null | undefined;
-  log: LogEntry[];
-  salesCount: number;
-  creditsSpent: number;
-  revenue: number;
-  credits: number;
-  creditPct: number;
-  products: ProductItem[];
-  handleStart: () => void;
-  handleStop: () => void;
-  toggleChannel: (ch: Channel) => void;
-  toggleProduct: (id: string) => void;
+  log: LogEntry[]; salesCount: number; creditsSpent: number; revenue: number;
+  credits: number; creditPct: number; products: ProductItem[];
+  handleStart: () => void; handleStop: () => void;
+  toggleChannel: (ch: Channel) => void; toggleProduct: (id: string) => void;
   setSelectedProdIds: React.Dispatch<React.SetStateAction<string[]>>;
   setLog: React.Dispatch<React.SetStateAction<LogEntry[]>>;
 };
 
-// ─── Main component ───────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════
+// MAIN COMPONENT
+// ═══════════════════════════════════════════════════════════════════════
+
 function RoboDivulgador() {
   const { user, data, isAdmin, triggerDemoSale, addSalesOrderForProduct } = useApp();
   const email = user?.email ?? "";
@@ -169,45 +138,22 @@ function RoboDivulgador() {
 
   const [credits, setCredits] = useState<number>(() => {
     if (!email) return INITIAL_CREDITS;
-    try {
-      const raw = localStorage.getItem(CREDITS_KEY(email));
-      if (raw !== null) return Math.max(0, Number(raw) || 0);
-    } catch {}
+    try { const raw = localStorage.getItem(CREDITS_KEY(email)); if (raw !== null) return Math.max(0, Number(raw) || 0); } catch {}
     return INITIAL_CREDITS;
   });
 
-  useEffect(() => {
-    if (!email) return;
-    try { localStorage.setItem(CREDITS_KEY(email), String(credits)); } catch {}
-  }, [credits, email]);
+  useEffect(() => { if (!email) return; try { localStorage.setItem(CREDITS_KEY(email), String(credits)); } catch {} }, [credits, email]);
 
-  // Live mirror of `credits` so long-running loops (sale loop) can read the
-  // current value instead of a stale closure captured when they started. This
-  // is what lets a loop running across midnight pick up the daily reset value.
   const creditsRef = useRef(credits);
   useEffect(() => { creditsRef.current = credits; }, [credits]);
 
-  // ── Daily credit reset (client-side, São Paulo-anchored) ──────────────────
-  // For EVERY user (not gated on isAdmin): on a new São Paulo day, credits reset
-  // to exactly INITIAL_CREDITS (10000). Same-day re-renders/reloads do nothing,
-  // so same-day consumption is preserved. The per-user lastreset key in
-  // localStorage is the strict guard: once today's SP date is written, no
-  // further reset happens until the SP date changes (also makes this safe under
-  // StrictMode double-invoke). Declared BEFORE the admin seed effect so the
-  // reset settles to 10000 first and the admin one-time seed deducts on top of
-  // the reset value rather than fighting/wiping it.
   useEffect(() => {
     if (!email) return;
     let last: string | null = null;
     try { last = localStorage.getItem(LASTRESET_KEY(email)); } catch {}
     const today = saoPauloToday();
-    if (last !== today) {
-      setCredits(INITIAL_CREDITS);
-      try { localStorage.setItem(LASTRESET_KEY(email), today); } catch {}
-    }
-    // same São Paulo day → do nothing (preserve consumption)
+    if (last !== today) { setCredits(INITIAL_CREDITS); try { localStorage.setItem(LASTRESET_KEY(email), today); } catch {} }
   }, [email]);
-
 
   const [active, setActive] = useState(false);
   const [channels, setChannels] = useState<Channel[]>(["whatsapp", "contacts", "facebook"]);
@@ -221,10 +167,8 @@ function RoboDivulgador() {
   useEffect(() => {
     if (!isAdmin) return;
     const history = buildAdminHistory();
-    setLog(history.log);
-    setSalesCount(history.salesCount);
-    setCreditsSpent(history.creditsSpent);
-    setRevenue(history.revenue);
+    setLog(history.log); setSalesCount(history.salesCount);
+    setCreditsSpent(history.creditsSpent); setRevenue(history.revenue);
     setCredits((prev) => Math.max(0, prev - history.creditsSpent));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdmin]);
@@ -283,13 +227,11 @@ function RoboDivulgador() {
         setSalesCount((prev) => prev + 1);
         setRevenue((prev) => prev + result!.amount);
         addLog({ type: "sale", msg: saleMsg, amount: result.amount, channel: ch });
-        toast.success(`🤖 Venda do Robô`, { description: saleMsg });
+        toast.success("🤖 Venda do Robô", { description: saleMsg });
         if (creditsRef.current - cost <= 0) {
           setActive(false);
           toast.error("Robô parado — créditos esgotados.");
-        } else {
-          scheduleSale();
-        }
+        } else { scheduleSale(); }
       }, delay);
     };
     scheduleSale();
@@ -297,26 +239,17 @@ function RoboDivulgador() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active]);
 
-  useEffect(() => {
-    if (active && (channels.length === 0 || credits <= 0)) setActive(false);
-  }, [active, channels, credits]);
+  useEffect(() => { if (active && (channels.length === 0 || credits <= 0)) setActive(false); }, [active, channels, credits]);
 
-  const toggleChannel = (ch: Channel) => {
-    setChannels((prev) => prev.includes(ch) ? prev.filter((c) => c !== ch) : [...prev, ch]);
-  };
-  const toggleProduct = (id: string) => {
-    setSelectedProdIds((prev) => prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]);
-  };
+  const toggleChannel = (ch: Channel) => { setChannels((prev) => prev.includes(ch) ? prev.filter((c) => c !== ch) : [...prev, ch]); };
+  const toggleProduct = (id: string) => { setSelectedProdIds((prev) => prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]); };
   const handleStart = () => {
     if (channels.length === 0) { toast.error("Selecione pelo menos um canal."); return; }
     if (credits <= 0) { toast.error("Créditos esgotados. Contate o suporte."); return; }
     setActive(true);
     toast.success("🤖 Robô Divulgador iniciado!", { description: "O robô está divulgando seus produtos automaticamente." });
   };
-  const handleStop = () => {
-    setActive(false);
-    toast("🤖 Robô Divulgador pausado.");
-  };
+  const handleStop = () => { setActive(false); toast("🤖 Robô Divulgador pausado."); };
 
   const creditPct = Math.round((credits / INITIAL_CREDITS) * 100);
   const currentConf = currentMsg ? CHANNEL_CONFIG.find((c) => c.id === currentMsg.channel) : null;
@@ -329,42 +262,42 @@ function RoboDivulgador() {
     setSelectedProdIds, setLog,
   };
 
-  return <PremiumView {...viewProps} />;
+  return <ShopeeView {...viewProps} />;
 }
 
-// ─── Premium UI ───────────────────────────────────────────────────────────────
-function PremiumView({
+// ═══════════════════════════════════════════════════════════════════════
+// SHOPEE VIEW
+// ═══════════════════════════════════════════════════════════════════════
+
+function ShopeeView({
   active, channels, selectedProdIds, currentMsg, currentConf,
   log, salesCount, creditsSpent, revenue, credits, creditPct,
   products, handleStart, handleStop, toggleChannel, toggleProduct,
   setSelectedProdIds, setLog,
 }: ViewProps) {
   return (
-    <DashboardShell
-      title="Robô Divulgador"
-      subtitle="Divulgação automática dos seus produtos em grupos e contatos."
-    >
+    <DashboardShell title="Robô Divulgador" subtitle="Divulgação automática dos seus produtos em grupos e contatos.">
       <div className="flex flex-col gap-6 xl:flex-row">
-        {/* ── Left panel ── */}
+        {/* ═══ LEFT PANEL ═══ */}
         <div className="min-w-0 flex-1 space-y-5">
 
-          {/* Status card */}
-          <div className={`relative overflow-hidden rounded-2xl border-2 p-6 transition-all duration-500 ${
-            active ? "border-orange-500/60 bg-orange-50 shadow-lg shadow-orange-500/10" : "border-gray-200 bg-white"
+          {/* ── Status card ── */}
+          <div className={`relative overflow-hidden rounded-2xl bg-white p-6 shadow-sm shadow-black/[0.04] ring-1 ring-black/[0.06] transition-all duration-500 ${
+            active ? "ring-[#EE4D2D]/30" : ""
           }`}>
-            {active && <div className="pointer-events-none absolute inset-0 animate-pulse rounded-2xl bg-orange-500/5" />}
+            {active && <div className="pointer-events-none absolute inset-0 rounded-2xl bg-[#EE4D2D]/[0.03]" />}
             <div className="relative flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
               <div className="flex items-center gap-4">
-                {/* Bot icon with glow */}
+                {/* Bot icon */}
                 <div className={`relative flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl transition-all duration-500 ${
-                  active ? "bg-gradient-to-br from-orange-500 to-orange-600 shadow-xl shadow-orange-500/40" : "bg-gray-100"
+                  active ? "bg-[#EE4D2D] shadow-lg shadow-[#EE4D2D]/30" : "bg-gray-100"
                 }`}>
                   <Bot className={`h-10 w-10 ${active ? "text-white" : "text-gray-400"}`} />
                   {active && (
                     <>
-                      <span className="absolute -inset-1 animate-ping rounded-2xl bg-orange-400/20" />
-                      <span className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-green-500 ring-2 ring-white shadow-md shadow-green-500/50">
-                        <span className="h-2 w-2 animate-ping rounded-full bg-green-300" />
+                      <span className="absolute -inset-1 animate-ping rounded-2xl bg-[#EE4D2D]/20" />
+                      <span className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 ring-2 ring-white shadow-md shadow-emerald-500/50">
+                        <span className="h-2 w-2 animate-ping rounded-full bg-emerald-300" />
                       </span>
                     </>
                   )}
@@ -373,14 +306,16 @@ function PremiumView({
                   <div className="flex flex-wrap items-center gap-2.5">
                     <h2 className="text-xl font-bold text-gray-900">Robô Divulgador</h2>
                     <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-widest ${
-                      active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
+                      active ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-500"
                     }`}>
-                      <span className={`h-2 w-2 rounded-full ${active ? "bg-green-500 animate-pulse" : "bg-gray-400"}`} />
+                      <span className={`h-2 w-2 rounded-full ${active ? "bg-emerald-500" : "bg-gray-400"}`} />
                       {active ? "Ativo" : "Inativo"}
                     </span>
                   </div>
                   {active && currentMsg && currentConf ? (
-                    <p className={`mt-1.5 animate-in fade-in text-sm font-medium ${currentConf.color}`}>🤖 {currentMsg.text}</p>
+                    <p className={`mt-1.5 animate-in fade-in text-sm font-medium ${currentConf.color}`}>
+                      🤖 {currentMsg.text}
+                    </p>
                   ) : (
                     <p className="mt-1.5 text-sm text-gray-400">Pronto para divulgar seus produtos</p>
                   )}
@@ -388,11 +323,11 @@ function PremiumView({
               </div>
               <div className="shrink-0">
                 {active ? (
-                  <Button onClick={handleStop} variant="outline" className="border-red-200 bg-white text-red-500 shadow-sm hover:border-red-400 hover:bg-red-50">
+                  <Button onClick={handleStop} variant="outline" className="rounded-xl border-red-200 bg-white text-sm font-semibold text-red-500 shadow-sm shadow-black/[0.02] transition-all hover:border-red-400 hover:bg-red-50 active:scale-[0.98]">
                     <Square className="mr-2 h-4 w-4" /> Parar robô
                   </Button>
                 ) : (
-                  <Button onClick={handleStart} disabled={channels.length === 0 || credits <= 0} className="bg-orange-500 text-white shadow-lg shadow-orange-500/30 hover:bg-orange-600 disabled:opacity-50">
+                  <Button onClick={handleStart} disabled={channels.length === 0 || credits <= 0} className="h-10 rounded-xl bg-[#EE4D2D] text-sm font-semibold text-white shadow-sm shadow-[#EE4D2D]/25 transition-all hover:bg-[#EE4D2D]/90 hover:shadow-md hover:shadow-[#EE4D2D]/30 active:scale-[0.98] disabled:opacity-50">
                     <Play className="mr-2 h-4 w-4" /> Iniciar divulgação
                   </Button>
                 )}
@@ -400,7 +335,7 @@ function PremiumView({
             </div>
 
             {/* Credits meter */}
-            <div className="mt-5 rounded-xl border border-gray-100 bg-white/80 p-4">
+            <div className="mt-5 rounded-xl bg-[#FFF8F5] p-4">
               <div className="flex items-end justify-between">
                 <div>
                   <span className={`text-4xl font-black tabular-nums ${
@@ -414,9 +349,9 @@ function PremiumView({
                   {credits.toLocaleString("pt-BR")} <span className="text-gray-200">/</span> {INITIAL_CREDITS.toLocaleString("pt-BR")}
                 </span>
               </div>
-              <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-gray-100">
+              <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-gray-200">
                 <div
-                  className={`h-full rounded-full transition-all duration-700 ${credits < 1000 ? "bg-red-500" : credits < 5000 ? "bg-amber-500" : "bg-orange-500"}`}
+                  className={`h-full rounded-full transition-all duration-700 ${credits < 1000 ? "bg-red-500" : credits < 5000 ? "bg-amber-500" : "bg-[#EE4D2D]"}`}
                   style={{ width: `${creditPct}%` }}
                 />
               </div>
@@ -426,8 +361,8 @@ function PremiumView({
             </div>
           </div>
 
-          {/* Channel pills */}
-          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+          {/* ═══ CHANNEL PILLS ═══ */}
+          <div className="rounded-2xl bg-white p-5 shadow-sm shadow-black/[0.04] ring-1 ring-black/[0.06]">
             <h3 className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Canais de divulgação</h3>
             <p className="mt-1 text-sm text-gray-500">Selecione onde o robô vai divulgar seus produtos.</p>
             <div className="mt-4 flex flex-wrap gap-3">
@@ -439,8 +374,8 @@ function PremiumView({
                     onClick={() => toggleChannel(ch.id)}
                     className={`flex items-center gap-2.5 rounded-full border-2 px-5 py-2.5 text-sm font-semibold transition-all duration-200 ${
                       selected
-                        ? "border-orange-500 bg-orange-500 text-white shadow-md shadow-orange-500/25"
-                        : "border-gray-200 bg-white text-gray-600 hover:border-orange-300 hover:text-orange-500"
+                        ? "border-[#EE4D2D] bg-[#EE4D2D] text-white shadow-sm shadow-[#EE4D2D]/25"
+                        : "border-gray-200 bg-white text-gray-600 hover:border-[#EE4D2D]/30 hover:text-[#EE4D2D]"
                     }`}
                   >
                     <ch.icon className="h-4 w-4 shrink-0" />
@@ -452,8 +387,8 @@ function PremiumView({
             </div>
           </div>
 
-          {/* Product grid */}
-          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+          {/* ═══ PRODUCT GRID ═══ */}
+          <div className="rounded-2xl bg-white p-5 shadow-sm shadow-black/[0.04] ring-1 ring-black/[0.06]">
             <div className="flex items-start justify-between gap-2">
               <div>
                 <h3 className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Produtos para divulgar</h3>
@@ -464,18 +399,20 @@ function PremiumView({
                 </p>
               </div>
               {selectedProdIds.length > 0 && (
-                <button onClick={() => setSelectedProdIds([])} className="shrink-0 text-xs font-medium text-gray-400 hover:text-gray-700">
+                <button onClick={() => setSelectedProdIds([])} className="shrink-0 text-xs font-medium text-gray-400 transition-colors hover:text-[#EE4D2D]">
                   Limpar seleção
                 </button>
               )}
             </div>
             {products.length === 0 ? (
               <div className="mt-4 flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-200 py-10">
-                <Package className="h-10 w-10 text-gray-300" />
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#FFF8F5]">
+                  <Package className="h-7 w-7 text-[#EE4D2D]/60" />
+                </div>
                 <p className="mt-3 text-sm font-semibold text-gray-700">Você ainda não possui produtos</p>
                 <p className="mt-1 text-xs text-gray-400">Adicione produtos em Meus Produtos para usar o robô.</p>
                 <Link to="/dashboard/produtos">
-                  <Button size="sm" variant="outline" className="mt-4 border-orange-200 text-orange-500 hover:bg-orange-50">
+                  <Button size="sm" variant="outline" className="mt-4 rounded-xl border-gray-200 bg-white text-sm font-medium text-gray-600 shadow-sm shadow-black/[0.02] transition-all hover:border-[#EE4D2D]/30 hover:text-[#EE4D2D]">
                     <Sparkles className="mr-1.5 h-3.5 w-3.5" /> Ver catálogo
                   </Button>
                 </Link>
@@ -489,7 +426,7 @@ function PremiumView({
                       key={p.id}
                       onClick={() => toggleProduct(p.id)}
                       className={`flex items-center gap-3 overflow-hidden rounded-xl border-2 p-3 text-left transition-all duration-200 ${
-                        sel ? "border-orange-500 bg-orange-50" : "border-gray-100 bg-white hover:border-orange-200"
+                        sel ? "border-[#EE4D2D] bg-[#FFF8F5]" : "border-gray-100 bg-white hover:border-[#EE4D2D]/20 hover:bg-gray-50"
                       }`}
                     >
                       <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg">
@@ -501,7 +438,7 @@ function PremiumView({
                           </div>
                         )}
                         {sel && (
-                          <div className="absolute inset-0 flex items-center justify-center bg-orange-500/85">
+                          <div className="absolute inset-0 flex items-center justify-center bg-[#EE4D2D]/85">
                             <Check className="h-6 w-6 text-white drop-shadow-sm" />
                           </div>
                         )}
@@ -509,7 +446,7 @@ function PremiumView({
                       <div className="min-w-0 flex-1">
                         <div className="truncate text-sm font-semibold text-gray-900">{p.name}</div>
                         <span className={`mt-1 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
-                          p.status === "Ativo" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
+                          p.status === "Ativo" ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-500"
                         }`}>
                           {p.status}
                         </span>
@@ -522,24 +459,24 @@ function PremiumView({
           </div>
         </div>
 
-        {/* ── Dark right sidebar ── */}
+        {/* ═══ RIGHT SIDEBAR ═══ */}
         <div className="space-y-4 xl:w-80">
           {/* Metrics panel */}
-          <div className="rounded-2xl bg-slate-900 p-5 text-white shadow-xl">
-            <h3 className="text-[11px] font-bold uppercase tracking-widest text-slate-500">Sessão atual</h3>
+          <div className="rounded-2xl bg-white p-5 shadow-sm shadow-black/[0.04] ring-1 ring-black/[0.06]">
+            <h3 className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Sessão atual</h3>
             <div className="mt-4 space-y-3">
-              <PremiumStat icon={<TrendingUp className="h-4 w-4 text-orange-400" />} label="Vendas geradas" value={String(salesCount)} accent />
-              <PremiumStat icon={<Zap className="h-4 w-4 text-violet-400" />} label="Créditos gastos" value={String(creditsSpent)} />
-              <PremiumStat icon={<Sparkles className="h-4 w-4 text-emerald-400" />} label="Receita gerada" value={brl(revenue)} />
+              <SidebarStat icon={<TrendingUp className="h-4 w-4 text-[#EE4D2D]" />} label="Vendas geradas" value={String(salesCount)} accent />
+              <SidebarStat icon={<Zap className="h-4 w-4 text-violet-500" />} label="Créditos gastos" value={String(creditsSpent)} />
+              <SidebarStat icon={<Sparkles className="h-4 w-4 text-emerald-500" />} label="Receita gerada" value={brl(revenue)} />
             </div>
           </div>
 
           {/* Activity feed */}
-          <div className="rounded-2xl bg-slate-900 p-5 text-white shadow-xl">
+          <div className="rounded-2xl bg-white p-5 shadow-sm shadow-black/[0.04] ring-1 ring-black/[0.06]">
             <div className="flex items-center justify-between">
-              <h3 className="text-[11px] font-bold uppercase tracking-widest text-slate-500">Atividade recente</h3>
+              <h3 className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Atividade recente</h3>
               {log.length > 0 && (
-                <button onClick={() => setLog([])} className="text-[11px] text-slate-600 transition-colors hover:text-slate-300">
+                <button onClick={() => setLog([])} className="text-[11px] text-gray-400 transition-colors hover:text-[#EE4D2D]">
                   Limpar
                 </button>
               )}
@@ -547,8 +484,8 @@ function PremiumView({
             <div className="mt-4 max-h-[420px] overflow-y-auto">
               {log.length === 0 ? (
                 <div className="py-8 text-center">
-                  <Bot className="mx-auto h-8 w-8 text-slate-700" />
-                  <p className="mt-2 text-xs text-slate-500">Inicie o robô para ver a atividade aqui.</p>
+                  <Bot className="mx-auto h-8 w-8 text-gray-200" />
+                  <p className="mt-2 text-xs text-gray-400">Inicie o robô para ver a atividade aqui.</p>
                 </div>
               ) : (
                 <div className="space-y-px">
@@ -556,15 +493,15 @@ function PremiumView({
                     <div
                       key={entry.id}
                       className={`flex items-start gap-3 border-l-2 py-2.5 pl-3 animate-in slide-in-from-right-4 fade-in duration-300 ${
-                        entry.type === "sale" ? "border-green-500" : "border-blue-500"
+                        entry.type === "sale" ? "border-emerald-500" : "border-blue-500"
                       }`}
                     >
                       <p className={`min-w-0 flex-1 truncate text-xs leading-snug ${
-                        entry.type === "sale" ? "font-semibold text-green-400" : "text-slate-400"
+                        entry.type === "sale" ? "font-semibold text-emerald-600" : "text-gray-600"
                       }`}>
                         {entry.msg}
                       </p>
-                      <span className="shrink-0 text-[10px] tabular-nums text-slate-600">
+                      <span className="shrink-0 text-[10px] tabular-nums text-gray-400">
                         {new Date(entry.ts).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                       </span>
                     </div>
@@ -575,11 +512,11 @@ function PremiumView({
           </div>
 
           {/* Info tips */}
-          <div className="space-y-2.5 rounded-2xl border border-gray-100 bg-white p-4 text-xs text-gray-400 shadow-sm">
-            <div className="flex items-start gap-2"><ChevronRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-orange-400" /><span>O robô divulga automaticamente durante todo o dia enquanto ativo.</span></div>
-            <div className="flex items-start gap-2"><ChevronRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-orange-400" /><span>Cada venda consome {CREDITS_MIN}–{CREDITS_MAX} créditos de divulgação.</span></div>
-            <div className="flex items-start gap-2"><ChevronRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-orange-400" /><span>Com 10.000 créditos você pode gerar até {Math.floor(INITIAL_CREDITS / CREDITS_MIN)} vendas automáticas.</span></div>
-            <div className="flex items-start gap-2"><ChevronRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-orange-400" /><span>Quanto mais canais selecionados, maior o alcance da divulgação.</span></div>
+          <div className="space-y-2.5 rounded-2xl bg-white p-4 shadow-sm shadow-black/[0.04] ring-1 ring-black/[0.06]">
+            <div className="flex items-start gap-2"><ChevronRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#EE4D2D]" /><span className="text-xs text-gray-500">O robô divulga automaticamente durante todo o dia enquanto ativo.</span></div>
+            <div className="flex items-start gap-2"><ChevronRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#EE4D2D]" /><span className="text-xs text-gray-500">Cada venda consome {CREDITS_MIN}–{CREDITS_MAX} créditos de divulgação.</span></div>
+            <div className="flex items-start gap-2"><ChevronRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#EE4D2D]" /><span className="text-xs text-gray-500">Com 10.000 créditos você pode gerar até {Math.floor(INITIAL_CREDITS / CREDITS_MIN)} vendas automáticas.</span></div>
+            <div className="flex items-start gap-2"><ChevronRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#EE4D2D]" /><span className="text-xs text-gray-500">Quanto mais canais selecionados, maior o alcance da divulgação.</span></div>
           </div>
         </div>
       </div>
@@ -587,15 +524,14 @@ function PremiumView({
   );
 }
 
-// ─── Stat component ───────────────────────────────────────────────────────────
-function PremiumStat({ icon, label, value, accent }: { icon: React.ReactNode; label: string; value: string; accent?: boolean }) {
+function SidebarStat({ icon, label, value, accent }: { icon: React.ReactNode; label: string; value: string; accent?: boolean }) {
   return (
-    <div className={`rounded-xl p-4 ${accent ? "bg-slate-800 ring-1 ring-orange-500/30" : "bg-slate-800"}`}>
+    <div className={`rounded-xl p-4 ${accent ? "bg-[#FFF8F5] ring-1 ring-[#EE4D2D]/20" : "bg-gray-50"}`}>
       <div className="flex items-center gap-1.5">
         {icon}
-        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{label}</span>
+        <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">{label}</span>
       </div>
-      <div className={`mt-1.5 text-2xl font-black tabular-nums ${accent ? "text-orange-400" : "text-white"}`}>{value}</div>
+      <div className={`mt-1.5 text-2xl font-black tabular-nums ${accent ? "text-[#EE4D2D]" : "text-gray-900"}`}>{value}</div>
     </div>
   );
 }
