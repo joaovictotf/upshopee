@@ -1029,10 +1029,10 @@ function VideoIaPage() {
   }
 
   /* ═══════════════════════════════════════════════════════════
-     MAIN RENDER
+     MAIN RENDER (memoized — prevents re-renders from useApp() context changes)
      ═══════════════════════════════════════════════════════════ */
 
-  return (
+  const rendered = useMemo(() => (
     <DashboardShell title="Vídeo IA"
       subtitle="Crie vídeos profissionais para seus produtos com inteligência artificial. Siga os 7 passos abaixo.">
       <div className="mx-auto w-full max-w-4xl">
@@ -1103,7 +1103,44 @@ function VideoIaPage() {
         </div>
       </div>
     </DashboardShell>
-  );
+  ), [
+    // Only re-render when Video IA state actually changes — NOT when useApp() context changes
+    currentStep,
+    productMode,
+    productSearch,
+    selectedProduct,
+    manualProduct,
+    primaryImage,
+    additionalImages,
+    productInfo,
+    styleConfig,
+    generating,
+    genStep,
+    genError,
+    generatedContent,
+    projectId,
+    submitting,
+    dailyCount,
+    dailyLimitReached,
+    dailyLimitChecked,
+    step1Valid,
+    filteredProducts,
+    continueLabel,
+    handleBack,
+    handleContinue,
+    handleGenerate,
+    handleRegenerate,
+    handleCopyFinalPrompt,
+    handleSubmitProject,
+    handlePrimaryImageSelect,
+    handleAdditionalImageSelect,
+    removePrimaryImage,
+    removeAdditionalImage,
+    updateProductInfo,
+    updateGenerated,
+  ]);
+
+  return rendered;
 }
 
 /* ═════════════════════════════════════════════════════════════
