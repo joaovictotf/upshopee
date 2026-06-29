@@ -1,14 +1,24 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X, MessageCircle } from "lucide-react";
 
 /**
  * Pop-up do canal oficial no WhatsApp para os alunos.
  * Montado APENAS dentro do DashboardShell — nunca aparece em páginas
  * públicas (/planos, /login, etc.).
- * Sem persistência.
+ * Persiste dismiss no localStorage para não reaparecer.
  */
 export function WhatsAppChannelPopup() {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    const dismissed = localStorage.getItem("upshopee_whatsapp_popup_dismissed");
+    if (!dismissed) setOpen(true);
+  }, []);
+
+  const handleClose = () => {
+    localStorage.setItem("upshopee_whatsapp_popup_dismissed", "true");
+    setOpen(false);
+  };
 
   if (!open) return null;
 
@@ -18,7 +28,7 @@ export function WhatsAppChannelPopup() {
       role="dialog"
       aria-modal="true"
       aria-labelledby="wa-channel-title"
-      onClick={() => setOpen(false)}
+      onClick={handleClose}
     >
       <div
         className="relative w-full max-w-md overflow-hidden rounded-2xl border border-border bg-card shadow-2xl"
@@ -26,7 +36,7 @@ export function WhatsAppChannelPopup() {
       >
         <div className="h-1.5 w-full bg-[#25D366]" />
         <button
-          onClick={() => setOpen(false)}
+          onClick={handleClose}
           aria-label="Fechar"
           className="absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-full border border-border bg-card text-muted-foreground hover:text-foreground"
         >
@@ -55,7 +65,7 @@ export function WhatsAppChannelPopup() {
 
           <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <button
-              onClick={() => setOpen(false)}
+              onClick={handleClose}
               className="rounded-xl border border-border bg-background px-4 py-2.5 text-sm font-medium text-foreground transition hover:bg-accent"
             >
               Fechar
@@ -64,7 +74,7 @@ export function WhatsAppChannelPopup() {
               href="https://whatsapp.com/channel/0029VbDG7Jz8kyyR7N8HFE41"
               target="_blank"
               rel="noopener noreferrer"
-              onClick={() => setOpen(false)}
+              onClick={handleClose}
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#25D366] px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-[#25D366]/30 transition hover:brightness-110"
             >
               <MessageCircle className="h-4 w-4" />
