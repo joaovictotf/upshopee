@@ -114,7 +114,7 @@ const DAILY_LIMIT = 3;
 export const Route = createFileRoute("/dashboard/video-ia")({ component: VideoIaPage });
 
 function VideoIaPage() {
-  const { currentUserId } = useApp();
+  const { currentUserId, isAdmin } = useApp();
 
   const [currentStep, setCurrentStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
@@ -156,9 +156,10 @@ function VideoIaPage() {
   const [dailyLimitReached, setDailyLimitReached] = useState(false);
   const [dailyLimitChecked, setDailyLimitChecked] = useState(false);
 
-  // Check daily limit when entering step 4
+  // Check daily limit when entering step 4 (admins are exempt)
   useEffect(() => {
     if (!currentUserId || currentStep < 4) return;
+    if (isAdmin) { setDailyLimitReached(false); setDailyLimitChecked(true); return; }
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
     (supabase.from as any)("video_projects")
@@ -172,7 +173,7 @@ function VideoIaPage() {
           setDailyLimitChecked(true);
         }
       });
-  }, [currentUserId, currentStep]);
+  }, [currentUserId, currentStep, isAdmin]);
 
   // Pre-fill step 3 from step 1
   useEffect(() => {
@@ -308,8 +309,8 @@ function VideoIaPage() {
   const handleGenerate = useCallback(async () => {
     if (!currentUserId) return;
 
-    // Check daily limit
-    if (dailyLimitReached) {
+    // Check daily limit (admins are exempt)
+    if (!isAdmin && dailyLimitReached) {
       toast.error(`Limite diário de ${DAILY_LIMIT} roteiros atingido. Volte amanhã!`);
       return;
     }
@@ -371,11 +372,11 @@ function VideoIaPage() {
       setGenStep(GENERATION_STEPS.length - 1);
       setGenerating(false);
     }
-  }, [currentUserId, productInfo, styleConfig, dailyLimitReached, dailyCount]);
+  }, [currentUserId, productInfo, styleConfig, dailyLimitReached, dailyCount, isAdmin]);
 
   const handleRegenerate = useCallback(async (variant?: string) => {
-    // Check daily limit
-    if (dailyLimitReached) {
+    // Check daily limit (admins are exempt)
+    if (!isAdmin && dailyLimitReached) {
       toast.error(`Limite diário de ${DAILY_LIMIT} roteiros atingido. Volte amanhã!`);
       return;
     }
@@ -438,7 +439,7 @@ function VideoIaPage() {
       setGenStep(GENERATION_STEPS.length - 1);
       setGenerating(false);
     }
-  }, [currentUserId, productInfo, styleConfig, dailyLimitReached, dailyCount]);
+  }, [currentUserId, productInfo, styleConfig, dailyLimitReached, dailyCount, isAdmin]);
 
   // ── Save project to database ──
   const saveProjectWithContent = useCallback(async (content?: GeneratedContent) => {
@@ -524,7 +525,7 @@ function VideoIaPage() {
   const handleContinue = useCallback(async () => {
     if (currentStep === 3) { await handleSubmitProject(); return; }
     if (currentStep === 4) {
-      if (dailyLimitReached) {
+      if (!isAdmin && dailyLimitReached) {
         toast.error(`Limite diário de ${DAILY_LIMIT} roteiros atingido. Volte amanhã!`);
         return;
       }
@@ -539,7 +540,7 @@ function VideoIaPage() {
       return;
     }
     setCurrentStep((s) => Math.min(s + 1, 7));
-  }, [currentStep, handleSubmitProject, saveProjectWithContent, projectId, dailyLimitReached]);
+  }, [currentStep, handleSubmitProject, saveProjectWithContent, projectId, dailyLimitReached, isAdmin]);
 
   const handleBack = useCallback(() => {
     if (currentStep === 1) return;
@@ -815,8 +816,8 @@ function VideoIaPage() {
   function Step4Style() {
     return (
       <div className="space-y-6">
-        {/* Daily limit badge */}
-        {dailyLimitChecked && (
+        {/* Daily limit badge (hidden for admins) */}
+        {!isAdmin && dailyLimitChecked && (
           <div className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-medium ${dailyLimitReached ? "bg-red-50 text-red-700 border border-red-200" : "bg-blue-50 text-blue-700 border border-blue-100"}`}>
             <Info className="h-3.5 w-3.5 shrink-0" />
             <span>{dailyCount} de {DAILY_LIMIT} gerações disponíveis hoje{dailyLimitReached ? " — limite atingido!" : ""}</span>
@@ -888,8 +889,8 @@ function VideoIaPage() {
             onChange={() => setStyleConfig((s) => ({ ...s, hasMusic: !s.hasMusic }))} />
         </div>
 
-        {/* Daily limit warning */}
-        {dailyLimitReached && (
+        {/* Daily limit warning (hidden for admins) */}
+        {!isAdmin && dailyLimitReached && (
           <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-center">
             <div className="flex justify-center mb-2">
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100"><Info className="h-6 w-6 text-red-500" /></div>
@@ -933,7 +934,7 @@ function VideoIaPage() {
             <p className="mt-1 max-w-sm text-sm text-muted-foreground">
               A IA vai criar o roteiro completo do vídeo com base no produto e estilo escolhido.
             </p>
-            {dailyLimitChecked && (
+            {!isAdmin && dailyLimitChecked && (
               <p className="mt-2 text-xs text-muted-foreground">
                 <span className={dailyLimitReached ? "text-red-500 font-semibold" : "text-blue-500 font-semibold"}>
                   {dailyCount}/{DAILY_LIMIT}
@@ -941,7 +942,7 @@ function VideoIaPage() {
               </p>
             )}
             <Button onClick={handleGenerate}
-              disabled={dailyLimitReached}
+              disabled={!isAdmin && dailyLimitReached}
               className="mt-5 h-12 rounded-xl bg-[#EE4D2D] px-8 text-sm font-semibold text-white shadow-md shadow-[#EE4D2D]/25 transition-all hover:bg-[#EE4D2D]/90 hover:shadow-lg hover:shadow-[#EE4D2D]/30 active:scale-[0.98] disabled:opacity-40">
               <Wand2 className="mr-2 h-4 w-4" /> {dailyLimitReached ? "Limite diário atingido" : "Gerar conteúdo"}
             </Button>
@@ -1079,7 +1080,7 @@ function VideoIaPage() {
 
               {continueLabel[currentStep] && (
                 <Button type="button" onClick={currentStep === 4 ? handleGenerate : handleContinue}
-                  disabled={submitting || generating || (currentStep === 4 && dailyLimitReached)}
+                  disabled={submitting || generating || (currentStep === 4 && !isAdmin && dailyLimitReached)}
                   className="h-11 min-w-[140px] rounded-xl bg-[#EE4D2D] text-sm font-semibold text-white shadow-sm shadow-[#EE4D2D]/25 transition-all hover:bg-[#EE4D2D]/90 hover:shadow-md hover:shadow-[#EE4D2D]/30 active:scale-[0.98] disabled:opacity-40">
                   {submitting || generating ? (
                     <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Processando...</span>
@@ -1138,6 +1139,7 @@ function VideoIaPage() {
     removeAdditionalImage,
     updateProductInfo,
     updateGenerated,
+    isAdmin,
   ]);
 
   return rendered;
