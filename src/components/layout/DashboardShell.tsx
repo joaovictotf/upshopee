@@ -1,6 +1,6 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
-import { LayoutDashboard, Package, Megaphone, Plug, Settings, LogOut, Bell, Search, Zap, Eye, EyeOff, ShieldCheck, Info, Menu, Trophy, X, Bot, Video } from "lucide-react";
+import { Grid3X3, ShoppingBag, TrendingUp, Users, Radio, Clapperboard, Link2, Settings2, LogOut, Bell, Search, Zap, Eye, EyeOff, ShieldCheck, Info, Menu, Trophy, X } from "lucide-react";
 import { useApp, MARKETPLACE_LABEL } from "../../lib/state";
 import { brl } from "../../lib/format";
 import { toast } from "sonner";
@@ -53,19 +53,19 @@ function CopaPopup({ onClose, onView }: { onClose: () => void; onView: () => voi
   );
 }
 
-type NavItem = { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean; special?: "fire" | "impulsionar"; adminOnly?: boolean };
+type NavItem = { to: string; label: string; icon: typeof Grid3X3; exact?: boolean; special?: "fire" | "impulsionar"; adminOnly?: boolean };
 const baseNav: NavItem[] = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, exact: true },
-  { to: "/dashboard/produtos", label: "Produtos", icon: Package },
+  { to: "/dashboard", label: "Dashboard", icon: Grid3X3, exact: true },
+  { to: "/dashboard/produtos", label: "Produtos", icon: ShoppingBag },
 
 
 
-  { to: "/dashboard/impulsionar-vendas", label: "Impulsionar vendas", icon: Zap, special: "impulsionar" },
-  { to: "/dashboard/grupos", label: "Grupos de Divulgação", icon: Megaphone },
-  { to: "/dashboard/robo-divulgador", label: "Robô Divulgador", icon: Bot },
-  { to: "/dashboard/video-ia", label: "Vídeo IA", icon: Video },
-  { to: "/dashboard/conectar-contas", label: "Conectar Contas", icon: Plug },
-  { to: "/dashboard/configuracoes", label: "Configurações", icon: Settings },
+  { to: "/dashboard/impulsionar-vendas", label: "Impulsionar vendas", icon: TrendingUp, special: "impulsionar" },
+  { to: "/dashboard/grupos", label: "Grupos de Divulgação", icon: Users },
+  { to: "/dashboard/robo-divulgador", label: "Robô Divulgador", icon: Radio },
+  { to: "/dashboard/video-ia", label: "Vídeo IA", icon: Clapperboard },
+  { to: "/dashboard/conectar-contas", label: "Conectar Contas", icon: Link2 },
+  { to: "/dashboard/configuracoes", label: "Configurações", icon: Settings2 },
 
 ];
 const adminExtraNav: NavItem[] = [
@@ -74,11 +74,11 @@ const adminExtraNav: NavItem[] = [
 
 function Logo() {
   return (
-    <div className="flex items-center gap-2">
-      <img src="/brand/shopesync-logo.png" alt="UpShopee" className="h-9 w-9 object-contain" />
+    <div className="flex items-center gap-2.5">
+      <img src="/brand/shopesync-logo.png" alt="UpShopee" className="h-10 w-10 object-contain" />
       <div className="leading-tight">
-        <div className="text-sm font-bold tracking-tight">UpShopee</div>
-        <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Painel do vendedor</div>
+        <div className="text-[15px] font-bold tracking-[-0.02em] text-foreground">UpShopee</div>
+        <div className="text-[9px] font-medium tracking-[0.12em] uppercase text-muted-foreground">Painel do vendedor</div>
       </div>
     </div>
   );
@@ -119,29 +119,38 @@ export function DashboardShell({ children, title, subtitle, actions, onLightning
   const nav: NavItem[] = (showAdmin ? [...baseNav, ...adminExtraNav] : [...baseNav]).filter(({ adminOnly }) => !adminOnly || isAdmin);
 
   const NavList = (
-    <nav className="flex-1 space-y-1 px-3">
+    <nav className="flex-1 space-y-0.5 px-3">
       {nav.map(({ to, label, icon: Icon, exact, special }) => {
         const active = exact ? pathname === to : pathname.startsWith(to);
-        if (special === "impulsionar") {
-          return (
-            <Link
-              key={to}
-              to={to}
-              onClick={() => setMobileOpen(false)}
-              className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${active ? "bg-orange-100 ring-1 ring-[#EE4D2D]/30" : "hover:bg-orange-50"}`}
-            >
-              <Zap className="h-4 w-4 text-[#EE4D2D]" />
-              <span className="font-bold text-[#EE4D2D]">{label}</span>
-              <span className="ml-auto flex items-center gap-1 bg-[#EE4D2D] text-white text-[9px] font-black uppercase rounded-full px-2 py-0.5 animate-pulse">
-                🔥 NOVO
-              </span>
-            </Link>
-          );
-        }
+        const isImpulsionar = special === "impulsionar";
+
         return (
-          <Link key={to} to={to} onClick={() => setMobileOpen(false)} className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${active ? "bg-primary/15 text-primary" : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground"}`}>
-            <Icon className="h-4 w-4" />
-            {label}
+          <Link
+            key={to}
+            to={to}
+            onClick={() => setMobileOpen(false)}
+            className={`group flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium tracking-[-0.01em] transition-colors ${
+              active
+                ? "text-[#EE4D2D]"
+                : "text-foreground/70 hover:text-foreground"
+            }`}
+          >
+            <span
+              className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
+                active
+                  ? "bg-[#EE4D2D]/10"
+                  : "bg-transparent group-hover:bg-muted"
+              }`}
+            >
+              <Icon className={`h-[18px] w-[18px] ${active ? "text-[#EE4D2D]" : ""}`} />
+            </span>
+            <span className={active ? "font-semibold" : ""}>{label}</span>
+            {isImpulsionar && (
+              <span className="ml-auto flex items-center gap-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#EE4D2D]" />
+                <span className="text-[10px] font-semibold text-[#EE4D2D]/70">Novo</span>
+              </span>
+            )}
           </Link>
         );
       })}
@@ -150,16 +159,23 @@ export function DashboardShell({ children, title, subtitle, actions, onLightning
 
   return (
     <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
-      <aside className="fixed inset-y-0 left-0 hidden w-64 flex-col border-r border-sidebar-border bg-sidebar md:flex">
-        <div className="px-5 py-5"><Logo /></div>
+      {/* Desktop sidebar — right-aligned, Shopee-style */}
+      <aside className="fixed inset-y-0 right-0 hidden w-60 flex-col border-l border-border/50 bg-sidebar md:flex">
+        <div className="border-b border-border/50 px-5 pb-4 pt-5 mb-2">
+          <Logo />
+        </div>
         {NavList}
-        <button onClick={handleLogout} className="mx-3 mb-2 flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground">
-          <LogOut className="h-4 w-4" /> Sair
-        </button>
-        <div className="px-5 pb-4 text-[10px] text-muted-foreground/60">v1.0</div>
+        <div className="border-t border-border/50 pt-2 mt-2">
+          <button
+            onClick={handleLogout}
+            className="mx-3 mb-3 flex w-[calc(100%-24px)] items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium tracking-[-0.01em] text-foreground/50 hover:bg-muted hover:text-foreground/80 transition-colors"
+          >
+            <LogOut className="h-[18px] w-[18px]" /> Sair
+          </button>
+        </div>
       </aside>
 
-      <div className="md:pl-64">
+      <div className="md:pr-60">
         <header className="sticky top-0 z-20 flex h-16 items-center justify-between gap-2 border-b border-border bg-background/80 px-3 backdrop-blur md:px-8">
           <div className="flex min-w-0 items-center gap-2">
             <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
@@ -168,13 +184,20 @@ export function DashboardShell({ children, title, subtitle, actions, onLightning
                   <Menu className="h-4 w-4" />
                 </button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-72 bg-sidebar p-0">
+              <SheetContent side="right" className="w-72 bg-sidebar p-0">
                 <SheetTitle className="sr-only">Menu</SheetTitle>
-                <div className="px-5 py-5"><Logo /></div>
+                <div className="border-b border-border/50 px-5 pb-4 pt-5 mb-2">
+                  <Logo />
+                </div>
                 {NavList}
-                <button onClick={handleLogout} className="mx-3 mb-4 mt-2 flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground">
-                  <LogOut className="h-4 w-4" /> Sair
-                </button>
+                <div className="border-t border-border/50 pt-2 mt-2">
+                  <button
+                    onClick={handleLogout}
+                    className="mx-3 mb-4 flex w-[calc(100%-24px)] items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium tracking-[-0.01em] text-foreground/50 hover:bg-muted hover:text-foreground/80 transition-colors"
+                  >
+                    <LogOut className="h-[18px] w-[18px]" /> Sair
+                  </button>
+                </div>
               </SheetContent>
             </Sheet>
             <div className="min-w-0">
