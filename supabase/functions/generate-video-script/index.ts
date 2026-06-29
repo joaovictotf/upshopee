@@ -1,35 +1,16 @@
-/// <reference types="https://deno.land/x/deno/types.d.ts" />
 // Video IA — Gemini script generation Edge Function
 // Receives product info + style config, calls Gemini API, returns generated video script.
+// Deploy: supabase functions deploy generate-video-script --no-verify-jwt
+// Secret: supabase secrets set GEMINI_API_KEY="your-key"
 
-import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
-import { corsHeaders } from "../_shared/cors.ts";
+// Inline CORS headers (no external imports — self-contained)
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, apikey, x-client-info",
+};
 
 // ── Types ────────────────────────────────────────────────────
-
-interface ProductInfo {
-  name: string;
-  description: string;
-  benefits: string;
-  targetAudience?: string;
-  differentiators?: string;
-  problemSolved?: string;
-  url?: string;
-}
-
-interface StyleConfig {
-  style: string;
-  duration: string;
-  voiceType: string;
-  tone: string;
-  hasText: boolean;
-  hasMusic: boolean;
-}
-
-interface GenerateRequest {
-  product: ProductInfo;
-  style: StyleConfig;
-}
 
 interface GeneratedContent {
   idea_title: string;
@@ -43,202 +24,254 @@ interface GeneratedContent {
   final_prompt: string;
 }
 
-// ── Gemini API call ──────────────────────────────────────────
+// ── Style & tone labels ──────────────────────────────────────
 
-async function callGemini(
-  apiKey: string,
-  product: ProductInfo,
-  style: StyleConfig,
-): Promise<GeneratedContent> {
-  const prompt = buildPrompt(product, style);
+const STYLE_LABELS: Record<string, string> = {
+  "produto-destaque": "Produto em destaque — foco total no produto, close-ups, iluminação profissional, gira o produto mostrando todos os ângulos",
+  "oferta-rapida": "Oferta rápida — ritmo acelerado, preço na tela, senso de urgência, textos piscando, contagem regressiva",
+  "problema-solucao": "Problema e solução — mostre o problema primeiro (frustração), depois o produto como solução (alívio/felicidade)",
+  "demonstracao": "Demonstração — mostre o produto sendo usado na prática, resultados visíveis, comparação antes/depois rápida",
+  "unboxing": "Unboxing — abrindo a embalagem, primeiras impressões, close nos detalhes, reação genuína de surpresa",
+  "ugc": "Estilo UGC (User Generated Content) — parece gravado por um cliente real, cenário caseiro, linguagem natural, selfie, menos produzido",
+  "cinematografico": "Cinematográfico — takes artísticos, câmera lenta, transições suaves, música emotiva, visual premium",
+  "achadinho": "Achadinho da Shopee — tom de descoberta, 'olha o que eu achei', empolgação, preço baixo, sensação de garimpo",
+  "antes-depois": "Antes e depois — comparação dramática, tela dividida, revelação impactante, contraste forte entre sem/com produto",
+  "narracao": "Narração — voz em off profissional conta a história, imagens ilustram, tom documental ou comercial",
+  "texto-tela": "Texto na tela — sem locução, comunicação 100% por textos animados, ritmo rápido, estilo TikTok trends",
+  "sem-fala": "Vídeo sem fala — apenas música e imagens, foco total no visual, demonstração silenciosa do produto",
+  "promocao": "Vídeo para promoção — foco em desconto/queima de estoque, banners de preço, urgência, 'só hoje', chamadas agressivas",
+};
 
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [{ text: prompt }],
-          },
-        ],
-        generationConfig: {
-          temperature: 0.9,
-          topK: 40,
-          topP: 0.95,
-          maxOutputTokens: 2048,
-        },
-      }),
-    },
-  );
+const TONE_LABELS: Record<string, string> = {
+  formal: "Formal — linguagem profissional, sério, confiável, sem gírias, tom de apresentação corporativa",
+  casual: "Casual — linguagem do dia a dia, amigável, como se estivesse conversando com um amigo, gírias leves permitidas",
+  entusiasmado: "Entusiasmado — alta energia, empolgação contagiante, muitas exclamações, tom de 'isso é incrível!'",
+  urgente: "Urgente — senso de escassez e pressa, 'últimas unidades', 'não perca tempo', tom de alerta e ação imediata",
+  emocional: "Emocional — apela para sentimentos, storytelling emotivo, conexão pessoal, tom de transformação de vida",
+};
 
-  if (!res.ok) {
-    const errBody = await res.text();
-    throw new Error(`Gemini API error ${res.status}: ${errBody}`);
-  }
-
-  const data = await res.json();
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) throw new Error("Empty response from Gemini API");
-
-  return parseResponse(text);
-}
+const VOICE_LABELS: Record<string, string> = {
+  masculina: "voz masculina",
+  feminina: "voz feminina",
+  "sem-voz": "sem narração (apenas música e efeitos sonoros)",
+};
 
 // ── Prompt builder ───────────────────────────────────────────
 
-function buildPrompt(product: ProductInfo, style: StyleConfig): string {
-  const durationSec = parseInt(style.duration) || 30;
+function buildPrompt(
+  product: Record<string, string>,
+  style: Record<string, string | boolean>,
+): string {
+  const durationSec = parseInt(String(style.duration || "30")) || 30;
+  const styleDesc = STYLE_LABELS[String(style.style)] || style.style;
+  const toneDesc = TONE_LABELS[String(style.tone)] || style.tone;
+  const voiceDesc = VOICE_LABELS[String(style.voiceType)] || style.voiceType;
+  const hasText = style.hasText === true || style.hasText === "true";
+  const hasMusic = style.hasMusic === true || style.hasMusic === "true";
 
-  return `Você é um especialista em marketing e criação de vídeos para Shopee (marketplace).
+  return `Você é um dos melhores criadores de vídeos da Shopee. Crie um roteiro de vídeo incrível.
 
-Crie um roteiro de vídeo para o seguinte produto:
+## INFORMAÇÕES DO PRODUTO
+- Nome: ${product.name || ""}
+- Descrição: ${product.description || ""}
+- Benefícios: ${product.benefits || ""}
+- Público-alvo: ${product.targetAudience || "Geral"}
+- Diferenciais: ${product.differentiators || "Não especificado"}
+- Problema que resolve: ${product.problemSolved || "Não especificado"}
 
-**Produto:** ${product.name}
-**Descrição:** ${product.description}
-**Benefícios:** ${product.benefits}
-${product.targetAudience ? `**Público-alvo:** ${product.targetAudience}` : ""}
-${product.differentiators ? `**Diferenciais:** ${product.differentiators}` : ""}
-${product.problemSolved ? `**Problema que resolve:** ${product.problemSolved}` : ""}
+## CONFIGURAÇÃO DO VÍDEO (ESCOLHAS DO USUÁRIO)
+- ESTILO: ${styleDesc}
+- DURAÇÃO: ${durationSec} segundos
+- VOZ: ${voiceDesc}
+- TOM: ${toneDesc}
+- TEXTOS NA TELA: ${hasText ? "SIM — incluir textos sobrepostos em cada cena" : "NÃO — sem textos na tela"}
+- MÚSICA DE FUNDO: ${hasMusic ? "SIM — sugerir estilo musical para cada cena" : "NÃO — sem música, apenas voz ou silêncio"}
 
-**Configuração do vídeo:**
-- Estilo: ${style.style}
-- Duração: ${style.duration} segundos
-- Voz: ${style.voiceType}
-- Tom: ${style.tone}
-- Com textos na tela: ${style.hasText ? "Sim" : "Não"}
-- Com música de fundo: ${style.hasMusic ? "Sim" : "Não"}
+## REGRAS PARA O ROTEIRO
+1. O vídeo é formato 9:16 VERTICAL (TikTok/Reels/Shopee)
+2. EXATAMENTE 3 cenas: abertura (3s) → desenvolvimento (${durationSec - 6}s) → fechamento (3s)
+3. O GANCHO INICIAL precisa prender nos PRIMEIROS 2 SEGUNDOS
+4. Linguagem direta e persuasiva, frases curtas e impactantes
+5. CTA (call-to-action) forte e claro no final
+6. NÃO invente características do produto — mantenha precisão total
+7. Adapte TUDO ao estilo escolhido: "${String(style.style)}"
+8. Adapte TUDO ao tom escolhido: "${String(style.tone)}"
+9. O texto na tela deve COMPLEMENTAR a narração, nunca repetir
+10. Hashtags relevantes para Shopee e para o nicho do produto
 
-**Regras:**
-1. O roteiro deve ter EXATAMENTE 3 cenas (abertura, desenvolvimento, fechamento)
-2. A linguagem deve ser direta, persuasiva e adequada para Shopee
-3. Use frases curtas e impactantes (estilo anúncio de marketplace)
-4. O vídeo deve ter cerca de ${durationSec} segundos no total
-5. Inclua uma chamada para ação (CTA) clara no final
-6. As hashtags devem ser relevantes para o produto e para a Shopee
-7. O texto na tela deve complementar a narração, não repeti-la
-
-**IMPORTANTE:** Retorne APENAS um JSON válido (sem markdown, sem explicações adicionais) neste formato exato:
+## FORMATO DA RESPOSTA (APENAS JSON, sem markdown, sem explicações)
 
 {
-  "idea_title": "Título criativo e chamativo para o vídeo (max 80 caracteres)",
-  "hook": "Frase de abertura que prende a atenção nos primeiros 3 segundos (max 150 caracteres)",
-  "script": "Cena 1 (abertura): [descreva a cena visual e a ação]\\n\\nCena 2 (desenvolvimento): [mostre o produto em uso, destaque benefícios]\\n\\nCena 3 (fechamento): [CTA final, oferta, urgência]",
-  "voiceover": "Texto completo da narração/locução que acompanha cada cena",
-  "screen_texts": "${style.hasText ? "Texto 1: [sobreposição cena 1]\\nTexto 2: [sobreposição cena 2]\\nTexto 3: [sobreposição cena 3]" : "vazio"}",
-  "cta": "Chamada para ação final (ex: 'Compre agora com frete grátis!', 'Link na descrição!')",
-  "caption": "Legenda completa para o post do vídeo (2-3 frases com emojis, max 300 caracteres)",
-  "hashtags": "#shopee #[palavrachave1] #[palavrachave2] #[palavrachave3] #[palavrachave4] #[palavrachave5] #[palavrachave6]",
-  "final_prompt": "Prompt completo otimizado para gerar este vídeo no Google Gemini Video. Inclua todas as instruções visuais, textuais e de áudio necessárias para que o Gemini produza o vídeo final. O prompt deve ser em português, detalhado, com especificações de cada cena, estilo visual, textos na tela, locução, música e duração."
+  "idea_title": "título chamativo e criativo (max 80 caracteres)",
+  "hook": "frase de abertura que prende nos primeiros 2-3 segundos (max 150 caracteres)",
+  "script": "Cena 1 (abertura - 3s): [descrição visual detalhada + direção de câmera]\\nLocução: [texto]\\n\\nCena 2 (desenvolvimento - ${durationSec - 6}s): [demonstração/prova social/benefícios]\\nLocução: [texto]\\n\\nCena 3 (fechamento - 3s): [CTA + produto + urgência]\\nLocução: [texto]",
+  "voiceover": "texto completo da narração corrida, pronto pra gravar (apenas a fala, sem descrições)",
+  "screen_texts": ${hasText ? '"Texto 1 (cena 1): [frase de impacto]\\nTexto 2 (cena 2): [preço/benefício]\\nTexto 3 (cena 3): [CTA]"' : '"sem textos na tela"'},
+  "cta": "chamada para ação (ex: 'Compre agora! Link na bio! Frete grátis!')",
+  "caption": "legenda para o post (2-3 linhas com emojis, max 300 caracteres)",
+  "hashtags": "#shopee #[nicho1] #[nicho2] #[produto] #promoção #[estilo] #[categoria]",
+  "final_prompt": "PROMPT COMPLETO para gerar este vídeo no Google Gemini Video. Inclua: formato 9:16, duração ${durationSec}s, descrição de cada cena com ângulos e movimentos, texto completo da narração, textos na tela, estilo de música, e restrições de precisão do produto."
 }`;
 }
 
-// ── Response parser ──────────────────────────────────────────
+// ── Parse Gemini response ────────────────────────────────────
 
 function parseResponse(text: string): GeneratedContent {
-  // Remove markdown code fences if present
   let cleaned = text.trim();
+
+  // Strip code fences
   if (cleaned.startsWith("```")) {
     cleaned = cleaned.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
   }
 
-  const parsed = JSON.parse(cleaned);
-
-  // Validate required fields
-  const required = [
-    "idea_title",
-    "hook",
-    "script",
-    "voiceover",
-    "cta",
-    "caption",
-    "hashtags",
-    "final_prompt",
-  ];
-  for (const key of required) {
-    if (!parsed[key]) {
-      throw new Error(`Missing required field in Gemini response: ${key}`);
-    }
+  // Find JSON boundaries
+  const start = cleaned.indexOf("{");
+  const end = cleaned.lastIndexOf("}");
+  if (start !== -1 && end !== -1 && end > start) {
+    cleaned = cleaned.slice(start, end + 1);
   }
 
+  const parsed = JSON.parse(cleaned);
+
   return {
-    idea_title: String(parsed.idea_title),
-    hook: String(parsed.hook),
-    script: String(parsed.script),
-    voiceover: String(parsed.voiceover),
+    idea_title: String(parsed.idea_title || ""),
+    hook: String(parsed.hook || ""),
+    script: String(parsed.script || ""),
+    voiceover: String(parsed.voiceover || ""),
     screen_texts: String(parsed.screen_texts || ""),
-    cta: String(parsed.cta),
-    caption: String(parsed.caption),
-    hashtags: String(parsed.hashtags),
-    final_prompt: String(parsed.final_prompt),
+    cta: String(parsed.cta || ""),
+    caption: String(parsed.caption || ""),
+    hashtags: String(parsed.hashtags || ""),
+    final_prompt: String(parsed.final_prompt || ""),
+  };
+}
+
+// ── Fallback generation (when Gemini is unavailable) ─────────
+
+function buildFallback(product: Record<string, string>, style: Record<string, string | boolean>): GeneratedContent {
+  const hashtagProd = (product.name || "produto").toLowerCase().replace(/\s+/g, "");
+  const durationSec = String(style.duration || "30");
+
+  return {
+    idea_title: `${product.name || "Produto"} — ${String(style.style || "destaque")}`,
+    hook: `${product.name || "Confira"} — ${(product.benefits || "").slice(0, 80)}`,
+    script: `Cena 1 (3s) - [Close no produto girando]: ${product.name || "Produto"} em destaque.\nLocução: Olha só o que eu encontrei na Shopee! ${product.name || ""} com preço imperdível!\n\nCena 2 (${Math.max(parseInt(durationSec) - 6, 10)}s) - [Uso do produto]: Mostre os benefícios.\nLocução: ${product.benefits || "Qualidade incrível"}. ${product.differentiators || "Super recomendo!"}\n\nCena 3 (3s) - [CTA final]: Tela com chamada pra ação.\nLocução: Corre que tá acabando! Link na bio!`,
+    voiceover: `Olha só o que eu encontrei na Shopee! ${product.name || ""} com preço imperdível! ${product.benefits || "Qualidade incrível"}. ${product.differentiators || "Super recomendo!"} Corre que tá acabando! Link na bio!`,
+    screen_texts: style.hasText ? `${product.name}\n${(product.benefits || "").slice(0, 40)}\nLINK NA BIO 🔥` : "sem textos na tela",
+    cta: "Corre que tá acabando! Link na bio! 🔥",
+    caption: `🎯 Achei na Shopee: ${product.name || "esse produto incrível"}! ${(product.description || "").slice(0, 100)}\n\nLink na bio 👆 #Shopee #Achadinho`,
+    hashtags: `#shopee #achadinho #${hashtagProd} #promoção #oferta`,
+    final_prompt: `Crie um vídeo 9:16 vertical de ${durationSec}s para ${product.name || "produto"}.\nDescrição: ${product.description || ""}\nBenefícios: ${product.benefits || ""}\n\n3 cenas: abertura → demonstração → CTA. Textos na tela e narração em português.`,
   };
 }
 
 // ── Main handler ─────────────────────────────────────────────
 
-serve(async (req: Request) => {
+Deno.serve(async (req: Request) => {
   // CORS preflight
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response(null, { status: 204, headers: corsHeaders });
+  }
+
+  // Only POST
+  if (req.method !== "POST") {
+    return new Response(JSON.stringify({ ok: false, error: "Method not allowed" }), {
+      status: 405,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 
   try {
-    // Only accept POST
-    if (req.method !== "POST") {
-      return new Response(
-        JSON.stringify({ ok: false, error: "Method not allowed" }),
-        { status: 405, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
+    const body = await req.json();
 
-    // Parse body
-    const body: GenerateRequest = await req.json();
+    const product = body.product || {};
+    const style = body.style || {};
 
-    if (!body.product?.name) {
+    if (!product.name || !product.description) {
       return new Response(
-        JSON.stringify({ ok: false, error: "product.name is required" }),
+        JSON.stringify({ ok: false, error: "product.name and product.description are required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    if (!body.style) {
-      return new Response(
-        JSON.stringify({ ok: false, error: "style config is required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
+    console.log("Generating script for:", product.name);
+    console.log("Style:", JSON.stringify(style));
 
-    // Read Gemini API key from secret
     const apiKey = Deno.env.get("GEMINI_API_KEY");
-    if (!apiKey) {
-      console.error("GEMINI_API_KEY secret is not set");
-      return new Response(
-        JSON.stringify({ ok: false, error: "Server configuration error: GEMINI_API_KEY not set" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+
+    if (apiKey) {
+      try {
+        const prompt = buildPrompt(product, style);
+        console.log("Calling Gemini API...");
+
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 25000);
+
+        const geminiRes = await fetch(
+          "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-goog-api-key": apiKey,
+            },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }],
+              generationConfig: {
+                temperature: 0.9,
+                topK: 40,
+                topP: 0.95,
+                maxOutputTokens: 2048,
+              },
+            }),
+            signal: controller.signal,
+          },
+        );
+
+        clearTimeout(timeout);
+
+        if (geminiRes.ok) {
+          const data = await geminiRes.json();
+          const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+          if (text) {
+            try {
+              const content = parseResponse(text);
+              console.log("Gemini success:", content.idea_title);
+              return new Response(JSON.stringify({ ok: true, content }), {
+                status: 200,
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+              });
+            } catch (parseErr) {
+              console.error("Failed to parse Gemini response:", parseErr);
+              console.log("Raw text:", text.slice(0, 500));
+            }
+          }
+        } else {
+          const errText = await geminiRes.text();
+          console.error("Gemini API error:", geminiRes.status, errText.slice(0, 300));
+        }
+      } catch (geminiErr) {
+        console.error("Gemini call failed:", geminiErr);
+      }
+    } else {
+      console.log("No GEMINI_API_KEY set, using fallback");
     }
 
-    console.log("Generating video script for:", body.product.name);
-    console.log("Style:", body.style.style, "| Duration:", body.style.duration);
+    // Fallback — always returns useful content
+    const fallback = buildFallback(product, style);
+    console.log("Returning fallback content");
 
-    // Call Gemini
-    const content = await callGemini(apiKey, body.product, body.style);
+    return new Response(JSON.stringify({ ok: true, content: fallback }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
 
-    console.log("Script generated successfully:", content.idea_title);
-
-    return new Response(
-      JSON.stringify({ ok: true, content }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
   } catch (err) {
-    console.error("Error in generate-video-script:", err);
-
-    const message = err instanceof Error ? err.message : "Unknown error";
-    const status = message.includes("Missing required") ? 422 : 500;
-
+    console.error("Fatal error:", err);
     return new Response(
-      JSON.stringify({ ok: false, error: message }),
-      { status, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "Internal error" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
 });

@@ -318,6 +318,9 @@ function VideoIaPage() {
       setGenStep((s) => Math.min(s + 1, GENERATION_STEPS.length - 1));
     }, 2000);
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 35000);
+
     try {
       const res = await fetch(
         "https://ndawyrqzqhzbyjdmkdge.supabase.co/functions/v1/generate-video-script",
@@ -336,6 +339,7 @@ function VideoIaPage() {
             },
             style: styleConfig,
           }),
+          signal: controller.signal,
         },
       );
 
@@ -350,9 +354,14 @@ function VideoIaPage() {
       toast.success("Conteúdo gerado com sucesso!");
       setCurrentStep(6);
     } catch (err: any) {
-      console.error("[handleGenerate]", err);
-      setGenError(err?.message || "Erro ao gerar conteúdo. Tente novamente.");
+      if (err?.name === "AbortError") {
+        setGenError("Tempo limite excedido (35s). O servidor demorou muito. Tente novamente.");
+      } else {
+        console.error("[handleGenerate]", err);
+        setGenError(err?.message || "Erro ao gerar conteúdo. Tente novamente.");
+      }
     } finally {
+      clearTimeout(timeoutId);
       clearInterval(stepInterval);
       setGenStep(GENERATION_STEPS.length - 1);
       setGenerating(false);
@@ -374,6 +383,9 @@ function VideoIaPage() {
       setGenStep((s) => Math.min(s + 1, GENERATION_STEPS.length - 1));
     }, 2000);
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 35000);
+
     try {
       const res = await fetch(
         "https://ndawyrqzqhzbyjdmkdge.supabase.co/functions/v1/generate-video-script",
@@ -392,6 +404,7 @@ function VideoIaPage() {
             },
             style: variantStyle,
           }),
+          signal: controller.signal,
         },
       );
 
@@ -402,8 +415,13 @@ function VideoIaPage() {
       await saveProjectWithContent(data.content);
       toast.success("Nova versão gerada!");
     } catch (err: any) {
-      setGenError(err?.message || "Erro ao gerar. Tente novamente.");
+      if (err?.name === "AbortError") {
+        setGenError("Tempo limite excedido (35s). Tente novamente.");
+      } else {
+        setGenError(err?.message || "Erro ao gerar. Tente novamente.");
+      }
     } finally {
+      clearTimeout(timeoutId);
       clearInterval(stepInterval);
       setGenStep(GENERATION_STEPS.length - 1);
       setGenerating(false);
