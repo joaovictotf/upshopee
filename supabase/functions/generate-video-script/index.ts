@@ -37,6 +37,9 @@ const STYLE_LABELS: Record<string, string> = {
   "texto-tela": "Text on Screen — dynamic kinetic typography animations, bold large text as main visual element, product shots as background between text segments, TikTok trend text style with beat-synced animations, BIG BOLD attention-grabbing words, pulsing CTA text, high-energy beat music synced to text reveals, NO voiceover needed",
   "sem-fala": "No Speech — pure visual storytelling, stunning product beauty shots as primary communication, all information through images and occasional subtle text, emphasis on product aesthetics and usage visuals, emotional atmospheric music carries entire video, ambient sound design, no spoken words at all",
   "promocao": "Promotion Video — commercial broadcast style, bold price graphics dominating screen, 'PROMOCAO IMPERDIVEL' siren/alert graphics opening, deal stack graphics (original price struck through → discounted price → savings amount), 'so hoje' urgency elements, limited-time countdown, aggressive CTA with flashing 'COMPRE AGORA', exciting commercial attention-grabbing music",
+  "comparacao-precos": "Price Comparison — side-by-side product comparison showing price advantage, competitor price vs Shopee price, savings calculator overlay, value proposition graphics, 'best deal' badge, consumer choice endorsement style, split screen layout with consistent framing for fair comparison",
+  "review-produto": "Product Review — honest review style, product testing montage, pros and cons balanced presentation, close-up details with inspection shots, star rating animation overlay, final verdict with recommendation, authentic reviewer vibe, talking head mixed with product B-roll footage",
+  "rotina-dia": "Daily Routine — 'day in the life' vlog style showing product integrated into daily routine, morning/afternoon/night segments with time-of-day color grading, natural lighting throughout (warm morning, bright noon, cozy evening), relatable lifestyle content, cozy aesthetic, product as essential part of the day",
 };
 
 const TONE_LABELS: Record<string, string> = {
@@ -621,64 +624,344 @@ Locução: Incrível, né? ${name} na Shopee. Link na bio!`;
 
 // ── Remaining 5 style templates (narracao, texto-tela, sem-fala, promocao) use generic fallback enhanced with style data ──
 
-function buildGenericTemplate(product: Record<string, string>, styleId: string, durationSec: number, hasText: boolean, hasMusic: boolean): GeneratedContent {
+function buildTemplateNarracao(product: Record<string, string>, durationSec: number, hasText: boolean, hasMusic: boolean): GeneratedContent {
   const name = product.name || "Produto";
   const benefits = product.benefits || "";
   const benefitsList = benefits.split("\n").filter(Boolean);
   const desc = product.description || "";
   const diff = product.differentiators || "";
-  const problem = product.problemSolved || "";
   const audience = product.targetAudience || "você";
-  const scene2Dur = Math.max(durationSec - 6, 9);
+  const problem = product.problemSolved || "";
 
-  const styleNames: Record<string, string> = {
-    narracao: "Narração Explicativa",
-    "texto-tela": "Texto na Tela",
-    "sem-fala": "Visual Puro",
-    promocao: "Promoção Imperdível",
-  };
+  const idea_title = `${name} — A História Que Você Precisa Conhecer`;
 
-  const baseTitle = styleNames[styleId] || styleId;
-  const idea_title = `${name} — ${baseTitle}`;
-
-  const hook = `${benefitsList[0] || `Descubra ${name}`} — ${name} na Shopee!`.slice(0, 150);
+  const hook = `${benefitsList[0] || `Descubra ${name}`} — vou te contar por que esse produto é diferente.`.slice(0, 150);
 
   const script = `CENA 1 — Abertura (0-3s):
-[Camera: Plano de abertura impactante, movimento suave revelando ${name}]
-[Lighting: Iluminação profissional destacando o produto]
-[Visual: ${name} em destaque, entrada impactante]
-${hasText ? `[Text overlay: "${name}" — animação de entrada, centro, 0.5s-2.8s]` : ""}
-Locução: ${benefitsList[0] || `Conheça ${name}`}! Na Shopee!
+[Camera: Ken Burns slow zoom (3% scale) em foto beauty shot do produto, cross-dissolve de 1.5s a partir de tela preta]
+[Lighting: Iluminação suave estilo documentário, key light difuso, sem sombras duras, temperatura 4500K neutra]
+[Visual: ${name} em foto profissional com fundo desfocado, título aparece com fade elegante]
+${hasText ? `[Text overlay: "${name}" — fade in lento (1.2s), fonte serifada elegante, tracking wide, centro inferior, aparece 0.5s, fade out 2.8s]` : ""}
+Locução: (voz calma e profissional) ${name}. ${benefitsList[0] || "Um produto que merece sua atenção."}
 
 CENA 2 — Desenvolvimento (3-${durationSec - 3}s):
-[Camera: Variedade de ângulos mostrando o produto, close-ups em detalhes importantes]
-[Lighting: Iluminação consistente e profissional]
-[Visual: Demonstração dos benefícios: ${benefits}]
-${hasText ? `[Text overlay: "${benefitsList[0] || ""}" — slide in, centro, 4s-${durationSec - 3}s]` : ""}
-Locução: ${benefits} ${diff} ${desc.slice(0, 80)}. Perfeito para ${audience}.
+[Camera: Sequência de Ken Burns em 4-5 fotos do produto — cada uma com zoom lento (2-4%), cross-dissolve entre elas, close-ups em texturas e detalhes, ritmo pausado e contemplativo]
+[Lighting: Iluminação consistente e suave em todas as fotos, correção de cor quente e convidativa]
+[Visual: Cada benefício ilustrado por uma imagem correspondente — produto em uso, detalhes de qualidade, lifestyle shot, resultado final]
+${hasText ? `[Text overlay: "${benefitsList[0] || "Qualidade excepcional"}" — fade in suave, centro, ${4}s-${Math.floor((durationSec - 6) / 2) + 3}s]\n[Text overlay: "${diff || "Design exclusivo"}" — fade in suave, centro, ${Math.floor((durationSec - 6) / 2) + 3}s-${durationSec - 3}s]` : ""}
+Locução: ${benefits} ${diff} ${desc.slice(0, 100)}. Perfeito para ${audience}. ${problem ? `Se você enfrenta ${problem}, ${name} é a resposta.` : ""}
 
 CENA 3 — Fechamento (${durationSec - 3}-${durationSec}s):
-[Camera: Hero shot final, aproximação para destaque]
-[Lighting: Iluminação dramática final]
-[Visual: ${name} em destaque máximo, pronto para o CTA]
-${hasText ? `[Text overlay: "Link na bio! 🔥" — animação final, centro inferior, ${durationSec - 3}s até o fim]` : ""}
-Locução: ${name} na Shopee. Link na bio!`;
+[Camera: Último Ken Burns em foto hero shot, zoom out lento revelando produto em toda sua glória, fade para preto nos últimos 0.5s]
+[Lighting: Iluminação final mais dramática, leve vinheta nas bordas para foco total no produto]
+[Visual: Hero shot final do produto, composição limpa e profissional]
+${hasText ? `[Text overlay: "${name} na Shopee. Link na bio." — fade in elegante, centro inferior, ${durationSec - 3}s até fade para preto]` : ""}
+Locução: ${name}. Na Shopee. Link na bio.`;
 
-  const voiceover = `${benefitsList[0] || `Conheça ${name}`}! Na Shopee! ${benefits} ${diff} ${desc.slice(0, 80)}. Perfeito para ${audience}. ${name} na Shopee. Link na bio!`;
+  const voiceover = `(voz calma e profissional) ${name}. ${benefitsList[0] || "Um produto que merece sua atenção."} ${benefits} ${diff} ${desc.slice(0, 100)}. Perfeito para ${audience}. ${problem ? `Se você enfrenta ${problem}, ${name} é a resposta.` : ""} ${name}. Na Shopee. Link na bio.`;
 
   const screen_texts = hasText
-    ? `Cena 1 (0-3s): "${name}" — animação de entrada, centro\nCena 2 (3-${durationSec - 3}s): "${benefitsList[0] || ""}" — slide in, centro\nCena 3 (${durationSec - 3}-${durationSec}s): "Link na bio! 🔥" — animação final`
+    ? `Cena 1 (0-3s): "${name}" — fade in lento, serifado, centro inferior, 0.5s-2.8s\nCena 2 (3-${durationSec - 3}s): "${benefitsList[0] || "Qualidade excepcional"}" / "${diff || "Design exclusivo"}" — fade in suave, centro\nCena 3 (${durationSec - 3}-${durationSec}s): "${name} na Shopee. Link na bio." — fade in elegante`
     : "sem textos na tela";
 
-  const cta = `${name} na Shopee. Link na bio! 🔥`;
+  const cta = `${name} na Shopee. Link na bio! 📖`;
 
-  const caption = `🎯 ${name} na Shopee!\n${desc.slice(0, 120)}\n\nLink na bio 👆 #Shopee`;
+  const caption = `📖 ${name}\n\n${desc.slice(0, 120)}\n\nDescubra por que ${name} é diferente. Link na bio 👆 #Shopee`;
 
   const hashtagProd = name.toLowerCase().replace(/\s+/g, "");
-  const hashtags = `#shopee #${hashtagProd} #promoção #oferta #achadinho #dica #produto #comprasonline #review #${styleId}`;
+  const hashtags = `#shopee #${hashtagProd} #review #dica #conheça #produto #qualidade #narração #comprasonline #detalhes`;
 
-  const final_prompt = buildEnglishFinalPrompt(product, styleId, durationSec, hasText, hasMusic);
+  const final_prompt = buildEnglishFinalPrompt(product, "narracao", durationSec, hasText, hasMusic);
+  return { idea_title, hook, script, voiceover, screen_texts, cta, caption, hashtags, final_prompt };
+}
 
+function buildTemplateTextoTela(product: Record<string, string>, durationSec: number, hasText: boolean, hasMusic: boolean): GeneratedContent {
+  const name = product.name || "Produto";
+  const benefits = product.benefits || "";
+  const benefitsList = benefits.split("\n").filter(Boolean);
+  const desc = product.description || "";
+  const diff = product.differentiators || "";
+
+  const idea_title = `ATENÇÃO! ${name} — Imperdível!`;
+
+  const hook = `ATENÇÃO! ${benefitsList[0] || `Você precisa ver ${name}`}!`.slice(0, 150);
+
+  const script = `CENA 1 — Abertura (0-3s):
+[Camera: Fundo colorido sólido com gradiente, texto como elemento visual principal, animações de entrada impactantes]
+[Lighting: Iluminação de estúdio vibrante no produto ao fundo, cores saturadas]
+[Visual: Texto gigante "ATENÇÃO!" explode na tela com scale animation (0.3s), depois "${name}" aparece com slide up]
+${hasText ? `[Text overlay: "ATENÇÃO!" — scale explosivo (0-300%), centro, 0-1.5s, fonte ultra bold, cor vibrante]\n[Text overlay: "${name}" — slide up de baixo, centro, 1.5s-2.8s, bold]` : ""}
+(SEM LOCUÇÃO — apenas música e texto)
+
+CENA 2 — Desenvolvimento (3-${durationSec - 3}s):
+[Camera: Transições dinâmicas entre cards de texto — cada benefício é um card animado, produto aparece brevemente entre os textos como background, animações sincronizadas com a batida da música]
+[Lighting: Iluminação de estúdio consistente, produto bem iluminado quando aparece]
+[Visual: Sequência de 3-4 cards de texto com benefícios, cada um com animação diferente (slide left, slide right, bounce, scale), produto ao fundo com opacidade 30% entre os textos]
+${hasText ? `[Text overlay: Sequência animada de benefícios — "${benefitsList[0] || "QUALIDADE PREMIUM"}" → "${benefitsList[1] || "PREÇO IMPERDÍVEL"}" → "${benefitsList[2] || "RESULTADO GARANTIDO"}" → "${diff || "EXCLUSIVO"}" — cada card sincronizado com a batida, centro, bold máximo]` : ""}
+(SEM LOCUÇÃO — apenas música e texto)
+
+CENA 3 — Fechamento (${durationSec - 3}-${durationSec}s):
+[Camera: Plano final com texto CTA gigante, produto aparece como background com blur, animação final impactante]
+[Lighting: Iluminação dramática final, cores no máximo]
+[Visual: Texto "LINK NA BIO 👆" pulsando/girando/scale, produto ao fundo, efeito de partículas ou glitter]
+${hasText ? `[Text overlay: "LINK NA BIO 👆" — pulse + scale animado, centro, ${durationSec - 3}s até o fim, maior texto do vídeo, efeito glow]` : ""}
+(SEM LOCUÇÃO — apenas música e texto)`;
+
+  const voiceover = "(sem voz — vídeo 100% texto e música)";
+
+  const screen_texts = `Cena 1 (0-3s): "ATENÇÃO!" (0-1.5s) → "${name}" (1.5s-2.8s) — animações bold, centro\nCena 2 (3-${durationSec - 3}s): Cards animados: "${benefitsList[0] || "QUALIDADE PREMIUM"}" / "${benefitsList[1] || "PREÇO IMPERDÍVEL"}" / "${benefitsList[2] || "RESULTADO GARANTIDO"}" / "${diff || "EXCLUSIVO"}"\nCena 3 (${durationSec - 3}-${durationSec}s): "LINK NA BIO 👆" — pulse + glow, centro`;
+
+  const cta = `LINK NA BIO 👆🔥`;
+
+  const caption = `⚠️ ATENÇÃO! ${name} na Shopee!\n${desc.slice(0, 100)}\n\nLink na bio 👆 #Shopee #Imperdivel`;
+
+  const hashtagProd = name.toLowerCase().replace(/\s+/g, "");
+  const hashtags = `#shopee #${hashtagProd} #atenção #promoção #oferta #imperdivel #linknabio #comprasonline #dica #fyp`;
+
+  const final_prompt = buildEnglishFinalPrompt(product, "texto-tela", durationSec, hasText, hasMusic);
+  return { idea_title, hook, script, voiceover, screen_texts, cta, caption, hashtags, final_prompt };
+}
+
+function buildTemplateSemFala(product: Record<string, string>, durationSec: number, hasText: boolean, hasMusic: boolean): GeneratedContent {
+  const name = product.name || "Produto";
+  const benefits = product.benefits || "";
+  const benefitsList = benefits.split("\n").filter(Boolean);
+  const desc = product.description || "";
+
+  const idea_title = `${name} — Visualmente Impressionante`;
+
+  const hook = `Deixe as imagens falarem por ${name}.`.slice(0, 150);
+
+  const script = `CENA 1 — Abertura (0-3s):
+[Camera: Plano de beleza absoluta — close-up extremo do produto com movimento orbital ultra lento (60fps), revelação atmosférica com fade in do preto]
+[Lighting: Iluminação cinematográfica dramática — key light angular criando sombras artísticas, backlight para silhueta inicial, transição para revelação completa]
+[Visual: ${name} emerge dramaticamente das sombras, close extremo em textura e acabamento, composição visual de beleza pura]
+(SEM LOCUÇÃO — experiência puramente visual com trilha sonora atmosférica)
+
+CENA 2 — Desenvolvimento (3-${durationSec - 3}s):
+[Camera: Sequência de planos de beleza — close-ups de detalhes, produto em uso filmado em câmera lenta (60fps), ângulos criativos, macro, transições suaves com cross-dissolve de 2s]
+[Lighting: Evolução de iluminação ao longo da cena — começa suave, atinge pico dramático no meio, retorna à suavidade — narrativa visual através da luz]
+[Visual: Cada detalhe do produto explorado visualmente — materiais, texturas, design, uso, resultado — tudo comunicado APENAS através de imagens belíssimas e cinematográficas]
+${hasText ? `[Text overlay: "${benefitsList[0] || "Excelência em cada detalhe"}" — fade in/out extremamente sutil, canto inferior, mínimo, ${6}s-${durationSec - 3}s, fonte fina e elegante]` : ""}
+(SEM LOCUÇÃO — narrativa 100% visual)
+
+CENA 3 — Fechamento (${durationSec - 3}-${durationSec}s):
+[Camera: Plano hero final — dolly out extremamente lento revelando o produto em composição perfeita, último frame congela como fotografia]
+[Lighting: Iluminação mais dramática do vídeo — pico de intensidade, flare de lente artístico, fade para branco nos últimos 0.5s]
+[Visual: Hero shot final de beleza absoluta, produto em sua apresentação mais impressionante]
+${hasText ? `[Text overlay: "Shopee" — fade in minimalista, centro inferior, ${durationSec - 2}s até fade para branco, fonte ultrafina]` : ""}
+(SEM LOCUÇÃO — final puramente visual)`;
+
+  const voiceover = "(sem voz — vídeo puramente visual com trilha sonora atmosférica)";
+
+  const screen_texts = hasText
+    ? `Cena 2 (6-${durationSec - 3}s): "${benefitsList[0] || "Excelência em cada detalhe"}" — fade sutil, canto inferior\nCena 3 (${durationSec - 2}-${durationSec}s): "Shopee" — fade minimalista, centro inferior`
+    : "sem textos na tela — comunicação 100% visual";
+
+  const cta = `Descubra ${name} na Shopee. Link na bio. ✨`;
+
+  const caption = `✨ ${name}\n\n${desc.slice(0, 120)}\n\nDeixe as imagens falarem. Link na bio 👆 #Shopee`;
+
+  const hashtagProd = name.toLowerCase().replace(/\s+/g, "");
+  const hashtags = `#shopee #${hashtagProd} #visual #design #aesthetic #cinematic #beleza #premium #arte #inspiração`;
+
+  const final_prompt = buildEnglishFinalPrompt(product, "sem-fala", durationSec, hasText, hasMusic);
+  return { idea_title, hook, script, voiceover, screen_texts, cta, caption, hashtags, final_prompt };
+}
+
+function buildTemplatePromocao(product: Record<string, string>, durationSec: number, hasText: boolean, hasMusic: boolean): GeneratedContent {
+  const name = product.name || "Produto";
+  const benefits = product.benefits || "";
+  const benefitsList = benefits.split("\n").filter(Boolean);
+  const desc = product.description || "";
+  const diff = product.differentiators || "";
+
+  const idea_title = `🔥 PROMOÇÃO: ${name} — Preço Imperdível!`;
+
+  const hook = `PROMOÇÃO IMPERDÍVEL! ${name} com o MELHOR PREÇO na Shopee! 🔥`.slice(0, 150);
+
+  const script = `CENA 1 — Abertura (0-2s):
+[Camera: Corte seco com flash vermelho, zoom in rápido, efeito de sirene visual]
+[Lighting: Flash vermelho pulsante, iluminação de alerta máxima, alto contraste]
+[Visual: Selo "PROMOÇÃO" explode na tela, fundo vermelho com alerta piscando, ${name} aparece em destaque]
+${hasText ? `[Text overlay: "🔥 PROMOÇÃO IMPERDÍVEL! 🔥" — flash + scale, centro, 0-2s, vermelho e amarelo, efeito de tremor]` : ""}
+Locução: ATENÇÃO! PROMOÇÃO IMPERDÍVEL NA SHOPEE!
+
+CENA 2 — Desenvolvimento (2-${durationSec - 3}s):
+[Camera: Cortes rápidos e dinâmicos, gráficos de preço sobrepostos, zoom em detalhes do produto, transições whip pan]
+[Lighting: Iluminação comercial de alto impacto, cores vibrantes, contraste máximo]
+[Visual: Stack de preços animado — PREÇO ORIGINAL riscado em vermelho → PREÇO PROMOCIONAL em verde gigante → ECONOMIA em destaque → badge "SÓ HOJE" piscando → timer regressivo → produto em close]
+${hasText ? `[Text overlay 1: "DE R$[original]" — riscado em vermelho, ${2}s, centro]\n[Text overlay 2: "POR APENAS R$[promo]!" — verde gigante, ${2.8}s, centro]\n[Text overlay 3: "⏱️ SÓ HOJE!" — piscando, canto superior, timer regressivo animado]` : ""}
+Locução: ${name}! ${benefitsList[0] || "Qualidade premium"} ${benefitsList[1] || ""} E OLHA O PREÇO! ${desc.slice(0, 60)}. ${diff || "Oportunidade única!"} MAS ATENÇÃO: é só hoje!
+
+CENA 3 — Fechamento (${durationSec - 3}-${durationSec}s):
+[Camera: Zoom out dramático revelando produto + CTA gigante, efeitos de partículas e glow]
+[Lighting: Iluminação de clímax comercial, máximo brilho, efeito de holofote no CTA]
+[Visual: Produto centralizado com glow, CTA "COMPRE AGORA!" gigante e pulsante]
+${hasText ? `[Text overlay: "COMPRE AGORA! LINK NA BIO! 🔥" — scale + pulse + glow, centro total, ${durationSec - 3}s até o fim, efeito máximo]` : ""}
+Locução: COMPRE AGORA! Link na bio! Corre antes que ACABE! 🔥`;
+
+  const voiceover = `ATENÇÃO! PROMOÇÃO IMPERDÍVEL NA SHOPEE! ${name}! ${benefitsList[0] || "Qualidade premium"} ${benefitsList[1] || ""} E OLHA O PREÇO! ${desc.slice(0, 60)}. ${diff || "Oportunidade única!"} MAS ATENÇÃO: é só hoje! COMPRE AGORA! Link na bio! Corre antes que ACABE! 🔥`;
+
+  const screen_texts = hasText
+    ? `Cena 1 (0-2s): "🔥 PROMOÇÃO IMPERDÍVEL! 🔥" — flash + scale, centro\nCena 2 (2-${durationSec - 3}s): Preço riscado → novo preço → "⏱️ SÓ HOJE!"\nCena 3 (${durationSec - 3}-${durationSec}s): "COMPRE AGORA! LINK NA BIO! 🔥" — scale + pulse + glow`
+    : "sem textos na tela";
+
+  const cta = `COMPRE AGORA! Link na bio! 🔥⚡`;
+
+  const caption = `🔥 PROMOÇÃO IMPERDÍVEL! ${name}\n\n${desc.slice(0, 100)}\n\nPreço especial por tempo limitado! Link na bio 👆 #Promoção #Shopee`;
+
+  const hashtagProd = name.toLowerCase().replace(/\s+/g, "");
+  const hashtags = `#shopee #${hashtagProd} #promoção #oferta #desconto #imperdivel #sohoje #liquidação #comprasonline #corre`;
+
+  const final_prompt = buildEnglishFinalPrompt(product, "promocao", durationSec, hasText, hasMusic);
+  return { idea_title, hook, script, voiceover, screen_texts, cta, caption, hashtags, final_prompt };
+}
+
+function buildTemplateComparacaoPrecos(product: Record<string, string>, durationSec: number, hasText: boolean, hasMusic: boolean): GeneratedContent {
+  const name = product.name || "Produto";
+  const benefits = product.benefits || "";
+  const benefitsList = benefits.split("\n").filter(Boolean);
+  const desc = product.description || "";
+  const diff = product.differentiators || "";
+
+  const idea_title = `Compare: ${name} — O Melhor Custo-Benefício`;
+
+  const hook = `COMPARE OS PREÇOS! ${name} na Shopee — o MELHOR custo-benefício! 📊`.slice(0, 150);
+
+  const script = `CENA 1 — Abertura (0-3s):
+[Camera: Split screen horizontal — dois produtos lado a lado em enquadramento idêntico, câmera travada para comparação justa]
+[Lighting: Iluminação idêntica nos dois lados para comparação justa — mesma temperatura, mesma intensidade]
+[Visual: Lado esquerdo: "OUTROS" com preço mais alto visível. Lado direito: "${name}" com preço Shopee. Diferença de preço destacada com animação]
+${hasText ? `[Text overlay: "COMPARE OS PREÇOS 📊" — slide in, topo central, 0.3s-2.8s, bold, azul confiança]` : ""}
+Locução: Compare os preços! Olha a diferença que faz comprar na Shopee!
+
+CENA 2 — Desenvolvimento (3-${durationSec - 3}s):
+[Camera: Split screen mantido, zoom alternado entre os produtos para mostrar detalhes, gráfico de barras animado comparando preços]
+[Lighting: Iluminação consistente e justa, lado Shopee ganha destaque sutil (5% mais brilho)]
+[Visual: Comparação detalhada — preço, qualidade lado a lado, badge "MELHOR CUSTO-BENEFÍCIO" aparece sobre o produto Shopee]
+${hasText ? `[Text overlay 1: "MESMA QUALIDADE" — ambos os lados, ${3.5}s, centro superior]\n[Text overlay 2: "PREÇO MENOR!" — lado Shopee destacado, ${5}s, verde]\n[Text overlay 3: "🏆 MELHOR CUSTO-BENEFÍCIO" — badge sobre produto Shopee, ${durationSec - 5}s-${durationSec - 3}s, dourado]` : ""}
+Locução: ${name}. ${benefitsList[0] || "Mesma qualidade"} ${benefitsList[1] || "Melhor preço"} ${desc.slice(0, 60)}. ${diff} Por que pagar mais caro?
+
+CENA 3 — Fechamento (${durationSec - 3}-${durationSec}s):
+[Camera: Zoom in no lado Shopee, lado OUTROS fade out, produto Shopee ocupa tela inteira]
+[Lighting: Iluminação triunfante no produto Shopee, glow de "escolha certa"]
+[Visual: ${name} em destaque total, badge "O MELHOR PREÇO TÁ NA SHOPEE"]
+${hasText ? `[Text overlay: "O MELHOR PREÇO TÁ NA SHOPEE! 🛍️" — scale animado, centro, ${durationSec - 3}s até o fim, cores Shopee]` : ""}
+Locução: O melhor preço tá na Shopee! ${name} — link na bio!`;
+
+  const voiceover = `Compare os preços! Olha a diferença que faz comprar na Shopee! ${name}. ${benefitsList[0] || "Mesma qualidade"} ${benefitsList[1] || "Melhor preço"} ${desc.slice(0, 60)}. ${diff} Por que pagar mais caro? O melhor preço tá na Shopee! ${name} — link na bio!`;
+
+  const screen_texts = hasText
+    ? `Cena 1 (0-3s): "COMPARE OS PREÇOS 📊" — slide in, topo\nCena 2 (3-${durationSec - 3}s): "MESMA QUALIDADE" → "PREÇO MENOR!" → "🏆 MELHOR CUSTO-BENEFÍCIO"\nCena 3 (${durationSec - 3}-${durationSec}s): "O MELHOR PREÇO TÁ NA SHOPEE! 🛍️" — scale`
+    : "sem textos na tela";
+
+  const cta = `O melhor preço tá na Shopee! Link na bio! 📊🛍️`;
+
+  const caption = `📊 COMPARAMOS PARA VOCÊ: ${name}\n\n${desc.slice(0, 100)}\n\nMelhor custo-benefício na Shopee. Link na bio 👆 #Comparação #Shopee`;
+
+  const hashtagProd = name.toLowerCase().replace(/\s+/g, "");
+  const hashtags = `#shopee #${hashtagProd} #comparação #custobeneficio #preço #economia #melhorpreço #dica #comprasonline #valeapena`;
+
+  const final_prompt = buildEnglishFinalPrompt(product, "comparacao-precos", durationSec, hasText, hasMusic);
+  return { idea_title, hook, script, voiceover, screen_texts, cta, caption, hashtags, final_prompt };
+}
+
+function buildTemplateReview(product: Record<string, string>, durationSec: number, hasText: boolean, hasMusic: boolean): GeneratedContent {
+  const name = product.name || "Produto";
+  const benefits = product.benefits || "";
+  const benefitsList = benefits.split("\n").filter(Boolean);
+  const desc = product.description || "";
+  const diff = product.differentiators || "";
+
+  const idea_title = `Review Completo: ${name} — Vale a Pena?`;
+
+  const hook = `Review completo do ${name}! Testei por dias e vou contar TUDO pra vocês! ⭐`.slice(0, 150);
+
+  const script = `CENA 1 — Abertura (0-3s):
+[Camera: Talking head — pessoa falando direto pra câmera, fundo clean, enquadramento médio, produto visível na mão]
+[Lighting: Iluminação de estúdio suave, key light frontal, fill para suavizar sombras, visual de canal de review]
+[Visual: Pessoa segurando ${name}, estrelas de avaliação aparecem animadas (5 estrelas preenchendo uma a uma)]
+${hasText ? `[Text overlay: "REVIEW COMPLETO ⭐⭐⭐⭐⭐" — typewriter, topo, 0.3s-2.8s, bold com estrelas animadas]` : ""}
+Locução: Review completo do ${name}! Usei por dias e vou contar tudo!
+
+CENA 2 — Desenvolvimento (3-${durationSec - 3}s):
+[Camera: Alterna entre talking head (comentando) e B-roll do produto (close-ups, uso, detalhes), transições limpas com swipe]
+[Lighting: Talking head: iluminação consistente. B-roll: iluminação de produto profissional]
+[Visual: Cards de PRÓS aparecendo em verde (✓ ${benefitsList[0] || "Qualidade"}, ✓ ${benefitsList[1] || "Preço"}, ✓ ${diff || "Design"}), close-ups do produto confirmando cada ponto, teste real de uso]
+${hasText ? `[Text overlay: "PRÓS: ✓ ${benefitsList[0] || "Qualidade excelente"}" — slide in, verde, canto esquerdo]\n[Text overlay: "✓ ${benefitsList[1] || "Preço justo"}" — slide in, verde]\n[Text overlay: "✓ ${diff || "Design premium"}" — slide in, verde]\n[Text overlay: "NOTA FINAL: ⭐⭐⭐⭐⭐" — scale, centro, ${durationSec - 5}s-${durationSec - 3}s, dourado]` : ""}
+Locução: Os pontos positivos: ${benefits} ${desc.slice(0, 80)}. ${diff} Minha nota? ${benefitsList.length >= 3 ? "5 de 5 estrelas!" : "Muito positivo!"}
+
+CENA 3 — Fechamento (${durationSec - 3}-${durationSec}s):
+[Camera: Talking head final, close no rosto, tom de recomendação pessoal e honesta]
+[Lighting: Iluminação levemente mais quente, tom acolhedor de recomendação final]
+[Visual: Pessoa falando com confiança, produto em destaque na mão, selo "VALE A PENA ✅" aparece]
+${hasText ? `[Text overlay: "VALE MUITO A PENA! ✅ Link na bio" — fade in, centro inferior, ${durationSec - 3}s até o fim, verde confiança]` : ""}
+Locução: Resumindo: ${name} vale MUITO a pena! Link na bio na Shopee!`;
+
+  const voiceover = `Review completo do ${name}! Usei por dias e vou contar tudo! Os pontos positivos: ${benefits} ${desc.slice(0, 80)}. ${diff} Minha nota? ${benefitsList.length >= 3 ? "5 de 5 estrelas!" : "Muito positivo!"} Resumindo: ${name} vale MUITO a pena! Link na bio na Shopee!`;
+
+  const screen_texts = hasText
+    ? `Cena 1 (0-3s): "REVIEW COMPLETO ⭐⭐⭐⭐⭐" — typewriter, topo\nCena 2 (3-${durationSec - 3}s): PRÓS em verde → "NOTA FINAL: ⭐⭐⭐⭐⭐" dourado\nCena 3 (${durationSec - 3}-${durationSec}s): "VALE MUITO A PENA! ✅ Link na bio" — fade in`
+    : "sem textos na tela";
+
+  const cta = `Vale muito a pena! ${name} na Shopee. Link na bio! ⭐`;
+
+  const caption = `⭐ Review completo: ${name}!\n\n${desc.slice(0, 100)}\n\nMinha opinião sincera: vale a pena! Link na bio 👆 #Review #Shopee`;
+
+  const hashtagProd = name.toLowerCase().replace(/\s+/g, "");
+  const hashtags = `#shopee #${hashtagProd} #review #testei #valeapena #opinião #produto #dica #comprasonline #recomendo`;
+
+  const final_prompt = buildEnglishFinalPrompt(product, "review-produto", durationSec, hasText, hasMusic);
+  return { idea_title, hook, script, voiceover, screen_texts, cta, caption, hashtags, final_prompt };
+}
+
+function buildTemplateRotina(product: Record<string, string>, durationSec: number, hasText: boolean, hasMusic: boolean): GeneratedContent {
+  const name = product.name || "Produto";
+  const benefits = product.benefits || "";
+  const benefitsList = benefits.split("\n").filter(Boolean);
+  const desc = product.description || "";
+  const diff = product.differentiators || "";
+
+  const idea_title = `Meu Dia com ${name} — Rotina Completa`;
+
+  const hook = `Vem ver como ${name} faz parte do meu dia a dia! ✨ Rotina completa!`.slice(0, 150);
+
+  const script = `CENA 1 — Abertura (0-3s):
+[Camera: Vlog estilo — câmera na mão, acordando/começando o dia, luz natural da manhã entrando pela janela, warm tones]
+[Lighting: Luz natural matinal, tons quentes e dourados (3200K), sombras suaves, cozy morning vibes]
+[Visual: Cena matinal aconchegante — pessoa começa o dia, ${name} aparece como primeiro item usado na rotina]
+${hasText ? `[Text overlay: "☀️ Meu dia com ${name}" — fade in suave, canto superior, 0.5s-2.8s, fonte handwritten style]` : ""}
+Locução: (voz calma e acolhedora) Vem comigo ver como é meu dia com ${name}!
+
+CENA 2 — Desenvolvimento (3-${durationSec - 3}s):
+[Camera: Vlog seguindo a pessoa em diferentes momentos do dia — manhã (luz quente), tarde (luz neutra), noite (luz aconchegante), transições com cross-dissolve suave entre momentos]
+[Lighting: Evolução natural da luz ao longo do dia — manhã dourada → tarde clara → noite aconchegante com luz artificial quente]
+[Visual: ${name} sendo usado em 2-3 momentos diferentes do dia — cada momento mostra um benefício diferente, produto integrado naturalmente na rotina, estilo de vida aspiracional mas realista]
+${hasText ? `[Text overlay 1: "☀️ Manhã: ${benefitsList[0] || "Começando bem o dia"}" — ${4}s, canto]\n[Text overlay 2: "🌤️ Tarde: ${benefitsList[1] || "Perfeito para o dia a dia"}" — aparece no meio]\n[Text overlay 3: "🌙 Noite: ${benefitsList[2] || "Resultado incrível"}" — aparece próximo ao final]` : ""}
+Locução: De manhã, ${name} me ajuda a ${benefitsList[0] || "começar bem o dia"}. Durante a tarde, ${benefitsList[1] || "faz toda diferença na rotina"}. ${desc.slice(0, 60)}. ${diff}
+
+CENA 3 — Fechamento (${durationSec - 3}-${durationSec}s):
+[Camera: Momento final do dia — pessoa relaxando, produto por perto, atmosfera de satisfação e aconchego, plano mais fechado e íntimo]
+[Lighting: Luz noturna quente e aconchegante (2800K), lâmpadas ou velas criando atmosfera acolhedora, glow suave]
+[Visual: Cena final de satisfação — pessoa sorrindo, ${name} ao lado como parte essencial da rotina]
+${hasText ? `[Text overlay: "Não vivo mais sem! 💫 Link na bio" — fade in suave, centro inferior, ${durationSec - 3}s até o fim]` : ""}
+Locução: ${name} já faz parte da minha rotina. Não vivo mais sem! Link na bio na Shopee!`;
+
+  const voiceover = `(voz calma e acolhedora) Vem comigo ver como é meu dia com ${name}! De manhã, ${name} me ajuda a ${benefitsList[0] || "começar bem o dia"}. Durante a tarde, ${benefitsList[1] || "faz toda diferença na rotina"}. ${desc.slice(0, 60)}. ${diff} ${name} já faz parte da minha rotina. Não vivo mais sem! Link na bio na Shopee!`;
+
+  const screen_texts = hasText
+    ? `Cena 1 (0-3s): "☀️ Meu dia com ${name}" — fade in, canto superior\nCena 2 (3-${durationSec - 3}s): "☀️ Manhã: ${benefitsList[0] || "Começando bem"}" / "🌤️ Tarde: ${benefitsList[1] || "Dia a dia"}" / "🌙 Noite: ${benefitsList[2] || "Resultado"}"\nCena 3 (${durationSec - 3}-${durationSec}s): "Não vivo mais sem! 💫 Link na bio" — fade in`
+    : "sem textos na tela";
+
+  const cta = `Não vivo mais sem! ${name} na Shopee. Link na bio! 💫`;
+
+  const caption = `💫 Minha rotina com ${name}!\n\n${desc.slice(0, 100)}\n\nNão vivo mais sem! Link na bio 👆 #Rotina #Shopee`;
+
+  const hashtagProd = name.toLowerCase().replace(/\s+/g, "");
+  const hashtags = `#shopee #${hashtagProd} #rotina #diadia #vlog #lifestyle #dica #produto #essencial #recomendo`;
+
+  const final_prompt = buildEnglishFinalPrompt(product, "rotina-dia", durationSec, hasText, hasMusic);
   return { idea_title, hook, script, voiceover, screen_texts, cta, caption, hashtags, final_prompt };
 }
 
@@ -805,7 +1088,14 @@ function buildFallback(product: Record<string, string>, style: Record<string, st
     case "cinematografico": return buildTemplateCinematografico(enrichedProduct, durationSec, hasText, hasMusic);
     case "achadinho": return buildTemplateAchadinho(enrichedProduct, durationSec, hasText, hasMusic);
     case "antes-depois": return buildTemplateAntesDepois(enrichedProduct, durationSec, hasText, hasMusic);
-    default: return buildGenericTemplate(enrichedProduct, styleId, durationSec, hasText, hasMusic);
+    case "narracao": return buildTemplateNarracao(enrichedProduct, durationSec, hasText, hasMusic);
+    case "texto-tela": return buildTemplateTextoTela(enrichedProduct, durationSec, hasText, hasMusic);
+    case "sem-fala": return buildTemplateSemFala(enrichedProduct, durationSec, hasText, hasMusic);
+    case "promocao": return buildTemplatePromocao(enrichedProduct, durationSec, hasText, hasMusic);
+    case "comparacao-precos": return buildTemplateComparacaoPrecos(enrichedProduct, durationSec, hasText, hasMusic);
+    case "review-produto": return buildTemplateReview(enrichedProduct, durationSec, hasText, hasMusic);
+    case "rotina-dia": return buildTemplateRotina(enrichedProduct, durationSec, hasText, hasMusic);
+    default: return buildTemplateProdutoDestaque(enrichedProduct, durationSec, hasText, hasMusic);
   }
 }
 

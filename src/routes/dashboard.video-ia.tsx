@@ -121,9 +121,11 @@ const STYLE_OPTIONS = [
   { id: "texto-tela", label: "Texto na tela", icon: Subtitles, desc: "Sem voz, apenas textos e música" },
   { id: "sem-fala", label: "Vídeo sem fala", icon: Eye, desc: "Visual puro, só imagens e música" },
   { id: "promocao", label: "Vídeo para promoção", icon: Trophy, desc: "Foco em desconto e oferta limitada" },
+  { id: "comparacao-precos", label: "Comparação de preços", icon: Gem, desc: "Mostra a vantagem de preço e custo-benefício" },
+  { id: "review-produto", label: "Review do produto", icon: Eye, desc: "Avaliação completa com teste, prós e contras" },
+  { id: "rotina-dia", label: "Rotina / Dia a dia", icon: Camera, desc: "Produto integrado na rotina diária, estilo vlog" },
 ];
 
-const DURATION_OPTIONS = ["15s", "30s", "60s"];
 const VOICE_OPTIONS = [
   { value: "feminina", label: "Feminina" },
   { value: "masculina", label: "Masculina" },
@@ -470,19 +472,8 @@ const Step4Style = memo(function Step4Style({
         </div>
       </div>
 
-      {/* Duration, Voice, Tone */}
-      <div className="grid gap-5 sm:grid-cols-3">
-        <div className="space-y-2">
-          <Label className="text-sm font-medium text-foreground">Duração</Label>
-          <div className="flex rounded-lg bg-gray-100 p-1">
-            {DURATION_OPTIONS.map((d) => (
-              <button key={d} type="button" onClick={() => setStyleConfig((s) => ({ ...s, duration: d }))}
-                className={`flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
-                  styleConfig.duration === d ? "bg-white text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
-                {d}
-              </button>))}
-          </div>
-        </div>
+      {/* Voice and Tone */}
+      <div className="grid gap-5 sm:grid-cols-2">
         <div className="space-y-2">
           <Label className="text-sm font-medium text-foreground">Voz</Label>
           <div className="flex rounded-lg bg-gray-100 p-1">
@@ -547,7 +538,6 @@ const Step5Generation = memo(function Step5Generation({
         <div className="mt-3 grid gap-2 text-xs sm:grid-cols-2">
           <SummaryRow label="Produto" value={productInfo.name} />
           <SummaryRow label="Estilo" value={STYLE_OPTIONS.find((s) => s.id === styleConfig.style)?.label || ""} />
-          <SummaryRow label="Duração" value={styleConfig.duration} />
           <SummaryRow label="Voz" value={VOICE_OPTIONS.find((v) => v.value === styleConfig.voiceType)?.label || ""} />
           <SummaryRow label="Tom" value={TONE_OPTIONS.find((t) => t.value === styleConfig.tone)?.label || ""} />
           <SummaryRow label="Extras" value={[styleConfig.hasText && "Textos na tela", styleConfig.hasMusic && "Música de fundo"].filter(Boolean).join(", ") || "Nenhum"} />
