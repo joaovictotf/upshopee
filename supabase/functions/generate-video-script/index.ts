@@ -24,36 +24,36 @@ interface GeneratedContent {
   final_prompt: string;
 }
 
-// ── Style & tone labels ──────────────────────────────────────
+// ── Style & tone labels (English) ──────────────────────────────
 
 const STYLE_LABELS: Record<string, string> = {
-  "produto-destaque": "Produto em destaque — foco total no produto, close-ups, iluminação profissional, gira o produto mostrando todos os ângulos",
-  "oferta-rapida": "Oferta rápida — ritmo acelerado, preço na tela, senso de urgência, textos piscando, contagem regressiva",
-  "problema-solucao": "Problema e solução — mostre o problema primeiro (frustração), depois o produto como solução (alívio/felicidade)",
-  "demonstracao": "Demonstração — mostre o produto sendo usado na prática, resultados visíveis, comparação antes/depois rápida",
-  "unboxing": "Unboxing — abrindo a embalagem, primeiras impressões, close nos detalhes, reação genuína de surpresa",
-  "ugc": "Estilo UGC (User Generated Content) — parece gravado por um cliente real, cenário caseiro, linguagem natural, selfie, menos produzido",
-  "cinematografico": "Cinematográfico — takes artísticos, câmera lenta, transições suaves, música emotiva, visual premium",
-  "achadinho": "Achadinho da Shopee — tom de descoberta, 'olha o que eu achei', empolgação, preço baixo, sensação de garimpo",
-  "antes-depois": "Antes e depois — comparação dramática, tela dividida, revelação impactante, contraste forte entre sem/com produto",
-  "narracao": "Narração — voz em off profissional conta a história, imagens ilustram, tom documental ou comercial",
-  "texto-tela": "Texto na tela — sem locução, comunicação 100% por textos animados, ritmo rápido, estilo TikTok trends",
-  "sem-fala": "Vídeo sem fala — apenas música e imagens, foco total no visual, demonstração silenciosa do produto",
-  "promocao": "Vídeo para promoção — foco em desconto/queima de estoque, banners de preço, urgência, 'só hoje', chamadas agressivas",
+  "produto-destaque": "Product spotlight — full focus on the product, close-ups, professional lighting, rotating the product showing all angles",
+  "oferta-rapida": "Quick offer — fast pace, price on screen, sense of urgency, flashing text, countdown timer",
+  "problema-solucao": "Problem and solution — show the problem first (frustration), then the product as the solution (relief/happiness)",
+  "demonstracao": "Demonstration — show the product being used in practice, visible results, quick before/after comparison",
+  "unboxing": "Unboxing — opening the package, first impressions, close-ups on details, genuine surprise reaction",
+  "ugc": "UGC style (User Generated Content) — looks like a real customer filmed it, home setting, natural language, selfie style, less produced",
+  "cinematografico": "Cinematic — artistic takes, slow motion, smooth transitions, emotional music, premium visual",
+  "achadinho": "Shopee hidden gem — discovery tone, 'look what I found', excitement, low price, treasure hunting feel",
+  "antes-depois": "Before and after — dramatic comparison, split screen, impactful reveal, strong contrast without/with product",
+  "narracao": "Narration — professional voice-over tells the story, images illustrate, documentary or commercial tone",
+  "texto-tela": "Text on screen — no voice-over, 100% animated text communication, fast pace, TikTok trend style",
+  "sem-fala": "No speech — music and images only, full visual focus, silent product demonstration",
+  "promocao": "Promotion video — focus on discount/clearance sale, price banners, urgency, 'today only', aggressive calls to action",
 };
 
 const TONE_LABELS: Record<string, string> = {
-  formal: "Formal — linguagem profissional, sério, confiável, sem gírias, tom de apresentação corporativa",
-  casual: "Casual — linguagem do dia a dia, amigável, como se estivesse conversando com um amigo, gírias leves permitidas",
-  entusiasmado: "Entusiasmado — alta energia, empolgação contagiante, muitas exclamações, tom de 'isso é incrível!'",
-  urgente: "Urgente — senso de escassez e pressa, 'últimas unidades', 'não perca tempo', tom de alerta e ação imediata",
-  emocional: "Emocional — apela para sentimentos, storytelling emotivo, conexão pessoal, tom de transformação de vida",
+  formal: "Formal — professional language, serious, trustworthy, no slang, corporate presentation tone",
+  casual: "Casual — everyday language, friendly, like talking to a friend, light slang allowed",
+  entusiasmado: "Enthusiastic — high energy, contagious excitement, lots of exclamation, 'this is incredible!' tone",
+  urgente: "Urgent — scarcity and rush, 'last units', 'don't miss out', alert and immediate action tone",
+  emocional: "Emotional — appeals to feelings, emotional storytelling, personal connection, life transformation tone",
 };
 
 const VOICE_LABELS: Record<string, string> = {
-  masculina: "voz masculina",
-  feminina: "voz feminina",
-  "sem-voz": "sem narração (apenas música e efeitos sonoros)",
+  masculina: "male voice",
+  feminina: "female voice",
+  "sem-voz": "no narration (music and sound effects only)",
 };
 
 // ── Prompt builder ───────────────────────────────────────────
@@ -110,7 +110,7 @@ function buildPrompt(
   "cta": "chamada para ação (ex: 'Compre agora! Link na bio! Frete grátis!')",
   "caption": "legenda para o post (2-3 linhas com emojis, max 300 caracteres)",
   "hashtags": "#shopee #[nicho1] #[nicho2] #[produto] #promoção #[estilo] #[categoria]",
-  "final_prompt": "PROMPT COMPLETO para gerar este vídeo no Google Gemini Video. Inclua: formato 9:16, duração ${durationSec}s, descrição de cada cena com ângulos e movimentos, texto completo da narração, textos na tela, estilo de música, e restrições de precisão do produto."
+  "final_prompt": "Generate a professional video creation prompt IN ENGLISH with this EXACT structure:\n\nVIDEO GENERATION PROMPT\n======================\nProduct: [product name]\nDescription: [product description]\nKey Benefits: [benefits]\nTarget Audience: [target audience]\nDifferentiators: [differentiators]\nProblem Solved: [problem solved]\n\nVideo Specifications:\n- Format: 9:16 vertical (TikTok/Reels/Shopee)\n- Duration: ${durationSec} seconds\n- Style: [full style description]\n- Tone: [full tone description]\n- Voiceover: [male/female/none]\n- On-screen Text: [yes/no]\n- Background Music: [yes/no]\n\nScene-by-Scene Direction:\n[3 scenes with camera angles, movements, visual descriptions, text overlay timing]\n\nFull Narration Script:\n[complete voiceover text]\n\nOn-Screen Text Overlays:\n[text for each scene if enabled]\n\nMusic Direction:\n[music style per scene if applicable]\n\nIMPORTANT CONSTRAINTS:\n- Do NOT fabricate product features — stay accurate\n- Maintain [tone] tone throughout\n- Hook captures attention in first 2 seconds\n- Strong call-to-action at the end\n- Optimized for Shopee/TikTok/Reels\n- Use ALL product information provided above"
 }`;
 }
 
@@ -161,7 +161,7 @@ function buildFallback(product: Record<string, string>, style: Record<string, st
     cta: "Corre que tá acabando! Link na bio! 🔥",
     caption: `🎯 Achei na Shopee: ${product.name || "esse produto incrível"}! ${(product.description || "").slice(0, 100)}\n\nLink na bio 👆 #Shopee #Achadinho`,
     hashtags: `#shopee #achadinho #${hashtagProd} #promoção #oferta`,
-    final_prompt: `Crie um vídeo 9:16 vertical de ${durationSec}s para ${product.name || "produto"}.\nDescrição: ${product.description || ""}\nBenefícios: ${product.benefits || ""}\n\n3 cenas: abertura → demonstração → CTA. Textos na tela e narração em português.`,
+    final_prompt: `VIDEO GENERATION PROMPT\n======================\nProduct: ${product.name || "N/A"}\nDescription: ${product.description || "N/A"}\nKey Benefits: ${product.benefits || "N/A"}\nTarget Audience: ${product.targetAudience || "General"}\nDifferentiators: ${product.differentiators || "N/A"}\nProblem Solved: ${product.problemSolved || "N/A"}\n\nVideo Specifications:\n- Format: 9:16 vertical (TikTok/Reels/Shopee)\n- Duration: ${durationSec} seconds\n- Style: ${STYLE_LABELS[String(style.style)] || style.style || "Product highlight"}\n- Tone: ${TONE_LABELS[String(style.tone)] || style.tone || "Enthusiastic"}\n- Voiceover: ${VOICE_LABELS[String(style.voiceType)] || style.voiceType || "female voice"}\n- On-screen Text: ${style.hasText ? "Yes" : "No"}\n- Background Music: ${style.hasMusic ? "Yes" : "No"}\n\nScene-by-Scene Direction:\nScene 1 (0-3s) - Opening Hook: Close-up of ${product.name || "the product"} rotating, dramatic lighting, text overlay with key benefit.\nScene 2 (3-${Math.max(parseInt(durationSec) - 3, 10)}s) - Demonstration: Show product in use, highlight features and benefits.\nScene 3 (${Math.max(parseInt(durationSec) - 3, 10)}-${durationSec}s) - CTA: Product shot with price/offer, strong call-to-action text.\n\nFull Narration Script:\n[Use the voiceover text above translated to English]\n\nOn-Screen Text Overlays:\n${style.hasText ? `Scene 1: "${product.name || ""} - ${(product.benefits || "").slice(0, 30)}"\nScene 2: "Limited offer! Free shipping!"\nScene 3: "Buy now! Link in bio 🔥"` : "No on-screen text"}\n\nMusic Direction:\n${style.hasMusic ? "Upbeat trending music matching the Shopee style" : "No background music"}\n\nIMPORTANT CONSTRAINTS:\n- Do NOT fabricate product features — stay accurate\n- Maintain ${TONE_LABELS[String(style.tone)] || "enthusiastic"} tone\n- Hook captures attention in first 2 seconds\n- End with strong CTA\n- Optimized for Shopee/TikTok/Reels`,
   };
 }
 

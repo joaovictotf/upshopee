@@ -10,9 +10,9 @@ import { Textarea } from "../components/ui/textarea";
 import { toast } from "sonner";
 import {
   Search, Upload, X, ChevronLeft, ArrowRight, Check, Loader2, Star,
-  Camera, Package, Image, Info, Sparkles, Copy, ExternalLink,
+  Camera, Package, Image, Info, Sparkles, Copy, Send,
   Wand2, RotateCw, Shirt, Zap, Lightbulb, ShoppingBag, Play, Trophy,
-  Gem, Scissors, Monitor, Eye, Subtitles, Volume2, Music,
+  Gem, Scissors, Eye, Subtitles, Volume2, Music,
 } from "lucide-react";
 import { products as mockProducts, type Product } from "../lib/mock/products";
 
@@ -511,17 +511,11 @@ function VideoIaPage() {
     }
   }, [currentUserId, saveProjectWithContent]);
 
-  // ── Step 7: Copy prompt + open Gemini ──
-  const handleCopyAndOpen = useCallback(async () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase.from as any)("video_projects")
-      .update({ status: "opened_in_gemini", updated_at: new Date().toISOString() })
-      .eq("id", projectId);
-
+  // ── Step 7: Copy prompt to clipboard ──
+  const handleCopyFinalPrompt = useCallback(async () => {
     await navigator.clipboard.writeText(generatedContent.final_prompt);
-    toast.success("Prompt copiado!", { description: "Abrindo Gemini em uma nova aba..." });
-    setTimeout(() => window.open("https://gemini.google.com/app", "_blank"), 600);
-  }, [generatedContent.final_prompt, projectId]);
+    toast.success("Prompt copiado com sucesso!");
+  }, [generatedContent.final_prompt]);
 
   // ── Navigation ──
   const handleContinue = useCallback(async () => {
@@ -1003,75 +997,195 @@ function VideoIaPage() {
             onChange={(v) => updateGenerated("caption", v)} rows={2} />
           <EditableField label="Hashtags" value={generatedContent.hashtags}
             onChange={(v) => updateGenerated("hashtags", v)} />
+          <EditableField label="Prompt final em inglês" value={generatedContent.final_prompt}
+            onChange={(v) => updateGenerated("final_prompt", v)} rows={10} />
         </div>
       </div>
     );
   }
 
   /* ═══════════════════════════════════════════════════════════
-     STEP 7 — Open in Gemini
+     STEP 7 — Prompt pronto
      ═══════════════════════════════════════════════════════════ */
   function Step7Gemini() {
-    return (
-      <div className="space-y-6">
-        {/* Instructions card */}
-        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm shadow-black/[0.02] ring-1 ring-black/[0.06]">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FFF8F5]">
-              <Monitor className="h-5 w-5 text-[#EE4D2D]" />
-            </div>
-            <div>
-              <h3 className="text-sm font-bold text-foreground">Como usar no Gemini</h3>
-              <p className="text-xs text-muted-foreground">Siga os passos para gerar seu vídeo</p>
-            </div>
-          </div>
-          <div className="mt-4 grid gap-2 sm:grid-cols-4">
-            {[
-              { step: 1, text: "Envie a imagem do produto", icon: Image },
-              { step: 2, text: "Cole o prompt abaixo", icon: ClipboardIcon },
-              { step: 3, text: "Selecione geração de vídeo", icon: Play },
-              { step: 4, text: "Baixe o resultado", icon: DownloadIcon },
-            ].map(({ step, text, icon: Icon }) => (
-              <div key={step} className="flex items-start gap-2 rounded-lg bg-gray-50 p-3">
-                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#EE4D2D] text-[11px] font-bold text-white">{step}</div>
-                <div className="min-w-0">
-                  <Icon className="mb-0.5 h-3.5 w-3.5 text-[#EE4D2D]" />
-                  <p className="text-[11px] font-medium text-gray-600 leading-tight">{text}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+  type ChatMsg = { role: "user" | "assistant"; content: string };
+  const [chatMessages, setChatMessages] = useState<ChatMsg[]>([
+    {
+      role: "assistant",
+      content: `Seu roteiro está pronto! 🎬 Aqui está um resumo: **${generatedContent.idea_title}**.\n\nSe quiser ajustar algo, é só me pedir! Por exemplo:\n• "Deixa o tom mais urgente"\n• "Faz uma versão mais curta"\n• "Adiciona mais emoção na cena 2"\n• "Muda o CTA para algo mais direto"\n\nO que você gostaria de mudar?`,
+    },
+  ]);
+  const [chatInput, setChatInput] = useState("");
+  const [chatLoading, setChatLoading] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
-        {/* Prompt code block */}
-        <div className="rounded-2xl border border-gray-100 bg-white shadow-sm shadow-black/[0.02] ring-1 ring-black/[0.06] overflow-hidden">
-          <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50/50 px-5 py-3">
-            <span className="text-xs font-semibold text-gray-500">Prompt final para o Gemini</span>
-            <span className="text-[10px] text-muted-foreground">{generatedContent.final_prompt.length} caracteres</span>
-          </div>
-          <div className="p-5">
-            <pre className="whitespace-pre-wrap break-words text-sm leading-relaxed text-gray-700 font-mono select-all bg-gray-50 rounded-xl p-4 max-h-80 overflow-y-auto">
-              {generatedContent.final_prompt}
-            </pre>
-          </div>
-        </div>
+  // Auto-scroll to bottom
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatMessages]);
 
-        {/* Action buttons */}
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <Button onClick={handleCopyAndOpen}
-            className="h-12 flex-1 rounded-xl bg-[#EE4D2D] text-sm font-semibold text-white shadow-md shadow-[#EE4D2D]/25 transition-all hover:bg-[#EE4D2D]/90 hover:shadow-lg hover:shadow-[#EE4D2D]/30 active:scale-[0.98]">
-            <Copy className="mr-2 h-4 w-4" /> Copiar prompt e abrir Gemini
-          </Button>
-          <Button variant="outline" onClick={async () => {
-            await navigator.clipboard.writeText(generatedContent.final_prompt);
-            toast.success("Prompt copiado para a área de transferência!");
-          }}
-            className="h-12 rounded-xl border-gray-200 bg-white text-sm font-medium text-gray-600 shadow-sm hover:border-[#EE4D2D]/30 hover:text-[#EE4D2D]">
-            <Copy className="mr-2 h-4 w-4" /> Apenas copiar
-          </Button>
+  // Focus input on mount
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  const handleSendMessage = useCallback(async () => {
+    const text = chatInput.trim();
+    if (!text || chatLoading) return;
+
+    const userMsg: ChatMsg = { role: "user", content: text };
+    setChatMessages((prev) => [...prev, userMsg]);
+    setChatInput("");
+    setChatLoading(true);
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+      const res = await fetch(
+        "https://ndawyrqzqhzbyjdmkdge.supabase.co/functions/v1/generate-video-chat",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            messages: [...chatMessages, userMsg].map((m) => ({ role: m.role, content: m.content })),
+            product: {
+              name: productInfo.name,
+              description: productInfo.description,
+              benefits: productInfo.benefits,
+              targetAudience: productInfo.targetAudience,
+              differentiators: productInfo.differentiators,
+              problemSolved: productInfo.problemSolved,
+            },
+            style: styleConfig,
+            currentContent: generatedContent,
+          }),
+          signal: controller.signal,
+        },
+      );
+
+      clearTimeout(timeoutId);
+      const data = await res.json();
+
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || "Erro ao comunicar com o assistente");
+      }
+
+      setChatMessages((prev) => [...prev, { role: "assistant", content: data.reply }]);
+    } catch (err: any) {
+      if (err?.name === "AbortError") {
+        setChatMessages((prev) => [...prev, { role: "assistant", content: "⏰ O assistente demorou muito para responder. Tente novamente ou faça uma pergunta mais curta." }]);
+      } else {
+        setChatMessages((prev) => [...prev, { role: "assistant", content: "❌ Erro ao comunicar com o assistente. Verifique sua conexão e tente novamente." }]);
+      }
+    } finally {
+      setChatLoading(false);
+    }
+  }, [chatInput, chatLoading, chatMessages, productInfo, styleConfig, generatedContent]);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
+  return (
+    <div className="flex flex-col h-[650px] max-h-[calc(100vh-280px)] min-h-[450px]">
+      {/* Header */}
+      <div className="flex-shrink-0 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm shadow-black/[0.02] ring-1 ring-black/[0.06] mb-4">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#FFF8F5]">
+            <Sparkles className="h-5 w-5 text-[#EE4D2D]" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-foreground">Assistente de Vídeo IA</h3>
+            <p className="text-xs text-muted-foreground">Refine seu roteiro conversando com a inteligência artificial</p>
+          </div>
         </div>
       </div>
-    );
+
+      {/* Chat messages area */}
+      <div className="flex-1 overflow-y-auto rounded-2xl border border-gray-100 bg-[#FAFAFA] p-4 shadow-sm shadow-black/[0.02] ring-1 ring-black/[0.06] mb-4">
+        <div className="space-y-4">
+          {chatMessages.map((msg, i) => (
+            <div
+              key={i}
+              className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} animate-[fadeIn_0.3s_ease-out]`}
+            >
+              <div
+                className={`max-w-[85%] sm:max-w-[70%] rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap break-words ${
+                  msg.role === "user"
+                    ? "bg-[#EE4D2D] text-white rounded-br-md shadow-sm shadow-[#EE4D2D]/15"
+                    : "bg-white text-gray-700 rounded-bl-md border border-gray-100 shadow-sm"
+                }`}
+              >
+                {msg.content}
+              </div>
+            </div>
+          ))}
+          {chatLoading && (
+            <div className="flex justify-start">
+              <div className="max-w-[85%] sm:max-w-[70%] rounded-2xl rounded-bl-md border border-gray-100 bg-white px-4 py-3 shadow-sm">
+                <div className="flex items-center gap-1.5">
+                  <span className="h-2 w-2 animate-bounce rounded-full bg-gray-400" style={{ animationDelay: "0ms" }} />
+                  <span className="h-2 w-2 animate-bounce rounded-full bg-gray-400" style={{ animationDelay: "150ms" }} />
+                  <span className="h-2 w-2 animate-bounce rounded-full bg-gray-400" style={{ animationDelay: "300ms" }} />
+                </div>
+              </div>
+            </div>
+          )}
+          <div ref={chatEndRef} />
+        </div>
+      </div>
+
+      {/* Input area */}
+      <div className="flex-shrink-0 rounded-2xl border border-gray-100 bg-white p-3 shadow-sm shadow-black/[0.02] ring-1 ring-black/[0.06] mb-4">
+        <div className="flex items-end gap-2">
+          <textarea
+            ref={inputRef}
+            value={chatInput}
+            onChange={(e) => setChatInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Peça ajustes no roteiro..."
+            rows={2}
+            disabled={chatLoading}
+            className="flex-1 resize-none rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-[#EE4D2D]/40 focus:outline-none focus:ring-2 focus:ring-[#EE4D2D]/10 disabled:opacity-50"
+          />
+          <Button
+            type="button"
+            onClick={handleSendMessage}
+            disabled={!chatInput.trim() || chatLoading}
+            className="h-10 w-10 shrink-0 rounded-xl bg-[#EE4D2D] p-0 text-white shadow-sm shadow-[#EE4D2D]/25 transition-all hover:bg-[#EE4D2D]/90 hover:shadow-md hover:shadow-[#EE4D2D]/30 active:scale-[0.97] disabled:opacity-40"
+          >
+            <Send className="h-4 w-4" />
+          </Button>
+        </div>
+        <p className="mt-1.5 text-[10px] text-muted-foreground text-center">
+          Enter para enviar · Shift+Enter para nova linha
+        </p>
+      </div>
+
+      {/* Bottom actions */}
+      <div className="flex-shrink-0 flex flex-col gap-2 sm:flex-row">
+        <Button
+          onClick={handleCopyFinalPrompt}
+          variant="outline"
+          className="h-11 flex-1 rounded-xl border-gray-200 bg-white text-sm font-medium text-gray-600 shadow-sm hover:border-[#EE4D2D]/30 hover:text-[#EE4D2D]"
+        >
+          <Copy className="mr-2 h-4 w-4" /> Copiar prompt final
+        </Button>
+        <Button
+          onClick={handleBack}
+          variant="ghost"
+          className="h-11 rounded-xl text-sm font-medium text-gray-500 hover:text-[#EE4D2D]"
+        >
+          <ChevronLeft className="mr-2 h-4 w-4" /> Voltar e editar
+        </Button>
+      </div>
+    </div>
+  );
   }
 
   /* ═══════════════════════════════════════════════════════════
@@ -1274,12 +1388,4 @@ function ImageUploadSlot({ image, onSelect, onRemove, large = false, dragOver = 
         onChange={(e) => { const file = e.target.files?.[0]; if (file) onSelect(file); e.target.value = ""; }} />
     </div>
   );
-}
-
-// Simple SVG icons for Step 7
-function ClipboardIcon({ className }: { className?: string }) {
-  return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>;
-}
-function DownloadIcon({ className }: { className?: string }) {
-  return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>;
 }
