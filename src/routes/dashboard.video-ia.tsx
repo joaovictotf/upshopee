@@ -104,6 +104,8 @@ const GENERATION_STEPS = [
   "Montando prompt final...",
 ];
 
+const DAILY_LIMIT = 3;
+
 /* ───────────────────────────────────────────────────────────────
    Page component
    ─────────────────────────────────────────────────────────────── */
@@ -148,6 +150,29 @@ function VideoIaPage() {
   });
   const [projectId, setProjectId] = useState<string | null>(null);
 
+  // Daily limit
+  const [dailyCount, setDailyCount] = useState(0);
+  const [dailyLimitReached, setDailyLimitReached] = useState(false);
+  const [dailyLimitChecked, setDailyLimitChecked] = useState(false);
+
+  // Check daily limit when entering step 4
+  useEffect(() => {
+    if (!currentUserId || currentStep < 4) return;
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    (supabase.from as any)("video_projects")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", currentUserId)
+      .gte("created_at", todayStart.toISOString())
+      .then(({ count, error }: { count: number | null; error: any }) => {
+        if (!error) {
+          setDailyCount(count || 0);
+          setDailyLimitReached((count || 0) >= DAILY_LIMIT);
+          setDailyLimitChecked(true);
+        }
+      });
+  }, [currentUserId, currentStep]);
+
   // Pre-fill step 3 from step 1
   useEffect(() => {
     if (currentStep === 3) {
@@ -176,12 +201,9 @@ function VideoIaPage() {
   // ── Validation ──
   const step1Valid = productMode === "existing" ? !!selectedProduct
     : !!(manualProduct.name.trim() && manualProduct.url.trim());
-  const step2Valid = true; // Image upload is always optional — user can skip
+  const step2Valid = true;
   const step3Valid = !!(productInfo.name.trim() && productInfo.description.trim() && productInfo.benefits.trim());
   const step4Valid = !!styleConfig.style;
-  // Step 5 auto-advances on success
-  const step6Valid = !!generatedContent.idea_title;
-  // Step 7 is always actionable
 
   // ── Image helpers ──
   function emptySlot(): ImageSlot {
@@ -194,7 +216,6 @@ function VideoIaPage() {
     return null;
   }, []);
 
-  // Upload a single image to Supabase Storage
   const uploadSingleImage = useCallback(async (
     file: File,
     setter: (updates: Partial<ImageSlot>) => void,
@@ -205,29 +226,19 @@ function VideoIaPage() {
       return null;
     }
     setter({ uploading: true, progress: 0 });
-
     const ext = file.name.split(".").pop() || "jpg";
     const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
     const storagePath = `${currentUserId}/${fileName}`;
-
-    console.log("[uploadSingleImage] Uploading:", { fileName, storagePath, fileSize: file.size, fileType: file.type });
-
     try {
       const { data, error } = await supabase.storage
         .from("video-project-images")
-        .upload(storagePath, file, {
-          cacheControl: "3600",
-          upsert: true,
-        });
-
+        .upload(storagePath, file, { cacheControl: "3600", upsert: true });
       if (error) {
         console.error("[uploadSingleImage] Supabase error:", error);
         setter({ uploading: false, progress: 0 });
         toast.error(`Erro ao enviar ${file.name}: ${error.message}`);
         return null;
       }
-
-      console.log("[uploadSingleImage] Success:", data?.path);
       setter({ uploading: false, progress: 100, storagePath });
       return storagePath;
     } catch (err: any) {
@@ -238,24 +249,17 @@ function VideoIaPage() {
     }
   }, [currentUserId]);
 
-  // Auto-upload primary image on select
   const handlePrimaryImageSelect = useCallback((file: File) => {
     const error = validateFile(file);
     if (error) { toast.error(error); return; }
     if (primaryImage.preview) URL.revokeObjectURL(primaryImage.preview);
     const preview = URL.createObjectURL(file);
-    // Set preview immediately so user sees the image
     setPrimaryImage({ file, preview, storagePath: null, uploading: true, progress: 0 });
-    // Start upload in background (fire-and-forget, state updates via setter callback)
-    uploadSingleImage(file, (updates) => {
-      setPrimaryImage((prev) => ({ ...prev, ...updates }));
-    }).catch((err) => {
-      console.error("[handlePrimaryImageSelect] uploadSingleImage rejected:", err);
-    });
+    uploadSingleImage(file, (updates) => { setPrimaryImage((prev) => ({ ...prev, ...updates })); })
+      .catch((err) => { console.error("[handlePrimaryImageSelect] uploadSingleImage rejected:", err); });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [validateFile, uploadSingleImage]);
 
-  // Auto-upload additional image on select
   const handleAdditionalImageSelect = useCallback((file: File, index: number) => {
     const error = validateFile(file);
     if (error) { toast.error(error); return; }
@@ -267,14 +271,8 @@ function VideoIaPage() {
       return next;
     });
     uploadSingleImage(file, (updates) => {
-      setAdditionalImages((prev) => {
-        const next = [...prev];
-        next[index] = { ...next[index], ...updates };
-        return next;
-      });
-    }).catch((err) => {
-      console.error("[handleAdditionalImageSelect] uploadSingleImage rejected:", err);
-    });
+      setAdditionalImages((prev) => { const next = [...prev]; next[index] = { ...next[index], ...updates }; return next; });
+    }).catch((err) => { console.error("[handleAdditionalImageSelect] uploadSingleImage rejected:", err); });
   }, [validateFile, uploadSingleImage]);
 
   const removePrimaryImage = useCallback(() => {
@@ -291,7 +289,6 @@ function VideoIaPage() {
     });
   }, []);
 
-  // Drag-and-drop
   function useDropHandler(callback: (file: File) => void) {
     const [dragOver, setDragOver] = useState(false);
     return {
@@ -309,11 +306,17 @@ function VideoIaPage() {
   // ── Step 5: Call Edge Function ──
   const handleGenerate = useCallback(async () => {
     if (!currentUserId) return;
+
+    // Check daily limit
+    if (dailyLimitReached) {
+      toast.error(`Limite diário de ${DAILY_LIMIT} roteiros atingido. Volte amanhã!`);
+      return;
+    }
+
     setGenerating(true);
     setGenError(null);
     setGenStep(0);
 
-    // Animate generation steps
     const stepInterval = setInterval(() => {
       setGenStep((s) => Math.min(s + 1, GENERATION_STEPS.length - 1));
     }, 2000);
@@ -349,8 +352,9 @@ function VideoIaPage() {
       }
 
       setGeneratedContent(data.content);
-      // Save/update project with generated content
       await saveProjectWithContent(data.content);
+      setDailyCount((c) => c + 1);
+      if (dailyCount + 1 >= DAILY_LIMIT) setDailyLimitReached(true);
       toast.success("Conteúdo gerado com sucesso!");
       setCurrentStep(6);
     } catch (err: any) {
@@ -366,10 +370,15 @@ function VideoIaPage() {
       setGenStep(GENERATION_STEPS.length - 1);
       setGenerating(false);
     }
-  }, [currentUserId, productInfo, styleConfig]);
+  }, [currentUserId, productInfo, styleConfig, dailyLimitReached, dailyCount]);
 
   const handleRegenerate = useCallback(async (variant?: string) => {
-    // Modify style slightly for variation
+    // Check daily limit
+    if (dailyLimitReached) {
+      toast.error(`Limite diário de ${DAILY_LIMIT} roteiros atingido. Volte amanhã!`);
+      return;
+    }
+
     const variantStyle = variant
       ? { ...styleConfig, style: variant === "curta" ? "oferta-rapida" : variant === "comercial" ? "promocao" : "ugc" }
       : styleConfig;
@@ -413,6 +422,8 @@ function VideoIaPage() {
 
       setGeneratedContent(data.content);
       await saveProjectWithContent(data.content);
+      setDailyCount((c) => c + 1);
+      if (dailyCount + 1 >= DAILY_LIMIT) setDailyLimitReached(true);
       toast.success("Nova versão gerada!");
     } catch (err: any) {
       if (err?.name === "AbortError") {
@@ -426,7 +437,7 @@ function VideoIaPage() {
       setGenStep(GENERATION_STEPS.length - 1);
       setGenerating(false);
     }
-  }, [currentUserId, productInfo, styleConfig]);
+  }, [currentUserId, productInfo, styleConfig, dailyLimitReached, dailyCount]);
 
   // ── Save project to database ──
   const saveProjectWithContent = useCallback(async (content?: GeneratedContent) => {
@@ -434,16 +445,13 @@ function VideoIaPage() {
     const c = content || generatedContent;
 
     if (projectId) {
-      // Update existing
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase.from as any)("video_projects")
         .update({
           idea_title: c.idea_title, hook: c.hook, script: c.script,
           voiceover: c.voiceover, screen_texts: c.screen_texts,
           cta: c.cta, caption: c.caption, hashtags: c.hashtags,
           final_prompt: c.final_prompt,
-          style: styleConfig.style,
-          duration: styleConfig.duration,
+          style: styleConfig.style, duration: styleConfig.duration,
           voice_type: styleConfig.voiceType,
           has_text: styleConfig.hasText, has_music: styleConfig.hasMusic,
           status: content ? "content_generated" : "prompt_ready",
@@ -451,8 +459,6 @@ function VideoIaPage() {
         })
         .eq("id", projectId);
     } else {
-      // Create new
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase.from as any)("video_projects")
         .insert({
           user_id: currentUserId,
@@ -467,8 +473,7 @@ function VideoIaPage() {
           voiceover: c.voiceover, screen_texts: c.screen_texts,
           cta: c.cta, caption: c.caption, hashtags: c.hashtags,
           final_prompt: c.final_prompt,
-          style: styleConfig.style,
-          duration: styleConfig.duration,
+          style: styleConfig.style, duration: styleConfig.duration,
           voice_type: styleConfig.voiceType,
           has_text: styleConfig.hasText, has_music: styleConfig.hasMusic,
         })
@@ -478,7 +483,6 @@ function VideoIaPage() {
       if (error) { console.error("Save project error:", error); return; }
       if (data?.id) setProjectId(data.id);
 
-      // Insert image records
       const allImages: { slot: ImageSlot; isPrimary: boolean; sortOrder: number }[] = [
         { slot: primaryImage, isPrimary: true, sortOrder: 0 },
         ...additionalImages.filter((s) => s.storagePath)
@@ -506,9 +510,7 @@ function VideoIaPage() {
       setCurrentStep(4);
     } catch (err: any) {
       toast.error(err?.message || "Erro ao criar o projeto.");
-    } finally {
-      setSubmitting(false);
-    }
+    } finally { setSubmitting(false); }
   }, [currentUserId, saveProjectWithContent]);
 
   // ── Step 7: Copy prompt to clipboard ──
@@ -520,10 +522,14 @@ function VideoIaPage() {
   // ── Navigation ──
   const handleContinue = useCallback(async () => {
     if (currentStep === 3) { await handleSubmitProject(); return; }
-    if (currentStep === 4) { await saveProjectWithContent(); setCurrentStep(5); return; }
+    if (currentStep === 4) {
+      if (dailyLimitReached) {
+        toast.error(`Limite diário de ${DAILY_LIMIT} roteiros atingido. Volte amanhã!`);
+        return;
+      }
+      await saveProjectWithContent(); setCurrentStep(5); return;
+    }
     if (currentStep === 6) {
-      // Save as prompt_ready
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase.from as any)("video_projects")
         .update({ status: "prompt_ready", updated_at: new Date().toISOString() })
         .eq("id", projectId);
@@ -532,7 +538,7 @@ function VideoIaPage() {
       return;
     }
     setCurrentStep((s) => Math.min(s + 1, 7));
-  }, [currentStep, handleSubmitProject, saveProjectWithContent, projectId]);
+  }, [currentStep, handleSubmitProject, saveProjectWithContent, projectId, dailyLimitReached]);
 
   const handleBack = useCallback(() => {
     if (currentStep === 1) return;
@@ -547,15 +553,11 @@ function VideoIaPage() {
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── ProductInfo update ──
   const updateProductInfo = (field: keyof ProductInfo, value: string) =>
     setProductInfo((prev) => ({ ...prev, [field]: value }));
-
-  // ── Generated content update ──
   const updateGenerated = (field: keyof GeneratedContent, value: string) =>
     setGeneratedContent((prev) => ({ ...prev, [field]: value }));
 
-  // Navigation is always allowed — user can skip any step
   const canContinue: Record<number, boolean> = {
     1: true, 2: true, 3: true, 4: true, 5: true, 6: true, 7: true,
   };
@@ -714,7 +716,6 @@ function VideoIaPage() {
           <ImageUploadSlot image={primaryImage} onSelect={handlePrimaryImageSelect} onRemove={removePrimaryImage} large
             {...useDropHandler(handlePrimaryImageSelect)} />
         </div>
-
         <div>
           <div className="mb-2 flex items-center gap-2">
             <Label className="text-sm font-semibold text-foreground">Imagens adicionais</Label>
@@ -730,7 +731,6 @@ function VideoIaPage() {
             })}
           </div>
         </div>
-
         <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm shadow-black/[0.02] ring-1 ring-black/[0.06]">
           <div className="flex items-start gap-3">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#FFF8F5]"><Camera className="h-4 w-4 text-[#EE4D2D]" /></div>
@@ -814,6 +814,14 @@ function VideoIaPage() {
   function Step4Style() {
     return (
       <div className="space-y-6">
+        {/* Daily limit badge */}
+        {dailyLimitChecked && (
+          <div className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-medium ${dailyLimitReached ? "bg-red-50 text-red-700 border border-red-200" : "bg-blue-50 text-blue-700 border border-blue-100"}`}>
+            <Info className="h-3.5 w-3.5 shrink-0" />
+            <span>{dailyCount} de {DAILY_LIMIT} gerações disponíveis hoje{dailyLimitReached ? " — limite atingido!" : ""}</span>
+          </div>
+        )}
+
         {/* Style cards */}
         <div>
           <Label className="text-sm font-semibold text-foreground">Estilo do vídeo</Label>
@@ -851,7 +859,6 @@ function VideoIaPage() {
                 </button>))}
             </div>
           </div>
-
           <div className="space-y-2">
             <Label className="text-sm font-medium text-foreground">Voz</Label>
             <div className="flex rounded-lg bg-gray-100 p-1">
@@ -863,7 +870,6 @@ function VideoIaPage() {
                 </button>))}
             </div>
           </div>
-
           <div className="space-y-2">
             <Label className="text-sm font-medium text-foreground">Tom</Label>
             <select value={styleConfig.tone} onChange={(e) => setStyleConfig((s) => ({ ...s, tone: e.target.value }))}
@@ -880,6 +886,21 @@ function VideoIaPage() {
           <ToggleOption icon={Music} label="Com música de fundo" active={styleConfig.hasMusic}
             onChange={() => setStyleConfig((s) => ({ ...s, hasMusic: !s.hasMusic }))} />
         </div>
+
+        {/* Daily limit warning */}
+        {dailyLimitReached && (
+          <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-center">
+            <div className="flex justify-center mb-2">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100"><Info className="h-6 w-6 text-red-500" /></div>
+            </div>
+            <h3 className="text-sm font-bold text-red-800">Limite diário atingido</h3>
+            <p className="mt-1 text-xs text-red-600">Você já gerou {DAILY_LIMIT} roteiros hoje. O limite reseta à meia-noite.</p>
+            <Button onClick={handleBack} variant="outline"
+              className="mt-3 h-10 rounded-xl border-red-200 bg-white text-sm font-medium text-red-600 hover:bg-red-50">
+              Voltar
+            </Button>
+          </div>
+        )}
       </div>
     );
   }
@@ -890,7 +911,6 @@ function VideoIaPage() {
   function Step5Generation() {
     return (
       <div className="space-y-6">
-        {/* Summary card */}
         <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm shadow-black/[0.02] ring-1 ring-black/[0.06]">
           <h3 className="text-sm font-semibold text-foreground">Resumo da configuração</h3>
           <div className="mt-3 grid gap-2 text-xs sm:grid-cols-2">
@@ -903,7 +923,6 @@ function VideoIaPage() {
           </div>
         </div>
 
-        {/* Generate button */}
         {!generating && !genError && (
           <div className="flex flex-col items-center rounded-2xl border border-dashed border-gray-200 bg-white py-12 text-center shadow-sm">
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#FFF8F5]">
@@ -913,14 +932,21 @@ function VideoIaPage() {
             <p className="mt-1 max-w-sm text-sm text-muted-foreground">
               A IA vai criar o roteiro completo do vídeo com base no produto e estilo escolhido.
             </p>
+            {dailyLimitChecked && (
+              <p className="mt-2 text-xs text-muted-foreground">
+                <span className={dailyLimitReached ? "text-red-500 font-semibold" : "text-blue-500 font-semibold"}>
+                  {dailyCount}/{DAILY_LIMIT}
+                </span> roteiros gerados hoje
+              </p>
+            )}
             <Button onClick={handleGenerate}
-              className="mt-5 h-12 rounded-xl bg-[#EE4D2D] px-8 text-sm font-semibold text-white shadow-md shadow-[#EE4D2D]/25 transition-all hover:bg-[#EE4D2D]/90 hover:shadow-lg hover:shadow-[#EE4D2D]/30 active:scale-[0.98]">
-              <Wand2 className="mr-2 h-4 w-4" /> Gerar conteúdo
+              disabled={dailyLimitReached}
+              className="mt-5 h-12 rounded-xl bg-[#EE4D2D] px-8 text-sm font-semibold text-white shadow-md shadow-[#EE4D2D]/25 transition-all hover:bg-[#EE4D2D]/90 hover:shadow-lg hover:shadow-[#EE4D2D]/30 active:scale-[0.98] disabled:opacity-40">
+              <Wand2 className="mr-2 h-4 w-4" /> {dailyLimitReached ? "Limite diário atingido" : "Gerar conteúdo"}
             </Button>
           </div>
         )}
 
-        {/* Generating state */}
         {generating && (
           <div className="space-y-4 rounded-2xl border border-[#EE4D2D]/20 bg-white p-8 shadow-sm shadow-[#EE4D2D]/10">
             <div className="flex flex-col items-center">
@@ -944,7 +970,6 @@ function VideoIaPage() {
           </div>
         )}
 
-        {/* Error state */}
         {genError && (
           <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-center">
             <p className="text-sm font-medium text-red-700">{genError}</p>
@@ -964,7 +989,6 @@ function VideoIaPage() {
   function Step6Review() {
     return (
       <div className="space-y-6">
-        {/* Regenerate buttons */}
         <div className="flex flex-wrap gap-2">
           <RegenButton icon={RotateCw} label="Gerar outra versão" onClick={() => handleRegenerate()} />
           <RegenButton icon={Zap} label="Versão mais curta" onClick={() => handleRegenerate("curta")} />
@@ -979,7 +1003,6 @@ function VideoIaPage() {
           </div>
         )}
 
-        {/* Editable fields */}
         <div className="space-y-5 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm shadow-black/[0.02] ring-1 ring-black/[0.06]">
           <EditableField label="Título da ideia" value={generatedContent.idea_title}
             onChange={(v) => updateGenerated("idea_title", v)} />
@@ -1005,187 +1028,209 @@ function VideoIaPage() {
   }
 
   /* ═══════════════════════════════════════════════════════════
-     STEP 7 — Prompt pronto
+     STEP 7 — Chat + Gemini Redirect
      ═══════════════════════════════════════════════════════════ */
   function Step7Gemini() {
-  type ChatMsg = { role: "user" | "assistant"; content: string };
-  const [chatMessages, setChatMessages] = useState<ChatMsg[]>([
-    {
-      role: "assistant",
-      content: `Seu roteiro está pronto! 🎬 Aqui está um resumo: **${generatedContent.idea_title}**.\n\nSe quiser ajustar algo, é só me pedir! Por exemplo:\n• "Deixa o tom mais urgente"\n• "Faz uma versão mais curta"\n• "Adiciona mais emoção na cena 2"\n• "Muda o CTA para algo mais direto"\n\nO que você gostaria de mudar?`,
-    },
-  ]);
-  const [chatInput, setChatInput] = useState("");
-  const [chatLoading, setChatLoading] = useState(false);
-  const chatEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
+    type ChatMsg = { role: "user" | "assistant"; content: string };
+    const [chatMessages, setChatMessages] = useState<ChatMsg[]>([
+      {
+        role: "assistant",
+        content: `Seu roteiro está pronto! 🎬\n\n**${generatedContent.idea_title}**\n\nPosso ajustar qualquer coisa:\n• "Deixa o tom mais urgente"\n• "Faz uma versão mais curta"\n• "Muda a cena 2"\n• "Adiciona mais emoção"\n• "Quero estilo UGC"\n\nOu qualquer outra modificação! O que você gostaria de mudar?`,
+      },
+    ]);
+    const [chatInput, setChatInput] = useState("");
+    const [chatLoading, setChatLoading] = useState(false);
+    const [countdown, setCountdown] = useState<number | null>(null);
+    const [redirecting, setRedirecting] = useState(false);
+    const chatEndRef = useRef<HTMLDivElement>(null);
+    const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // Auto-scroll to bottom
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [chatMessages]);
+    useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [chatMessages]);
+    useEffect(() => { if (!redirecting) inputRef.current?.focus(); }, [redirecting]);
 
-  // Focus input on mount
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
-
-  const handleSendMessage = useCallback(async () => {
-    const text = chatInput.trim();
-    if (!text || chatLoading) return;
-
-    const userMsg: ChatMsg = { role: "user", content: text };
-    setChatMessages((prev) => [...prev, userMsg]);
-    setChatInput("");
-    setChatLoading(true);
-
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000);
-
-      const res = await fetch(
-        "https://ndawyrqzqhzbyjdmkdge.supabase.co/functions/v1/generate-video-chat",
-        {
+    const handleSendMessage = useCallback(async () => {
+      const text = chatInput.trim();
+      if (!text || chatLoading) return;
+      const userMsg: ChatMsg = { role: "user", content: text };
+      setChatMessages((prev) => [...prev, userMsg]);
+      setChatInput("");
+      setChatLoading(true);
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
+        const res = await fetch("https://ndawyrqzqhzbyjdmkdge.supabase.co/functions/v1/generate-video-chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             messages: [...chatMessages, userMsg].map((m) => ({ role: m.role, content: m.content })),
-            product: {
-              name: productInfo.name,
-              description: productInfo.description,
-              benefits: productInfo.benefits,
-              targetAudience: productInfo.targetAudience,
-              differentiators: productInfo.differentiators,
-              problemSolved: productInfo.problemSolved,
-            },
+            product: { name: productInfo.name, description: productInfo.description, benefits: productInfo.benefits, targetAudience: productInfo.targetAudience, differentiators: productInfo.differentiators, problemSolved: productInfo.problemSolved },
             style: styleConfig,
             currentContent: generatedContent,
           }),
           signal: controller.signal,
-        },
-      );
+        });
+        clearTimeout(timeoutId);
+        const data = await res.json();
+        if (!res.ok || !data.ok) throw new Error(data.error || "Erro ao comunicar com o assistente");
+        setChatMessages((prev) => [...prev, { role: "assistant", content: data.reply }]);
+      } catch (err: any) {
+        setChatMessages((prev) => [...prev, { role: "assistant", content: err?.name === "AbortError" ? "⏰ O assistente demorou muito para responder. Tente novamente." : "❌ Erro ao comunicar com o assistente. Verifique sua conexão." }]);
+      } finally { setChatLoading(false); }
+    }, [chatInput, chatLoading, chatMessages, productInfo, styleConfig, generatedContent]);
 
-      clearTimeout(timeoutId);
-      const data = await res.json();
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSendMessage(); }
+    };
 
-      if (!res.ok || !data.ok) {
-        throw new Error(data.error || "Erro ao comunicar com o assistente");
+    const handleOpenGemini = useCallback(() => {
+      navigator.clipboard.writeText(generatedContent.final_prompt);
+      toast.success("Prompt copiado! Você será redirecionado em 30 segundos...");
+      if (projectId) {
+        (supabase.from as any)("video_projects").update({ status: "opened_in_gemini", updated_at: new Date().toISOString() }).eq("id", projectId);
       }
+      setRedirecting(true);
+      setCountdown(30);
+      let remaining = 30;
+      const interval = setInterval(() => {
+        remaining--;
+        setCountdown(remaining);
+        if (remaining <= 0) { clearInterval(interval); window.open("https://gemini.google.com/app", "_blank", "noopener,noreferrer"); }
+      }, 1000);
+    }, [generatedContent.final_prompt, projectId]);
 
-      setChatMessages((prev) => [...prev, { role: "assistant", content: data.reply }]);
-    } catch (err: any) {
-      if (err?.name === "AbortError") {
-        setChatMessages((prev) => [...prev, { role: "assistant", content: "⏰ O assistente demorou muito para responder. Tente novamente ou faça uma pergunta mais curta." }]);
-      } else {
-        setChatMessages((prev) => [...prev, { role: "assistant", content: "❌ Erro ao comunicar com o assistente. Verifique sua conexão e tente novamente." }]);
+    const handleOpenGeminiNow = useCallback(() => {
+      navigator.clipboard.writeText(generatedContent.final_prompt);
+      if (projectId) {
+        (supabase.from as any)("video_projects").update({ status: "opened_in_gemini", updated_at: new Date().toISOString() }).eq("id", projectId);
       }
-    } finally {
-      setChatLoading(false);
-    }
-  }, [chatInput, chatLoading, chatMessages, productInfo, styleConfig, generatedContent]);
+      window.open("https://gemini.google.com/app", "_blank", "noopener,noreferrer");
+      setRedirecting(true);
+      setCountdown(null);
+    }, [generatedContent.final_prompt, projectId]);
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
-  };
-
-  return (
-    <div className="flex flex-col h-[650px] max-h-[calc(100vh-280px)] min-h-[450px]">
-      {/* Header */}
-      <div className="flex-shrink-0 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm shadow-black/[0.02] ring-1 ring-black/[0.06] mb-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#FFF8F5]">
-            <Sparkles className="h-5 w-5 text-[#EE4D2D]" />
+    // Redirecting state
+    if (redirecting) {
+      return (
+        <div className="space-y-5">
+          <div className="flex flex-col items-center rounded-2xl border border-emerald-200 bg-emerald-50 p-6 text-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500 shadow-md shadow-emerald-500/20"><Check className="h-7 w-7 text-white" /></div>
+            <h3 className="mt-3 text-lg font-bold text-emerald-800">Prompt copiado e pronto!</h3>
+            {countdown !== null && (
+              <p className="mt-1 text-sm text-emerald-600">Redirecionando para o Gemini em <span className="font-bold text-emerald-800 text-lg">{countdown}s</span>...</p>
+            )}
           </div>
-          <div>
-            <h3 className="text-sm font-bold text-foreground">Assistente de Vídeo IA</h3>
-            <p className="text-xs text-muted-foreground">Refine seu roteiro conversando com a inteligência artificial</p>
+          <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm shadow-black/[0.02] ring-1 ring-black/[0.06]">
+            <h4 className="flex items-center gap-2 text-sm font-bold text-foreground"><Sparkles className="h-4 w-4 text-[#EE4D2D]" /> Como gerar seu vídeo no Gemini</h4>
+            <div className="mt-4 space-y-3">
+              {[
+                { step: 1, icon: Copy, text: "O prompt em inglês já foi copiado automaticamente", done: true },
+                { step: 2, icon: Image, text: "No Gemini, envie a imagem do seu produto", done: false },
+                { step: 3, icon: Wand2, text: "Cole o prompt copiado no chat do Gemini", done: false },
+                { step: 4, icon: Subtitles, text: "Selecione 9:16 (formato vertical) no Gemini", done: false },
+                { step: 5, icon: Play, text: "Gere o vídeo e baixe o resultado!", done: false },
+              ].map(({ step, icon: Icon, text, done }) => (
+                <div key={step} className="flex items-start gap-3">
+                  <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${done ? "bg-emerald-500 text-white" : "bg-gray-100 text-gray-500"}`}>
+                    {done ? <Check className="h-3.5 w-3.5" /> : step}
+                  </div>
+                  <div className="flex items-center gap-2 pt-0.5">
+                    <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+                    <p className="text-sm text-gray-600">{text}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button onClick={handleOpenGeminiNow}
+              className="h-12 flex-1 rounded-xl bg-[#EE4D2D] text-sm font-semibold text-white shadow-md shadow-[#EE4D2D]/25 hover:bg-[#EE4D2D]/90 hover:shadow-lg hover:shadow-[#EE4D2D]/30 active:scale-[0.98]">
+              <Star className="mr-2 h-4 w-4" /> Abrir Gemini agora
+            </Button>
+            <Button onClick={handleBack} variant="ghost"
+              className="h-12 rounded-xl text-sm font-medium text-gray-500 hover:text-[#EE4D2D]">
+              <ChevronLeft className="mr-2 h-4 w-4" /> Voltar e editar
+            </Button>
           </div>
         </div>
-      </div>
+      );
+    }
 
-      {/* Chat messages area */}
-      <div className="flex-1 overflow-y-auto rounded-2xl border border-gray-100 bg-[#FAFAFA] p-4 shadow-sm shadow-black/[0.02] ring-1 ring-black/[0.06] mb-4">
-        <div className="space-y-4">
-          {chatMessages.map((msg, i) => (
-            <div
-              key={i}
-              className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} animate-[fadeIn_0.3s_ease-out]`}
-            >
-              <div
-                className={`max-w-[85%] sm:max-w-[70%] rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap break-words ${
-                  msg.role === "user"
-                    ? "bg-[#EE4D2D] text-white rounded-br-md shadow-sm shadow-[#EE4D2D]/15"
-                    : "bg-white text-gray-700 rounded-bl-md border border-gray-100 shadow-sm"
-                }`}
-              >
-                {msg.content}
-              </div>
-            </div>
-          ))}
-          {chatLoading && (
-            <div className="flex justify-start">
-              <div className="max-w-[85%] sm:max-w-[70%] rounded-2xl rounded-bl-md border border-gray-100 bg-white px-4 py-3 shadow-sm">
-                <div className="flex items-center gap-1.5">
-                  <span className="h-2 w-2 animate-bounce rounded-full bg-gray-400" style={{ animationDelay: "0ms" }} />
-                  <span className="h-2 w-2 animate-bounce rounded-full bg-gray-400" style={{ animationDelay: "150ms" }} />
-                  <span className="h-2 w-2 animate-bounce rounded-full bg-gray-400" style={{ animationDelay: "300ms" }} />
+    // Normal chat state
+    return (
+      <div className="flex flex-col h-[620px] max-h-[calc(100vh-280px)] min-h-[480px]">
+        {/* Success header */}
+        <div className="flex-shrink-0 flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 mb-4">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/20"><Check className="h-5 w-5 text-white" /></div>
+          <div className="min-w-0 flex-1">
+            <h3 className="text-sm font-bold text-emerald-800">Roteiro gerado com sucesso!</h3>
+            <p className="text-xs text-emerald-600 truncate">{generatedContent.idea_title}</p>
+          </div>
+        </div>
+
+        {/* Chat messages area */}
+        <div className="flex-1 overflow-y-auto rounded-2xl border border-gray-100 bg-[#FAFAFA] p-4 shadow-sm shadow-black/[0.02] ring-1 ring-black/[0.06] mb-3">
+          <div className="space-y-4">
+            {chatMessages.map((msg, i) => (
+              <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                <div className={`max-w-[85%] sm:max-w-[70%] rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap break-words ${msg.role === "user" ? "bg-[#EE4D2D] text-white rounded-br-md shadow-sm shadow-[#EE4D2D]/15" : "bg-white text-gray-700 rounded-bl-md border border-gray-100 shadow-sm"}`}>
+                  {msg.content}
                 </div>
               </div>
-            </div>
-          )}
-          <div ref={chatEndRef} />
+            ))}
+            {chatLoading && (
+              <div className="flex justify-start">
+                <div className="rounded-2xl rounded-bl-md border border-gray-100 bg-white px-4 py-3 shadow-sm">
+                  <div className="flex items-center gap-1.5">
+                    <span className="h-2 w-2 animate-bounce rounded-full bg-gray-400" style={{ animationDelay: "0ms" }} />
+                    <span className="h-2 w-2 animate-bounce rounded-full bg-gray-400" style={{ animationDelay: "150ms" }} />
+                    <span className="h-2 w-2 animate-bounce rounded-full bg-gray-400" style={{ animationDelay: "300ms" }} />
+                  </div>
+                </div>
+              </div>
+            )}
+            <div ref={chatEndRef} />
+          </div>
         </div>
-      </div>
 
-      {/* Input area */}
-      <div className="flex-shrink-0 rounded-2xl border border-gray-100 bg-white p-3 shadow-sm shadow-black/[0.02] ring-1 ring-black/[0.06] mb-4">
-        <div className="flex items-end gap-2">
-          <textarea
-            ref={inputRef}
-            value={chatInput}
-            onChange={(e) => setChatInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Peça ajustes no roteiro..."
-            rows={2}
-            disabled={chatLoading}
-            className="flex-1 resize-none rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-[#EE4D2D]/40 focus:outline-none focus:ring-2 focus:ring-[#EE4D2D]/10 disabled:opacity-50"
-          />
-          <Button
-            type="button"
-            onClick={handleSendMessage}
-            disabled={!chatInput.trim() || chatLoading}
-            className="h-10 w-10 shrink-0 rounded-xl bg-[#EE4D2D] p-0 text-white shadow-sm shadow-[#EE4D2D]/25 transition-all hover:bg-[#EE4D2D]/90 hover:shadow-md hover:shadow-[#EE4D2D]/30 active:scale-[0.97] disabled:opacity-40"
-          >
-            <Send className="h-4 w-4" />
+        {/* Input bar */}
+        <div className="flex-shrink-0 rounded-2xl border border-gray-100 bg-white p-3 shadow-sm shadow-black/[0.02] ring-1 ring-black/[0.06] mb-3">
+          <div className="flex items-end gap-2">
+            <textarea ref={inputRef} value={chatInput} onChange={(e) => setChatInput(e.target.value)} onKeyDown={handleKeyDown}
+              placeholder="Peça ajustes no roteiro..." rows={2} disabled={chatLoading}
+              className="flex-1 resize-none rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-[#EE4D2D]/40 focus:outline-none focus:ring-2 focus:ring-[#EE4D2D]/10 disabled:opacity-50" />
+            <Button type="button" onClick={handleSendMessage} disabled={!chatInput.trim() || chatLoading}
+              className="h-10 w-10 shrink-0 rounded-xl bg-[#EE4D2D] p-0 text-white shadow-sm shadow-[#EE4D2D]/25 hover:bg-[#EE4D2D]/90 hover:shadow-md hover:shadow-[#EE4D2D]/30 active:scale-[0.97] disabled:opacity-40">
+              <Send className="h-4 w-4" />
+            </Button>
+          </div>
+          <p className="mt-1.5 text-[10px] text-muted-foreground text-center">Enter para enviar · Shift+Enter para nova linha</p>
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex-shrink-0 flex flex-col gap-2 sm:flex-row mb-3">
+          <Button onClick={handleCopyFinalPrompt} variant="outline"
+            className="h-11 flex-1 rounded-xl border-gray-200 bg-white text-sm font-medium text-gray-600 shadow-sm hover:border-[#EE4D2D]/30 hover:text-[#EE4D2D]">
+            <Copy className="mr-2 h-4 w-4" /> 📋 Copiar prompt
+          </Button>
+          <Button onClick={handleOpenGemini}
+            className="h-11 flex-1 rounded-xl bg-[#EE4D2D] text-sm font-semibold text-white shadow-md shadow-[#EE4D2D]/25 hover:bg-[#EE4D2D]/90 hover:shadow-lg hover:shadow-[#EE4D2D]/30 active:scale-[0.98]">
+            <Star className="mr-2 h-4 w-4" /> 🎬 Gerar vídeo no Gemini
           </Button>
         </div>
-        <p className="mt-1.5 text-[10px] text-muted-foreground text-center">
-          Enter para enviar · Shift+Enter para nova linha
-        </p>
-      </div>
 
-      {/* Bottom actions */}
-      <div className="flex-shrink-0 flex flex-col gap-2 sm:flex-row">
-        <Button
-          onClick={handleCopyFinalPrompt}
-          variant="outline"
-          className="h-11 flex-1 rounded-xl border-gray-200 bg-white text-sm font-medium text-gray-600 shadow-sm hover:border-[#EE4D2D]/30 hover:text-[#EE4D2D]"
-        >
-          <Copy className="mr-2 h-4 w-4" /> Copiar prompt final
-        </Button>
-        <Button
-          onClick={handleBack}
-          variant="ghost"
-          className="h-11 rounded-xl text-sm font-medium text-gray-500 hover:text-[#EE4D2D]"
-        >
-          <ChevronLeft className="mr-2 h-4 w-4" /> Voltar e editar
-        </Button>
+        {/* Instructions card */}
+        <div className="flex-shrink-0 rounded-2xl border border-blue-100 bg-blue-50/50 p-4">
+          <h4 className="flex items-center gap-2 text-xs font-bold text-blue-800"><Lightbulb className="h-3.5 w-3.5" /> Como gerar seu vídeo</h4>
+          <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-5">
+            {["① Clique em Gerar vídeo no Gemini", "② Envie a imagem do produto", "③ Cole o prompt copiado", "④ Selecione 9:16 (vertical)", "⑤ Gere e baixe o vídeo!"].map((tip, i) => (
+              <div key={i} className="flex items-center gap-1.5">
+                <span className="text-[11px] leading-tight text-blue-700">{tip}</span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
-    </div>
-  );
+    );
   }
 
   /* ═══════════════════════════════════════════════════════════
@@ -1196,24 +1241,16 @@ function VideoIaPage() {
     <DashboardShell title="Vídeo IA"
       subtitle="Crie vídeos profissionais para seus produtos com inteligência artificial. Siga os 7 passos abaixo.">
       <div className="mx-auto w-full max-w-4xl">
-        {/* Stepper card */}
         <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm shadow-black/[0.02] ring-1 ring-black/[0.06]">
           <StepIndicator />
         </div>
-
         <div className="mt-6">
-          {/* Step title */}
           <div className="mb-4 flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#FFF8F5]">
-              {(() => {
-                const Icon = STEPS[currentStep - 1].icon;
-                return <Icon className="h-5 w-5 text-[#EE4D2D]" />;
-              })()}
+              {(() => { const Icon = STEPS[currentStep - 1].icon; return <Icon className="h-5 w-5 text-[#EE4D2D]" />; })()}
             </div>
             <div>
-              <h2 className="text-lg font-bold text-foreground">
-                Etapa {currentStep}: {STEPS[currentStep - 1].label}
-              </h2>
+              <h2 className="text-lg font-bold text-foreground">Etapa {currentStep}: {STEPS[currentStep - 1].label}</h2>
               <p className="text-xs text-muted-foreground">
                 {["Escolha o produto que será o tema do vídeo",
                   "Envie imagens de qualidade para o vídeo",
@@ -1227,7 +1264,6 @@ function VideoIaPage() {
             </div>
           </div>
 
-          {/* Step body */}
           <div className="min-h-[300px]">
             {currentStep === 1 && <Step1SelectProduct />}
             {currentStep === 2 && <Step2UploadImages />}
@@ -1238,7 +1274,6 @@ function VideoIaPage() {
             {currentStep === 7 && <Step7Gemini />}
           </div>
 
-          {/* Navigation buttons */}
           {currentStep !== 5 && (
             <div className="mt-8 flex items-center justify-between gap-3">
               <Button type="button" variant="outline" onClick={handleBack}
@@ -1249,7 +1284,7 @@ function VideoIaPage() {
 
               {continueLabel[currentStep] && (
                 <Button type="button" onClick={currentStep === 4 ? handleGenerate : handleContinue}
-                  disabled={submitting || generating}
+                  disabled={submitting || generating || (currentStep === 4 && dailyLimitReached)}
                   className="h-11 min-w-[140px] rounded-xl bg-[#EE4D2D] text-sm font-semibold text-white shadow-sm shadow-[#EE4D2D]/25 transition-all hover:bg-[#EE4D2D]/90 hover:shadow-md hover:shadow-[#EE4D2D]/30 active:scale-[0.98] disabled:opacity-40">
                   {submitting || generating ? (
                     <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Processando...</span>
@@ -1261,7 +1296,6 @@ function VideoIaPage() {
             </div>
           )}
 
-          {/* Step 5 has its own back button during generation/error */}
           {currentStep === 5 && !generating && (
             <div className="mt-8">
               <Button type="button" variant="outline" onClick={handleBack}
