@@ -105,6 +105,8 @@ function buildPrompt(
 13. The final_prompt must be in PERFECT ENGLISH — this is what gets pasted into a video AI generator
 14. The final_prompt must be comprehensive: all product details, all video specs, scene-by-scene direction, full narration, text specs, music direction
 15. Script must mention SPECIFIC product details by name — do NOT use generic placeholders
+16. ALL narration and voiceover text MUST be in Brazilian Portuguese (pt-BR)
+17. ALL on-screen text overlays MUST be in Brazilian Portuguese (pt-BR)
 
 ## RESPONSE FORMAT (JSON only, no markdown, no code fences, no explanation text)
 
@@ -708,10 +710,11 @@ VIDEO SPECIFICATIONS:
 - Platform: TikTok, Instagram Reels, Shopee Video
 - Duration: ${durationSec} seconds
 - Resolution: 1080x1920
+- Language: Brazilian Portuguese — ALL narration and on-screen text must be in Brazilian Portuguese (pt-BR)
 - Style: ${styleDesc}
 - Tone: ${TONE_LABELS[String(product.tone || "entusiasmado")] || "Enthusiastic"}
-- Voiceover: ${VOICE_LABELS[String(product.voiceType || "feminina")] || "Female voice"}
-- On-screen Text: ${hasText ? "Yes — with exact text, font style, animation, position, and timing per scene" : "No — visual communication only"}
+- Voiceover: ${VOICE_LABELS[String(product.voiceType || "feminina")] || "Female voice"} — narration MUST be in Brazilian Portuguese (pt-BR), NOT English
+- On-screen Text: ${hasText ? "Yes — ALL text overlays MUST be in Brazilian Portuguese (pt-BR)" : "No — visual communication only"}
 - Background Music: ${hasMusic ? "Yes — music direction specified per scene" : "No background music"}
 
 SCENE-BY-SCENE DIRECTION:
@@ -737,8 +740,8 @@ Visual: Ultimate product presentation — ${name} shown in its best light, all k
 ${hasText ? `Text Overlay: Call-to-action text — bold animated entrance (scale or pulse), white with optional accent color, prominent center or lower-third position, appears at scene start and holds through end, largest text element at 48pt+ equivalent` : ""}
 Audio: ${hasMusic ? "Music reaches emotional climax then resolves, final hit or fade on CTA words" : "Voiceover delivers final CTA with emphasis and impact"}
 
-FULL NARRATION SCRIPT (English):
-[Complete voiceover text in English, professionally written for a voice actor. Include [timing] markers at each scene transition. Use natural pacing with pauses marked by ellipses (...). Emphasize key words with ALL CAPS sparingly. The narration should tell a complete story: hook → benefits → proof → call to action. Total narration duration: ${durationSec} seconds at natural speaking pace (approximately ${Math.round(durationSec * 2.5)} words).]
+FULL NARRATION SCRIPT (Brazilian Portuguese):
+[Complete voiceover text in BRAZILIAN PORTUGUESE (pt-BR), professionally written for a voice actor. NOT English. Include [timing] markers at each scene transition. Use natural pacing with pauses marked by ellipses (...). Emphasize key words with ALL CAPS sparingly. The narration should tell a complete story: hook → benefits → proof → call to action. Total narration duration: ${durationSec} seconds at natural speaking pace (approximately ${Math.round(durationSec * 2.5)} words).]
 
 Scene 1 [0-3s]:
 [Hook — 6-8 words maximum, grab attention immediately]
@@ -770,8 +773,9 @@ IMPORTANT CONSTRAINTS:
 - The opening hook MUST capture viewer attention within the first 2 seconds
 - End with a clear, memorable, and actionable call-to-action
 - Use the tone consistently throughout every scene — maintain tonal coherence
-- Write ALL text natively in English — this is NOT a translation from another language
+- Write ALL narration and on-screen text in Brazilian Portuguese (pt-BR) — NOT English
 - Include all product information provided — a comprehensive prompt produces a better video
+- ALL narration and on-screen text MUST be in Brazilian Portuguese (pt-BR) — NOT English
 - The video should look PROFESSIONAL and ready for commercial use on social media platforms`;
 }
 
