@@ -433,9 +433,9 @@ function ShopeeView({ items, active, setActive, onFinish }: ViewProps) {
                 validated ? "border-emerald-200" : "border-gray-100"
               }`}>
                 <img
-                  src="/brand/up-logo-icon.png"
+                  src="/brand/logo.png"
                   alt="UpShopee"
-                  className="h-9 w-9 object-contain"
+                  className="h-12 w-auto object-contain"
                   onError={(e) => { e.currentTarget.style.display = "none"; }}
                 />
               </div>
