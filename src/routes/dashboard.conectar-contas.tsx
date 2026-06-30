@@ -433,7 +433,7 @@ function ShopeeView({ items, active, setActive, onFinish }: ViewProps) {
                 validated ? "border-emerald-200" : "border-gray-100"
               }`}>
                 <img
-                  src="/brand/shopesync-logo.png"
+                  src="/brand/up-logo-icon.png"
                   alt="UpShopee"
                   className="h-9 w-9 object-contain"
                   onError={(e) => { e.currentTarget.style.display = "none"; }}

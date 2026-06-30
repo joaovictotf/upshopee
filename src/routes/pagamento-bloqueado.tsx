@@ -58,7 +58,7 @@ function PagamentoBloqueado() {
     <div className="min-h-screen flex flex-col items-center justify-center bg-[#080808] px-4 py-10 text-white">
       <div className="w-full max-w-3xl flex flex-col items-center text-center">
         <div className="flex items-center justify-center gap-2">
-          <img src="/brand/shopesync-logo.png" alt="UpShopee" className="h-8 w-8 object-contain" />
+          <img src="/brand/up-logo-icon.png" alt="UpShopee" className="h-8 w-8 object-contain" />
           <span className="text-base font-bold text-white">UpShopee</span>
         </div>
 

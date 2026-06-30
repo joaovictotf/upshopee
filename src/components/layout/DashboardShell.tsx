@@ -74,12 +74,8 @@ const adminExtraNav: NavItem[] = [
 
 function Logo() {
   return (
-    <div className="flex items-center gap-2.5">
-      <img src="/brand/shopesync-logo.png" alt="UpShopee" className="h-10 w-10 object-contain" />
-      <div className="leading-tight">
-        <div className="text-[15px] font-bold tracking-[-0.02em] text-foreground">UpShopee</div>
-        <div className="text-[9px] font-medium tracking-[0.12em] uppercase text-muted-foreground">Painel do vendedor</div>
-      </div>
+    <div className="flex items-center gap-0">
+      <img src="/brand/up-logo-stacked.png" alt="UpShopee" className="h-10 w-auto object-contain" />
     </div>
   );
 }
