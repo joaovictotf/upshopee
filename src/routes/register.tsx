@@ -6,7 +6,7 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Card, CardContent } from "../components/ui/card";
 import { toast } from "sonner";
-import { Eye, EyeOff, ShoppingBag, UserPlus } from "lucide-react";
+import { Eye, EyeOff, UserPlus } from "lucide-react";
 
 export const Route = createFileRoute("/register")({ component: RegisterPage });
 
@@ -73,14 +73,7 @@ function RegisterPage() {
         </div>
 
         <div className="relative z-10">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20">
-              <ShoppingBag className="h-6 w-6 text-white" />
-            </div>
-            <span className="text-xl font-bold tracking-tight text-white">
-              UpShopee
-            </span>
-          </div>
+          <img src="/brand/logo.png" alt="UpShopee" className="h-20 w-auto object-contain brightness-0 invert" onError={(e)=>{e.currentTarget.style.display='none'}} />
         </div>
 
         <div className="relative z-10">
@@ -106,14 +99,7 @@ function RegisterPage() {
       <div className="flex flex-1 items-center justify-center px-4 py-12 sm:px-6">
         <div className="w-full max-w-[400px]">
           {/* Mobile logo */}
-          <div className="mb-8 flex items-center justify-center gap-3 lg:hidden">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EE4D2D]/10">
-              <ShoppingBag className="h-6 w-6 text-[#EE4D2D]" />
-            </div>
-            <span className="text-xl font-bold tracking-tight text-foreground">
-              UpShopee
-            </span>
-          </div>
+          <img src="/brand/logo.png" alt="UpShopee" className="mb-8 mx-auto block h-12 w-auto object-contain lg:hidden" onError={(e)=>{e.currentTarget.style.display='none'}} />
 
           <Card className="border-0 shadow-lg shadow-black/[0.04] ring-1 ring-black/[0.06]">
             <CardContent className="p-6 sm:p-8">

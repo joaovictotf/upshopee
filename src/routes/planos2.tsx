@@ -191,7 +191,7 @@ function Navbar() {
     }}>
       <div style={{ maxWidth: 1180, margin: "0 auto", padding: "0 20px", height: 64, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
         <Link to="/planos" style={{ display: "flex", alignItems: "center", gap: 9, textDecoration: "none", flexShrink: 0 }}>
-          <img src="/brand/logo.png" alt="UpShopee" style={{ height: 40, objectFit: "contain" }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+          <img src="/brand/logo.png" alt="UpShopee" style={{ height: 56, objectFit: "contain" }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
           <span style={{ fontWeight: 800, fontSize: 16, color: "#FFFFFF", letterSpacing: "-0.3px", fontFamily: "'Barlow', sans-serif" }}>UpShopee</span>
         </Link>
 
@@ -1325,7 +1325,7 @@ function FooterSection() {
         <div style={{ display: "flex", flexWrap: "wrap", gap: 32, justifyContent: "space-between", alignItems: "flex-start", marginBottom: 40 }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 10 }}>
-              <img src="/brand/logo.png" alt="UpShopee" style={{ height: 36, objectFit: "contain" }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+              <img src="/brand/logo.png" alt="UpShopee" style={{ height: 48, objectFit: "contain" }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
               <span style={{ fontWeight: 800, fontSize: 15, color: "#FFFFFF", fontFamily: "'Barlow', sans-serif" }}>UpShopee</span>
             </div>
             <p style={{ fontSize: 13, color: "#888888", margin: 0, maxWidth: 220, fontFamily: "'Barlow', sans-serif" }}>Automatize suas vendas na Shopee</p>

@@ -58,7 +58,7 @@ function PagamentoBloqueado() {
     <div className="min-h-screen flex flex-col items-center justify-center bg-[#080808] px-4 py-10 text-white">
       <div className="w-full max-w-3xl flex flex-col items-center text-center">
         <div className="flex items-center justify-center gap-2">
-          <img src="/brand/logo.png" alt="UpShopee" className="h-10 w-auto object-contain" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+          <img src="/brand/logo.png" alt="UpShopee" className="h-14 w-auto object-contain" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
           <span className="text-base font-bold text-white">UpShopee</span>
         </div>
 
