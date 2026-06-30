@@ -5,7 +5,7 @@ import { products, categories, VALENTINE_CATEGORY, COPA_CATEGORY, type Product }
 import { ProductCard } from "../components/products/ProductCard";
 import { GenerateListingFlow } from "../components/products/GenerateListingFlow";
 import { Input } from "../components/ui/input";
-import { Search, Heart, Sparkles, Trophy } from "lucide-react";
+import { Search, Heart, Trophy } from "lucide-react";
 
 export const Route = createFileRoute("/dashboard/produtos")({ component: Produtos });
 
@@ -115,67 +115,6 @@ function Produtos() {
           })}
         </div>
       </div>
-
-      {/* ═══ COPA DO MUNDO BANNER ═══ */}
-      {(cat === "Todos" || cat === COPA_CATEGORY) && (
-        <div className="copa-banner relative mb-5 overflow-hidden rounded-2xl border border-green-200 bg-white p-5 shadow-sm shadow-black/[0.04] ring-1 ring-black/[0.06]">
-          <div className="copa-shine pointer-events-none absolute inset-0" />
-          <div className="relative flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="copa-badge-new inline-flex items-center gap-1 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-green-700 shadow-sm">
-                  <Sparkles className="h-3 w-3" /> Novo · 10 produtos
-                </span>
-              </div>
-              <h2 className="mt-2 text-xl font-extrabold text-green-800 md:text-2xl">
-                🏆 Copa do Mundo 2026
-              </h2>
-              <p className="mt-1 max-w-2xl text-sm text-green-900/80">
-                Produtos com alta demanda para a Copa — camisas, bolas, kits
-                torcedor e muito mais com ótimas margens.
-              </p>
-            </div>
-            <button
-              onClick={() => setCat(COPA_CATEGORY)}
-              className="inline-flex items-center gap-1.5 self-start rounded-full px-4 py-2 text-xs font-semibold text-white shadow-md transition hover:brightness-110 md:self-auto"
-              style={{
-                background: "linear-gradient(135deg, #15803d, #ca8a04)",
-              }}
-            >
-              <Trophy className="h-3.5 w-3.5" /> Ver coleção completa
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ═══ DIA DOS NAMORADOS BANNER ═══ */}
-      {(cat === "Todos" || cat === VALENTINE_CATEGORY) && (
-        <div className="valentine-banner relative mb-5 overflow-hidden rounded-2xl border border-rose-200 bg-white p-5 shadow-sm shadow-black/[0.04] ring-1 ring-black/[0.06]">
-          <div className="valentine-shine pointer-events-none absolute inset-0" />
-          <div className="relative flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="inline-flex items-center gap-1 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-rose-600 shadow-sm">
-                  <Sparkles className="h-3 w-3" /> Alta procura
-                </span>
-              </div>
-              <h2 className="mt-2 text-xl font-extrabold text-rose-700 md:text-2xl">
-                Dia dos Namorados
-              </h2>
-              <p className="mt-1 max-w-2xl text-sm text-rose-900/80">
-                Produtos com alta procura para presentes românticos, kits
-                especiais e ofertas sazonais.
-              </p>
-            </div>
-            <button
-              onClick={() => setCat(VALENTINE_CATEGORY)}
-              className="inline-flex items-center gap-1.5 self-start rounded-full bg-gradient-to-r from-rose-500 to-orange-400 px-4 py-2 text-xs font-semibold text-white shadow-md transition hover:brightness-110 md:self-auto"
-            >
-              <Heart className="h-3.5 w-3.5" /> Ver coleção completa
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* ═══ PRODUCT GRID ═══ */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
