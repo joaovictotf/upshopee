@@ -1,12 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { DashboardShell } from "../components/layout/DashboardShell";
 import { useApp } from "../lib/state";
 import {
   Bot, MessageCircle, Users, Play, Square,
-  Wifi, Check, Link2, Radio, Send,
+  Wifi, Check, Link2, Radio, Send, Loader2,
+  Package, Megaphone, Sparkles,
 } from "lucide-react";
-import { Button } from "../components/ui/button";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/dashboard/robo-divulgador")({ component: RoboDivulgador });
@@ -124,6 +124,35 @@ function relativeTime(ts: number): string {
   return `${hours}h`;
 }
 
+type Tone = "entusiasmado" | "profissional" | "simples" | "desejo";
+
+const TONE_OPTIONS: { value: Tone; label: string; emoji: string }[] = [
+  { value: "entusiasmado", label: "Entusiasmado", emoji: "🎉" },
+  { value: "profissional", label: "Profissional", emoji: "💼" },
+  { value: "simples", label: "Simples", emoji: "💬" },
+  { value: "desejo", label: "Desejo", emoji: "💫" },
+];
+
+const TONE_TEMPLATES: Record<Tone, string[]> = {
+  entusiasmado: [
+    "🔥 ACABEI DE ACHAR! {product} na Shopee e tô CHOCADA! 😍 Preço incrível, qualidade absurda! Corre que vai acabar! 🏃‍♀️💨",
+    "GENTE!!! {product} — isso aqui é SURREAL de bom! 🤩 Comprei, chegou em 2 dias e já virei fã! Link na bio pra vocês aproveitarem também! 🔥",
+    "PARE TUDO! 🛑 {product} com preço que eu NUNCA vi antes! Já garanti o meu e vim correndo avisar! Não deixa pra depois! ⚡",
+  ],
+  profissional: [
+    "📊 Análise: {product} — excelente custo-benefício. Material de qualidade, entrega rápida e suporte confiável. Recomendo para quem busca profissionalismo.",
+    "✅ {product} avaliado e aprovado. Especificações técnicas superam expectativas. Ótima aquisição para quem valoriza eficiência. Link na bio.",
+  ],
+  simples: [
+    "Olha que legal: {product} na Shopee! 😊 Gostei bastante, chegou certinho. Dá uma olhada no link!",
+    "{product} — preço bom, entrega rápida. Recomendo! 👍",
+  ],
+  desejo: [
+    "Imagina chegar {product} na sua casa hoje... ✨ Perfeito pra você que merece o melhor. Se presenteia! 💫",
+    "Você merece {product}. Sério. Seu dia vai ficar muito melhor com isso. Clique e descubra! 💝",
+  ],
+};
+
 type ViewProps = {
   active: boolean;
   affiliateLink: string;
@@ -137,6 +166,15 @@ type ViewProps = {
   credits: number;
   creditPct: number;
   groupsReached: number;
+  productName: string;
+  setProductName: (v: string) => void;
+  divulgationTone: Tone;
+  setDivulgationTone: (v: Tone) => void;
+  generatedText: string;
+  setGeneratedText: (v: string) => void;
+  isGenerating: boolean;
+  genStep: number;
+  handleGenerateText: () => void;
   handleStart: () => void;
   handleStop: () => void;
   toggleChannel: (ch: Channel) => void;
@@ -170,8 +208,48 @@ function RoboDivulgador() {
     if (last !== today) { setCredits(INITIAL_CREDITS); try { localStorage.setItem(LASTRESET_KEY(email), today); } catch {} }
   }, [email]);
 
-  // ── Link + channels ──
+  // ── Link + product + tone + generation ──
   const [affiliateLink, setAffiliateLink] = useState("");
+  const [productName, setProductName] = useState("");
+  const [divulgationTone, setDivulgationTone] = useState<Tone>("entusiasmado");
+  const [generatedText, setGeneratedText] = useState("");
+  const generatedTextRef = useRef("");
+  useEffect(() => { generatedTextRef.current = generatedText; }, [generatedText]);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [genStep, setGenStep] = useState(0);
+
+  const handleGenerateText = useCallback(() => {
+    if (!productName.trim()) {
+      toast.error("Digite o nome do produto para gerar o texto.");
+      return;
+    }
+    setIsGenerating(true);
+    setGenStep(0);
+
+    const steps = ["Gerando texto de divulgação...", "Gerando imagem para divulgação..."];
+    const stepInterval = setInterval(() => {
+      setGenStep((s) => {
+        if (s >= steps.length - 1) {
+          clearInterval(stepInterval);
+          return s;
+        }
+        return s + 1;
+      });
+    }, 1200);
+
+    setTimeout(() => {
+      clearInterval(stepInterval);
+      setGenStep(2);
+
+      const pool = TONE_TEMPLATES[divulgationTone] || TONE_TEMPLATES.entusiasmado;
+      const text = pick(pool).replace("{product}", productName.trim());
+      setGeneratedText(text);
+      setIsGenerating(false);
+      toast.success("Texto de divulgação gerado!");
+    }, 2400);
+  }, [productName, divulgationTone]);
+
+  // ── Channels + activity ──
   const [active, setActive] = useState(false);
   const [channels, setChannels] = useState<Channel[]>(["whatsapp", "contacts", "facebook", "instagram", "telegram"]);
   const [currentMsg, setCurrentMsg] = useState<{ text: string; channel: Channel } | null>(null);
@@ -194,7 +272,11 @@ function RoboDivulgador() {
         if (creditsRef.current <= 0) { setActive(false); toast.error("IA Divulgadora parada — créditos esgotados."); return; }
         const ch = pick(channels);
         const conf = CHANNEL_CONFIG.find((c) => c.id === ch)!;
-        const msg = pick(conf.messages);
+        // Rotate between personalized text and generic channel messages
+        const usePersonalized = generatedTextRef.current && Math.random() < 0.4;
+        const msg = usePersonalized
+          ? generatedTextRef.current.slice(0, 80) + (generatedTextRef.current.length > 80 ? "..." : "")
+          : pick(conf.messages);
         const cost = rand(POST_CREDIT_COST_MIN, POST_CREDIT_COST_MAX);
         setCurrentMsg({ text: msg, channel: ch });
         addLog({ type: "activity", msg, channel: ch });
@@ -220,7 +302,9 @@ function RoboDivulgador() {
     if (!affiliateLink.includes("shopee.com.br")) { toast.error("Insira um link válido da Shopee."); return; }
     if (credits <= 0) { toast.error("Créditos esgotados. Eles renovam automaticamente à meia-noite."); return; }
     setActive(true);
-    toast.success("IA Divulgadora iniciada!", { description: "Seu link está sendo divulgado automaticamente." });
+    toast.success("IA Divulgadora iniciada!", {
+      description: generatedText ? "Divulgando com texto personalizado." : "Divulgando link de afiliado.",
+    });
   };
 
   const handleStop = () => { setActive(false); toast("IA Divulgadora pausada."); };
@@ -231,7 +315,9 @@ function RoboDivulgador() {
   const viewProps: ViewProps = {
     active, affiliateLink, setAffiliateLink, channels, currentMsg, currentConf,
     log, postsToday, creditsSpent, credits, creditPct, groupsReached,
-    handleStart, handleStop, toggleChannel,
+    productName, setProductName, divulgationTone, setDivulgationTone,
+    generatedText, setGeneratedText, isGenerating, genStep,
+    handleGenerateText, handleStart, handleStop, toggleChannel,
   };
 
   return <IAView {...viewProps} />;
@@ -244,7 +330,9 @@ function RoboDivulgador() {
 function IAView({
   active, affiliateLink, setAffiliateLink, channels, currentMsg, currentConf,
   log, postsToday, credits, creditPct, groupsReached,
-  handleStart, handleStop, toggleChannel,
+  productName, setProductName, divulgationTone, setDivulgationTone,
+  generatedText, setGeneratedText, isGenerating, genStep,
+  handleGenerateText, handleStart, handleStop, toggleChannel,
 }: ViewProps) {
   const linkValid = affiliateLink.trim().length > 0 && affiliateLink.includes("shopee.com.br");
   const canStart = linkValid && channels.length > 0 && credits > 0;
@@ -298,6 +386,117 @@ function IAView({
               </div>
             )}
           </div>
+
+          {/* ═══ PRODUCT NAME ═══ */}
+          <div className="rounded-2xl border border-gray-200 bg-white p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <Package className="h-4 w-4 text-gray-500" />
+              <h3 className="text-sm font-semibold text-gray-900">Nome do Produto</h3>
+            </div>
+            <input
+              type="text"
+              value={productName}
+              onChange={(e) => setProductName(e.target.value)}
+              placeholder="Ex: Camisa Feminina Seleção Brasileira 2026"
+              disabled={active}
+              className="h-11 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 text-sm text-gray-900 placeholder:text-gray-400 outline-none transition-all focus:border-[#EE4D2D]/50 focus:bg-white focus:ring-2 focus:ring-[#EE4D2D]/10 disabled:opacity-60"
+            />
+          </div>
+
+          {/* ═══ TONE SELECTOR ═══ */}
+          <div className="rounded-2xl border border-gray-200 bg-white p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <Megaphone className="h-4 w-4 text-gray-500" />
+              <h3 className="text-sm font-semibold text-gray-900">Tom da Divulgação</h3>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {TONE_OPTIONS.map((tone) => {
+                const active_tone = divulgationTone === tone.value;
+                return (
+                  <button
+                    key={tone.value}
+                    onClick={() => setDivulgationTone(tone.value)}
+                    disabled={active || isGenerating}
+                    className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-medium border-2 transition-all duration-200 disabled:opacity-60 ${
+                      active_tone
+                        ? "border-[#EE4D2D] bg-[#FFF8F5] text-[#EE4D2D]"
+                        : "border-gray-200 bg-white text-gray-500 hover:border-gray-300"
+                    }`}
+                  >
+                    <span className="text-sm">{tone.emoji}</span>
+                    {tone.label}
+                    {active_tone && <Check className="h-3 w-3" />}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* ═══ GENERATE BUTTON / GENERATING / RESULT ═══ */}
+          {isGenerating ? (
+            <div className="rounded-2xl border border-[#EE4D2D]/20 bg-[#FFF8F5] p-6">
+              <div className="flex flex-col items-center">
+                <div className="flex gap-1.5 mb-3">
+                  <span className="h-2 w-2 rounded-full bg-[#EE4D2D] animate-bounce" style={{ animationDelay: "0ms" }} />
+                  <span className="h-2 w-2 rounded-full bg-[#EE4D2D] animate-bounce" style={{ animationDelay: "150ms" }} />
+                  <span className="h-2 w-2 rounded-full bg-[#EE4D2D] animate-bounce" style={{ animationDelay: "300ms" }} />
+                </div>
+                <p className="text-sm font-medium text-gray-700 mb-4">
+                  {genStep === 0 ? "Gerando texto de divulgação..." : "Gerando imagem para divulgação..."}
+                </p>
+                <div className="w-full max-w-xs space-y-2">
+                  <div className="flex items-center gap-2.5 text-xs">
+                    {genStep >= 1
+                      ? <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                      : <Loader2 className="h-3.5 w-3.5 animate-spin text-[#EE4D2D] shrink-0" />}
+                    <span className={genStep >= 1 ? "text-emerald-700" : "text-gray-700"}>
+                      {genStep >= 1 ? "Texto gerado" : "Gerando texto..."}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2.5 text-xs">
+                    {genStep >= 2
+                      ? <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                      : <Loader2 className="h-3.5 w-3.5 animate-spin text-gray-300 shrink-0" />}
+                    <span className={genStep >= 2 ? "text-emerald-700" : "text-gray-400"}>
+                      {genStep >= 2 ? "Imagem gerada" : "Gerando imagem..."}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : generatedText ? (
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <Check className="h-4 w-4 text-emerald-500" />
+                <h3 className="text-sm font-semibold text-emerald-800">Texto de divulgação pronto</h3>
+              </div>
+              <textarea
+                value={generatedText}
+                onChange={(e) => setGeneratedText(e.target.value)}
+                rows={3}
+                disabled={active}
+                className="w-full rounded-xl border border-gray-200 bg-white p-4 text-sm text-gray-700 leading-relaxed resize-none outline-none transition-all focus:border-[#EE4D2D]/30 focus:ring-2 focus:ring-[#EE4D2D]/5 disabled:opacity-60"
+              />
+              <button
+                onClick={() => {
+                  setGeneratedText("");
+                  handleGenerateText();
+                }}
+                disabled={active || isGenerating}
+                className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-[#EE4D2D] transition-colors hover:text-[#d93e22] disabled:opacity-50"
+              >
+                <Sparkles className="h-3 w-3" /> Gerar outro
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={handleGenerateText}
+              disabled={!productName.trim() || isGenerating}
+              className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#EE4D2D]/40 bg-white text-sm font-semibold text-[#EE4D2D] transition-all hover:bg-[#FFF8F5] hover:border-[#EE4D2D] disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Sparkles className="h-4 w-4" /> Gerar texto de divulgação
+            </button>
+          )}
 
           {/* ═══ CHANNEL PILLS ═══ */}
           <div className="rounded-2xl border border-gray-200 bg-white p-5">
