@@ -270,7 +270,7 @@ export function DashboardShell({ children, title, subtitle, actions, onLightning
       {showCopaPopup && <CopaPopup onClose={handleCopaClose} onView={handleCopaView} />}
 
       {hasLightningAccess && (
-        <div className="flex gap-2 fixed bottom-6 right-6 z-50">
+        <div className="flex gap-2 fixed bottom-6 left-6 z-50">
           <button
             onClick={() => {
               if (window.confirm('Zerar as vendas de hoje?')) {

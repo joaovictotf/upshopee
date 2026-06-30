@@ -273,7 +273,7 @@
   position: fixed;
   /* Sits above the ⚡ lightning button (bottom-6 = 24px + 48px btn + 8px gap ≈ 88px) */
   bottom: 88px;
-  right: 24px;
+  left: 24px;
   z-index: 40;
   display: inline-flex;
   align-items: center;
@@ -316,7 +316,7 @@
   .whatsapp-support-btn {
     /* Acima do ⚡ e da bottom nav do navegador */
     bottom: 96px;
-    right: 16px;
+    left: 16px;
     padding: 12px;
     gap: 0;
   }
