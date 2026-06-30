@@ -12,10 +12,11 @@ import {
   Search, Upload, X, ChevronLeft, ArrowRight, Check, Loader2, Star,
   Camera, Package, Image, Info, Sparkles, Copy, Send,
   Wand2, RotateCw, Shirt, Zap, Lightbulb, ShoppingBag, Play, Trophy,
-  Gem, Scissors, Eye, Subtitles, Volume2, Music,
+  Gem, Scissors, Eye, Subtitles, Volume2, Music, Video,
 } from "lucide-react";
 import { products as mockProducts, type Product } from "../lib/mock/products";
 import Step7GeminiChat from "../components/Step7GeminiChat";
+import AdminStep7Video from "../components/AdminStep7Video";
 
 /* ───────────────────────────────────────────────────────────────
    Types
@@ -88,15 +89,6 @@ interface Step6Props {
    Constants
    ─────────────────────────────────────────────────────────────── */
 
-const STEPS = [
-  { num: 1, label: "Produto", icon: Package },
-  { num: 2, label: "Imagens", icon: Image },
-  { num: 3, label: "Informações", icon: Info },
-  { num: 4, label: "Estilo", icon: Sparkles },
-  { num: 5, label: "Geração", icon: Wand2 },
-  { num: 6, label: "Revisão", icon: Check },
-  { num: 7, label: "Gemini", icon: Star },
-] as const;
 
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -175,15 +167,15 @@ function useDropHandler(callback: (file: File) => void) {
    ─────────────────────────────────────────────────────────────── */
 
 const StepIndicator = memo(function StepIndicator({
-  currentStep, setCurrentStep,
-}: { currentStep: number; setCurrentStep: (s: number) => void }) {
+  currentStep, setCurrentStep, steps,
+}: { currentStep: number; setCurrentStep: (s: number) => void; steps: { readonly num: number; readonly label: string; readonly icon: any }[] }) {
   return (
     <div className="overflow-x-auto">
       <div className="flex items-center justify-between px-2 min-w-max">
-        {STEPS.map((step, idx) => {
+        {steps.map((step, idx) => {
           const isActive = step.num === currentStep;
           const isDone = step.num < currentStep;
-          const isLast = idx === STEPS.length - 1;
+          const isLast = idx === steps.length - 1;
           const Icon = step.icon;
           return (
             <div key={step.num} className="flex items-center flex-1">
@@ -678,6 +670,26 @@ export const Route = createFileRoute("/dashboard/video-ia")({ component: VideoIa
 function VideoIaPage() {
   const { currentUserId, isAdmin } = useApp();
 
+  const steps = useMemo(() => [
+    { num: 1, label: "Produto", icon: Package },
+    { num: 2, label: "Imagens", icon: Image },
+    { num: 3, label: "Informações", icon: Info },
+    { num: 4, label: "Estilo", icon: Sparkles },
+    { num: 5, label: "Geração", icon: Wand2 },
+    { num: 6, label: "Revisão", icon: Check },
+    { num: 7, label: isAdmin ? "Gerar Vídeo" : "Gemini", icon: isAdmin ? Video : Star },
+  ] as const, [isAdmin]);
+
+  const stepDescriptions = useMemo(() => [
+    "Escolha o produto que será o tema do vídeo",
+    "Envie imagens de qualidade para o vídeo",
+    "Preencha as informações detalhadas do produto",
+    "Configure o estilo e formato do vídeo",
+    "Gere o roteiro com inteligência artificial",
+    "Revise e edite o conteúdo gerado",
+    isAdmin ? "Gere o vídeo final com IA — escolha um produto afiliado" : "Refine o roteiro no chat e gere o vídeo no Gemini",
+  ] as const, [isAdmin]);
+
   const [currentStep, setCurrentStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
 
@@ -995,16 +1007,6 @@ function VideoIaPage() {
      RENDER
      ───────────────────────────────────────────────────────────── */
 
-  const stepDescriptions = [
-    "Escolha o produto que será o tema do vídeo",
-    "Envie imagens de qualidade para o vídeo",
-    "Preencha as informações detalhadas do produto",
-    "Configure o estilo e formato do vídeo",
-    "Gere o roteiro com inteligência artificial",
-    "Revise e edite o conteúdo gerado",
-    "Copie o prompt e abra no Google Gemini",
-  ];
-
   return (
     <DashboardShell title="Vídeo IA"
       subtitle="Crie vídeos profissionais para seus produtos com inteligência artificial. Siga os 7 passos abaixo.">
@@ -1028,7 +1030,7 @@ function VideoIaPage() {
       `}</style>
       <div className="mx-auto w-full max-w-4xl">
         <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm shadow-black/[0.02] ring-1 ring-black/[0.06]">
-          <StepIndicator currentStep={currentStep} setCurrentStep={setCurrentStep} />
+          <StepIndicator currentStep={currentStep} setCurrentStep={setCurrentStep} steps={steps} />
           <div className="mt-2 h-0.5 w-full rounded-full bg-gray-100">
             <div className="h-full rounded-full bg-[#EE4D2D] transition-all duration-500"
               style={{ width: `${(currentStep / 7) * 100}%` }} />
@@ -1037,10 +1039,10 @@ function VideoIaPage() {
         <div className="mt-6">
           <div className="mb-4 flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white border border-[#EE4D2D]/10 shadow-sm">
-              {(() => { const Icon = STEPS[currentStep - 1].icon; return <Icon className="h-6 w-6 text-[#EE4D2D]" />; })()}
+              {(() => { const Icon = steps[currentStep - 1].icon; return <Icon className="h-6 w-6 text-[#EE4D2D]" />; })()}
             </div>
             <div>
-              <h2 className="text-lg font-bold text-foreground">Etapa {currentStep}: {STEPS[currentStep - 1].label}</h2>
+              <h2 className="text-lg font-bold text-foreground">Etapa {currentStep}: {steps[currentStep - 1].label}</h2>
               <p className="text-xs text-muted-foreground">{stepDescriptions[currentStep - 1]}</p>
             </div>
           </div>
@@ -1052,7 +1054,11 @@ function VideoIaPage() {
             {currentStep === 4 && <Step4Style styleConfig={styleConfig} setStyleConfig={setStyleConfig} dailyCount={dailyCount} dailyLimitReached={dailyLimitReached} dailyLimitChecked={dailyLimitChecked} isAdmin={isAdmin} handleBack={handleBack} />}
             {currentStep === 5 && <Step5Generation productInfo={productInfo} styleConfig={styleConfig} generating={generating} genStep={genStep} genError={genError} generatedContent={generatedContent} dailyCount={dailyCount} dailyLimitReached={dailyLimitReached} dailyLimitChecked={dailyLimitChecked} isAdmin={isAdmin} handleGenerate={handleGenerate} handleRegenerate={handleRegenerate} />}
             {currentStep === 6 && <Step6Review generatedContent={generatedContent} setGeneratedContent={setGeneratedContent} handleRegenerate={handleRegenerate} />}
-            {currentStep === 7 && <Step7GeminiChat productInfo={productInfo} styleConfig={styleConfig} generatedContent={generatedContent} projectId={projectId} handleBack={handleBack} handleCopyFinalPrompt={handleCopyFinalPrompt} />}
+            {currentStep === 7 && (isAdmin ? (
+              <AdminStep7Video productInfo={productInfo} styleConfig={styleConfig} generatedContent={generatedContent} projectId={projectId} handleBack={handleBack} />
+            ) : (
+              <Step7GeminiChat productInfo={productInfo} styleConfig={styleConfig} generatedContent={generatedContent} projectId={projectId} handleBack={handleBack} handleCopyFinalPrompt={handleCopyFinalPrompt} />
+            ))}
           </div>
 
           {currentStep !== 5 && (
