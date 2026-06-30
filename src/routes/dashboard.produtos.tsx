@@ -24,7 +24,7 @@ function Produtos() {
         l = l.filter((p) => p.tags.includes(cat));
       else l = l.filter((p) => p.category === cat);
     }
-    return l.sort((a, b) => {
+    l.sort((a, b) => {
       const pa = Number(!!a.pinned);
       const pb = Number(!!b.pinned);
       if (pa !== pb) return pb - pa;
@@ -36,6 +36,12 @@ function Produtos() {
       if (va !== vb) return vb - va;
       return 0;
     });
+    // Shuffle randomly so products change position on each filter/search change
+    for (let i = l.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [l[i], l[j]] = [l[j], l[i]];
+    }
+    return l;
   }, [q, cat]);
 
   return (
