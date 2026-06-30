@@ -178,37 +178,39 @@ const StepIndicator = memo(function StepIndicator({
   currentStep, setCurrentStep,
 }: { currentStep: number; setCurrentStep: (s: number) => void }) {
   return (
-    <div className="mb-8 overflow-x-auto">
-      <div className="flex min-w-max items-center justify-center gap-1 px-2">
+    <div className="overflow-x-auto">
+      <div className="flex items-center justify-between px-2 min-w-max">
         {STEPS.map((step, idx) => {
           const isActive = step.num === currentStep;
           const isDone = step.num < currentStep;
           const isLast = idx === STEPS.length - 1;
           const Icon = step.icon;
           return (
-            <div key={step.num} className="flex items-center">
-              <button
-                type="button"
+            <div key={step.num} className="flex items-center flex-1">
+              <button type="button"
                 onClick={() => { if (isDone) setCurrentStep(step.num); }}
                 disabled={!isDone && !isActive}
-                className={`flex shrink-0 flex-col items-center gap-1 transition-all ${
-                  isDone ? "cursor-pointer" : isActive ? "cursor-default" : "cursor-not-allowed"}`}
-              >
-                <div className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold transition-all duration-300 ${
-                  isActive ? "bg-[#EE4D2D] text-white shadow-md shadow-[#EE4D2D]/30 scale-110"
-                  : isDone ? "bg-emerald-500 text-white shadow-sm shadow-emerald-500/20"
+                className="group flex flex-col items-center gap-1 mx-auto relative">
+                <div className={`relative flex h-11 w-11 items-center justify-center rounded-2xl transition-all duration-500 ${
+                  isActive ? "bg-[#EE4D2D] text-white shadow-lg shadow-[#EE4D2D]/30 scale-110"
+                  : isDone ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/20"
                   : "bg-gray-100 text-gray-400"}`}>
-                  {isDone ? <Check className="h-4 w-4" /> : isActive ? <Icon className="h-4 w-4" /> : step.num}
+                  {isDone ? <Check className="h-5 w-5" /> : <Icon className="h-5 w-5" />}
+                  {isActive && (
+                    <div className="absolute inset-0 rounded-2xl animate-ping bg-[#EE4D2D]/20" style={{ animationDuration: "2s" }} />
+                  )}
                 </div>
-                <span className={`text-[11px] font-medium whitespace-nowrap ${
-                  isActive ? "text-[#EE4D2D]" : isDone ? "text-emerald-600" : "text-gray-400"}`}>
-                  {step.label}
-                </span>
+                <span className={`text-[11px] font-medium whitespace-nowrap transition-colors duration-500 mt-1 ${
+                  isActive ? "text-[#EE4D2D] font-semibold"
+                  : isDone ? "text-emerald-600"
+                  : "text-gray-400"}`}>{step.label}</span>
+                {isActive && (
+                  <span className="absolute -bottom-0.5 h-1.5 w-1.5 rounded-full bg-[#EE4D2D] animate-bounce" />
+                )}
               </button>
               {!isLast && (
-                <div className="mx-0.5 mb-5 w-6 sm:w-10">
-                  <div className={`h-0.5 rounded-full transition-colors duration-300 ${isDone ? "bg-emerald-400" : "bg-gray-200"}`} />
-                </div>
+                <div className="flex-1 h-0.5 mx-1 mb-6 rounded-full transition-colors duration-500"
+                  style={{ background: isDone ? "linear-gradient(90deg,#10B981,#EE4D2D)" : "#E5E7EB" }} />
               )}
             </div>
           );
@@ -228,11 +230,11 @@ const Step1SelectProduct = memo(function Step1SelectProduct({
   filteredProducts, step1Valid,
 }: Step1Props) {
   return (
-    <div className="space-y-6">
+    <div className="vi-step-enter space-y-6" key={`step1-${productMode}`}>
       <div className="flex rounded-xl bg-gray-100 p-1">
         {(["existing", "manual"] as const).map((mode) => (
           <button key={mode} type="button" onClick={() => { setProductMode(mode); setSelectedProduct(null); }}
-            className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-all ${
+            className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-300 ${
               productMode === mode ? "bg-white text-foreground shadow-sm shadow-black/[0.06]" : "text-muted-foreground hover:text-foreground"}`}>
             {mode === "existing" ? "Usar produto existente" : "Cadastrar manualmente"}
           </button>
@@ -245,17 +247,17 @@ const Step1SelectProduct = memo(function Step1SelectProduct({
             <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             <Input value={productSearch} onChange={(e) => setProductSearch(e.target.value)}
               placeholder="Buscar produto por nome, categoria ou palavra-chave..."
-              className="h-11 rounded-xl border-gray-200 bg-white pl-10 pr-4 text-sm shadow-sm shadow-black/[0.02] focus-visible:ring-[#EE4D2D]/30" />
+              className="h-11 rounded-xl border-gray-200 bg-white pl-10 pr-4 text-sm shadow-sm shadow-black/[0.02] focus:border-[#EE4D2D]/40 focus:shadow-sm focus:shadow-[#EE4D2D]/5 focus-visible:ring-0" />
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {filteredProducts.map((product) => (
               <button key={product.id} type="button" onClick={() => setSelectedProduct(product)}
-                className={`flex items-start gap-3 rounded-xl border p-3 text-left transition-all ${
+                className={`group flex items-start gap-3 rounded-xl border p-3 text-left transition-all duration-300 ${
                   selectedProduct?.id === product.id
-                    ? "border-[#EE4D2D] bg-[#FFF8F5] ring-1 ring-[#EE4D2D]/20 shadow-sm shadow-[#EE4D2D]/10"
-                    : "border-gray-100 bg-white hover:border-gray-200 hover:shadow-sm"}`}>
+                    ? "border-[#EE4D2D] bg-[#FFF8F5] ring-1 ring-[#EE4D2D]/20 shadow-md shadow-[#EE4D2D]/10"
+                    : "border-gray-100 bg-white hover:border-gray-200 hover:shadow-md hover:-translate-y-0.5"}`}>
                 <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-gray-50">
-                  <img src={product.image} alt={product.name} className="h-full w-full object-contain" loading="lazy"
+                  <img src={product.image} alt={product.name} className="h-full w-full object-contain transition-transform duration-500 group-hover:scale-110" loading="lazy"
                     onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
                 </div>
                 <div className="min-w-0 flex-1">
@@ -267,7 +269,7 @@ const Step1SelectProduct = memo(function Step1SelectProduct({
                   </div>
                 </div>
                 {selectedProduct?.id === product.id && (
-                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#EE4D2D]">
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#EE4D2D] vi-bounce-in">
                     <Check className="h-3.5 w-3.5 text-white" />
                   </div>)}
               </button>
@@ -281,27 +283,27 @@ const Step1SelectProduct = memo(function Step1SelectProduct({
             </div>)}
         </>
       ) : (
-        <div className="space-y-4 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm shadow-black/[0.02] ring-1 ring-black/[0.06]">
+        <div className="vi-step-enter space-y-4 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm shadow-black/[0.02] ring-1 ring-black/[0.06]">
           <Field label="Nome do produto" required>
             <Input id="mp-name" value={manualProduct.name} onChange={(e) => setManualProduct((p) => ({ ...p, name: e.target.value }))}
               placeholder="Ex: Camisa Feminina Seleção Brasileira 2026"
-              className="h-11 rounded-lg border-gray-200 bg-white px-4 text-sm focus-visible:ring-[#EE4D2D]/30" />
+              className="h-11 rounded-lg border-gray-200 bg-white px-4 text-sm focus:border-[#EE4D2D]/40 focus:shadow-sm focus:shadow-[#EE4D2D]/5 focus-visible:ring-0" />
           </Field>
           <Field label="Link do produto na Shopee" required>
             <Input id="mp-url" type="url" value={manualProduct.url} onChange={(e) => setManualProduct((p) => ({ ...p, url: e.target.value }))}
               placeholder="https://shopee.com.br/..."
-              className="h-11 rounded-lg border-gray-200 bg-white px-4 text-sm focus-visible:ring-[#EE4D2D]/30" />
+              className="h-11 rounded-lg border-gray-200 bg-white px-4 text-sm focus:border-[#EE4D2D]/40 focus:shadow-sm focus:shadow-[#EE4D2D]/5 focus-visible:ring-0" />
           </Field>
           <Field label="Descrição breve" optional>
             <Textarea id="mp-desc" value={manualProduct.description} onChange={(e) => setManualProduct((p) => ({ ...p, description: e.target.value }))}
               placeholder="Descreva o produto brevemente..." rows={3}
-              className="resize-none rounded-lg border-gray-200 bg-white px-4 py-3 text-sm focus-visible:ring-[#EE4D2D]/30" />
+              className="resize-none rounded-lg border-gray-200 bg-white px-4 py-3 text-sm focus:border-[#EE4D2D]/40 focus:shadow-sm focus:shadow-[#EE4D2D]/5 focus-visible:ring-0" />
           </Field>
         </div>
       )}
 
       {step1Valid && (
-        <div className="flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+        <div className="vi-step-enter flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/20"><Check className="h-4 w-4 text-white" /></div>
           <div className="min-w-0">
             <p className="text-sm font-semibold text-emerald-800 truncate">{productMode === "existing" ? selectedProduct?.name : manualProduct.name}</p>
@@ -347,7 +349,7 @@ const Step2UploadImages = memo(function Step2UploadImages({
           })}
         </div>
       </div>
-      <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm shadow-black/[0.02] ring-1 ring-black/[0.06]">
+      <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm shadow-black/[0.02] ring-1 ring-black/[0.06] border-l-4 border-l-[#EE4D2D]/20">
         <div className="flex items-start gap-3">
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#FFF8F5]"><Camera className="h-4 w-4 text-[#EE4D2D]" /></div>
           <div>
@@ -376,53 +378,53 @@ const Step3ProductInfo = memo(function Step3ProductInfo({
   return (
     <div className="space-y-6 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm shadow-black/[0.02] ring-1 ring-black/[0.06]">
       <div className="grid gap-5 sm:grid-cols-2">
-        <div className="space-y-2 sm:col-span-2">
+        <div className="vi-float-up space-y-2 sm:col-span-2" style={{ animationDelay: "0ms" }}>
           <Label htmlFor="pi-name" className="text-sm font-medium text-foreground">Nome do produto <span className="text-[#EE4D2D]">*</span></Label>
           <Input id="pi-name" value={productInfo.name} onChange={(e) => update("name", e.target.value)}
-            placeholder="Nome completo do produto" className="h-11 rounded-lg border-gray-200 bg-white px-4 text-sm focus-visible:ring-[#EE4D2D]/30" />
+            placeholder="Nome completo do produto" className="h-11 rounded-lg border-gray-200 bg-white px-4 text-sm focus:border-[#EE4D2D]/40 focus:shadow-sm focus:shadow-[#EE4D2D]/5 focus-visible:ring-0" />
         </div>
-        <div className="space-y-2">
+        <div className="vi-float-up space-y-2" style={{ animationDelay: "50ms" }}>
           <Label htmlFor="pi-category" className="text-sm font-medium text-foreground">Categoria <span className="text-muted-foreground font-normal">(opcional)</span></Label>
           <select id="pi-category" value={productInfo.category} onChange={(e) => update("category", e.target.value)}
-            className="h-11 w-full rounded-lg border border-gray-200 bg-white px-4 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[#EE4D2D]/30">
+            className="h-11 w-full rounded-lg border border-gray-200 bg-white px-4 text-sm outline-none focus:border-[#EE4D2D]/40 focus:shadow-sm focus:shadow-[#EE4D2D]/5 focus-visible:ring-0">
             <option value="">Selecione uma categoria</option>
             {CATEGORY_OPTIONS.map((c) => (<option key={c} value={c}>{c}</option>))}
           </select>
         </div>
-        <div className="space-y-2">
+        <div className="vi-float-up space-y-2" style={{ animationDelay: "100ms" }}>
           <Label htmlFor="pi-audience" className="text-sm font-medium text-foreground">Público-alvo <span className="text-muted-foreground font-normal">(opcional)</span></Label>
           <Input id="pi-audience" value={productInfo.targetAudience} onChange={(e) => update("targetAudience", e.target.value)}
-            placeholder="Ex: Mulheres 18-35, torcedores..." className="h-11 rounded-lg border-gray-200 bg-white px-4 text-sm focus-visible:ring-[#EE4D2D]/30" />
+            placeholder="Ex: Mulheres 18-35, torcedores..." className="h-11 rounded-lg border-gray-200 bg-white px-4 text-sm focus:border-[#EE4D2D]/40 focus:shadow-sm focus:shadow-[#EE4D2D]/5 focus-visible:ring-0" />
         </div>
-        <div className="space-y-2 sm:col-span-2">
+        <div className="vi-float-up space-y-2 sm:col-span-2" style={{ animationDelay: "150ms" }}>
           <Label htmlFor="pi-desc" className="text-sm font-medium text-foreground">Descrição curta <span className="text-[#EE4D2D]">*</span></Label>
           <Textarea id="pi-desc" value={productInfo.description} onChange={(e) => update("description", e.target.value)}
             placeholder="Breve descrição do produto (2-3 frases)" rows={2}
-            className="resize-none rounded-lg border-gray-200 bg-white px-4 py-3 text-sm focus-visible:ring-[#EE4D2D]/30" />
+            className="resize-none rounded-lg border-gray-200 bg-white px-4 py-3 text-sm focus:border-[#EE4D2D]/40 focus:shadow-sm focus:shadow-[#EE4D2D]/5 focus-visible:ring-0" />
         </div>
-        <div className="space-y-2 sm:col-span-2">
+        <div className="vi-float-up space-y-2 sm:col-span-2" style={{ animationDelay: "200ms" }}>
           <Label htmlFor="pi-url" className="text-sm font-medium text-foreground">Link do produto na Shopee <span className="text-muted-foreground font-normal">(opcional)</span></Label>
           <Input id="pi-url" type="url" value={productInfo.url} onChange={(e) => update("url", e.target.value)}
-            placeholder="https://shopee.com.br/..." className="h-11 rounded-lg border-gray-200 bg-white px-4 text-sm focus-visible:ring-[#EE4D2D]/30" />
+            placeholder="https://shopee.com.br/..." className="h-11 rounded-lg border-gray-200 bg-white px-4 text-sm focus:border-[#EE4D2D]/40 focus:shadow-sm focus:shadow-[#EE4D2D]/5 focus-visible:ring-0" />
         </div>
-        <div className="space-y-2 sm:col-span-2">
+        <div className="vi-float-up space-y-2 sm:col-span-2" style={{ animationDelay: "250ms" }}>
           <Label htmlFor="pi-benefits" className="text-sm font-medium text-foreground">Principais benefícios <span className="text-[#EE4D2D]">*</span></Label>
           <Textarea id="pi-benefits" value={productInfo.benefits} onChange={(e) => update("benefits", e.target.value)}
             placeholder="Liste os 3-5 principais benefícios do produto (um por linha)" rows={4}
-            className="resize-none rounded-lg border-gray-200 bg-white px-4 py-3 text-sm focus-visible:ring-[#EE4D2D]/30" />
+            className="resize-none rounded-lg border-gray-200 bg-white px-4 py-3 text-sm focus:border-[#EE4D2D]/40 focus:shadow-sm focus:shadow-[#EE4D2D]/5 focus-visible:ring-0" />
           <p className="text-xs text-muted-foreground">Esses benefícios serão usados no roteiro do vídeo.</p>
         </div>
-        <div className="space-y-2 sm:col-span-2">
+        <div className="vi-float-up space-y-2 sm:col-span-2" style={{ animationDelay: "300ms" }}>
           <Label htmlFor="pi-diff" className="text-sm font-medium text-foreground">Diferenciais <span className="text-muted-foreground font-normal">(opcional)</span></Label>
           <Textarea id="pi-diff" value={productInfo.differentiators} onChange={(e) => update("differentiators", e.target.value)}
             placeholder="O que torna este produto diferente dos concorrentes?" rows={3}
-            className="resize-none rounded-lg border-gray-200 bg-white px-4 py-3 text-sm focus-visible:ring-[#EE4D2D]/30" />
+            className="resize-none rounded-lg border-gray-200 bg-white px-4 py-3 text-sm focus:border-[#EE4D2D]/40 focus:shadow-sm focus:shadow-[#EE4D2D]/5 focus-visible:ring-0" />
         </div>
-        <div className="space-y-2 sm:col-span-2">
+        <div className="vi-float-up space-y-2 sm:col-span-2" style={{ animationDelay: "350ms" }}>
           <Label htmlFor="pi-problem" className="text-sm font-medium text-foreground">Problema que resolve <span className="text-muted-foreground font-normal">(opcional)</span></Label>
           <Textarea id="pi-problem" value={productInfo.problemSolved} onChange={(e) => update("problemSolved", e.target.value)}
             placeholder="Qual problema ou necessidade este produto resolve?" rows={3}
-            className="resize-none rounded-lg border-gray-200 bg-white px-4 py-3 text-sm focus-visible:ring-[#EE4D2D]/30" />
+            className="resize-none rounded-lg border-gray-200 bg-white px-4 py-3 text-sm focus:border-[#EE4D2D]/40 focus:shadow-sm focus:shadow-[#EE4D2D]/5 focus-visible:ring-0" />
         </div>
       </div>
     </div>
@@ -448,24 +450,26 @@ const Step4Style = memo(function Step4Style({
         </div>
       )}
 
-      {/* Style cards */}
+      {/* Style cards — redesigned */}
       <div>
         <Label className="text-sm font-semibold text-foreground">Estilo do vídeo</Label>
         <p className="mb-3 mt-1 text-xs text-muted-foreground">Escolha o estilo que melhor se adapta ao seu produto.</p>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {STYLE_OPTIONS.map((opt) => {
             const active = styleConfig.style === opt.id;
             const Icon = opt.icon;
             return (
               <button key={opt.id} type="button" onClick={() => setStyleConfig((s) => ({ ...s, style: opt.id }))}
-                className={`flex flex-col items-center gap-1.5 rounded-xl border p-3 text-center transition-all ${
-                  active ? "border-[#EE4D2D] bg-[#FFF8F5] ring-1 ring-[#EE4D2D]/20 shadow-sm shadow-[#EE4D2D]/10"
-                  : "border-gray-100 bg-white hover:border-gray-200 hover:shadow-sm"}`}>
-                <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${active ? "bg-[#EE4D2D]/10" : "bg-gray-50"}`}>
-                  <Icon className={`h-4 w-4 ${active ? "text-[#EE4D2D]" : "text-gray-400"}`} />
+                className={`flex flex-col items-center gap-2 rounded-2xl border-2 p-4 text-center transition-all duration-300 ${
+                  active ? "border-[#EE4D2D] bg-[#FFF8F5] ring-1 ring-[#EE4D2D]/20 shadow-md shadow-[#EE4D2D]/10 vi-pulse-card"
+                  : "border-gray-100 bg-white hover:border-[#EE4D2D]/40 hover:shadow-md hover:-translate-y-0.5"}`}>
+                <div className={`flex h-12 w-12 items-center justify-center rounded-2xl transition-all duration-300 ${active ? "bg-[#EE4D2D]/10" : "bg-gray-50"}`}>
+                  <Icon className={`h-6 w-6 transition-colors duration-300 ${active ? "text-[#EE4D2D]" : "text-gray-400"}`} />
                 </div>
-                <span className={`text-xs font-semibold leading-tight ${active ? "text-[#EE4D2D]" : "text-foreground"}`}>{opt.label}</span>
-                <span className="text-[10px] leading-tight text-muted-foreground hidden sm:block">{opt.desc}</span>
+                <div>
+                  <span className={`text-sm font-semibold leading-tight ${active ? "text-[#EE4D2D]" : "text-foreground"}`}>{opt.label}</span>
+                  <p className="text-[11px] leading-tight text-muted-foreground mt-0.5 hidden sm:block">{opt.desc}</p>
+                </div>
               </button>
             );
           })}
@@ -479,7 +483,7 @@ const Step4Style = memo(function Step4Style({
           <div className="flex rounded-lg bg-gray-100 p-1">
             {VOICE_OPTIONS.map((v) => (
               <button key={v.value} type="button" onClick={() => setStyleConfig((s) => ({ ...s, voiceType: v.value }))}
-                className={`flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition-all ${
+                className={`flex-1 rounded-md px-3 py-2 text-xs font-medium transition-all duration-300 ${
                   styleConfig.voiceType === v.value ? "bg-white text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
                 {v.label}
               </button>))}
@@ -488,25 +492,41 @@ const Step4Style = memo(function Step4Style({
         <div className="space-y-2">
           <Label className="text-sm font-medium text-foreground">Tom</Label>
           <select value={styleConfig.tone} onChange={(e) => setStyleConfig((s) => ({ ...s, tone: e.target.value }))}
-            className="h-11 w-full rounded-lg border border-gray-200 bg-white px-4 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[#EE4D2D]/30">
+            className="h-11 w-full rounded-lg border border-gray-200 bg-white px-4 text-sm outline-none focus:border-[#EE4D2D]/40 focus:shadow-sm focus:shadow-[#EE4D2D]/5 focus-visible:ring-0">
             {TONE_OPTIONS.map((t) => (<option key={t.value} value={t.value}>{t.label}</option>))}
           </select>
         </div>
       </div>
 
-      {/* Toggles */}
-      <div className="flex flex-wrap gap-4">
-        <ToggleOption icon={Subtitles} label="Com textos na tela" active={styleConfig.hasText}
-          onChange={() => setStyleConfig((s) => ({ ...s, hasText: !s.hasText }))} />
-        <ToggleOption icon={Music} label="Com música de fundo" active={styleConfig.hasMusic}
-          onChange={() => setStyleConfig((s) => ({ ...s, hasMusic: !s.hasMusic }))} />
+      {/* Toggles — custom sliding pills */}
+      <div className="flex flex-wrap gap-6">
+        <div className="flex items-center gap-3">
+          <Subtitles className="h-4 w-4 text-gray-400" />
+          <span className="text-sm font-medium text-foreground">Textos na tela</span>
+          <button type="button" onClick={() => setStyleConfig((s) => ({ ...s, hasText: !s.hasText }))}
+            className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors duration-300 ${
+              styleConfig.hasText ? "bg-[#EE4D2D]" : "bg-gray-200"}`}>
+            <span className={`inline-block h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-300 ${
+              styleConfig.hasText ? "translate-x-6" : "translate-x-1"}`} />
+          </button>
+        </div>
+        <div className="flex items-center gap-3">
+          <Music className="h-4 w-4 text-gray-400" />
+          <span className="text-sm font-medium text-foreground">Música de fundo</span>
+          <button type="button" onClick={() => setStyleConfig((s) => ({ ...s, hasMusic: !s.hasMusic }))}
+            className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors duration-300 ${
+              styleConfig.hasMusic ? "bg-[#EE4D2D]" : "bg-gray-200"}`}>
+            <span className={`inline-block h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-300 ${
+              styleConfig.hasMusic ? "translate-x-6" : "translate-x-1"}`} />
+          </button>
+        </div>
       </div>
 
       {/* Daily limit warning (hidden for admins) */}
       {!isAdmin && dailyLimitReached && (
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-center">
-          <div className="flex justify-center mb-2">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100"><Info className="h-6 w-6 text-red-500" /></div>
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-center vi-step-enter">
+          <div className="flex justify-center mb-3">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-red-100"><Info className="h-7 w-7 text-red-500" /></div>
           </div>
           <h3 className="text-sm font-bold text-red-800">Limite diário atingido</h3>
           <p className="mt-1 text-xs text-red-600">Você já gerou {DAILY_LIMIT} roteiros hoje. O limite reseta à meia-noite.</p>
@@ -545,45 +565,46 @@ const Step5Generation = memo(function Step5Generation({
       </div>
 
       {!generating && !genError && (
-        <div className="flex flex-col items-center rounded-2xl border border-dashed border-gray-200 bg-white py-12 text-center shadow-sm">
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#FFF8F5]">
-            <Wand2 className="h-8 w-8 text-[#EE4D2D]" />
+        <div className="vi-step-enter flex flex-col items-center rounded-3xl border border-dashed border-gray-200 bg-white py-14 text-center shadow-sm relative overflow-hidden">
+          <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-gradient-to-br from-[#FFF8F5] to-[#FFE8E0]">
+            <Wand2 className="h-10 w-10 text-[#EE4D2D]" />
           </div>
-          <h3 className="mt-4 text-lg font-bold text-foreground">Pronto para gerar!</h3>
-          <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-            A IA vai criar o roteiro completo do vídeo com base no produto e estilo escolhido.
+          <h3 className="mt-5 text-xl font-bold text-foreground">Pronto para criar seu vídeo!</h3>
+          <p className="mt-2 max-w-sm text-sm text-muted-foreground">
+            A IA vai analisar o produto e gerar um roteiro profissional com base no estilo escolhido.
           </p>
           {!isAdmin && dailyLimitChecked && (
             <p className="mt-2 text-xs text-muted-foreground">
-              <span className={dailyLimitReached ? "text-red-500 font-semibold" : "text-blue-500 font-semibold"}>
+              <span className={dailyLimitReached ? "text-red-500 font-semibold" : "text-[#EE4D2D] font-semibold"}>
                 {dailyCount}/{DAILY_LIMIT}
-              </span> roteiros gerados hoje
+              </span> gerações hoje
             </p>
           )}
           <Button onClick={handleGenerate}
             disabled={!isAdmin && dailyLimitReached}
-            className="mt-5 h-12 rounded-xl bg-[#EE4D2D] px-8 text-sm font-semibold text-white shadow-md shadow-[#EE4D2D]/25 transition-all hover:bg-[#EE4D2D]/90 hover:shadow-lg hover:shadow-[#EE4D2D]/30 active:scale-[0.98] disabled:opacity-40">
-            <Wand2 className="mr-2 h-4 w-4" /> {dailyLimitReached ? "Limite diário atingido" : "Gerar conteúdo"}
+            className="mt-6 h-14 w-full max-w-sm rounded-2xl bg-gradient-to-r from-[#EE4D2D] to-[#FF6B3D] text-base font-semibold text-white shadow-lg shadow-[#EE4D2D]/25 transition-all hover:shadow-xl hover:shadow-[#EE4D2D]/35 active:scale-[0.98] disabled:opacity-40">
+            <Wand2 className="mr-2 h-5 w-5" /> {dailyLimitReached ? "Limite diário atingido" : "Gerar conteúdo com IA"}
           </Button>
         </div>
       )}
 
       {generating && (
-        <div className="space-y-4 rounded-2xl border border-[#EE4D2D]/20 bg-white p-8 shadow-sm shadow-[#EE4D2D]/10">
-          <div className="flex flex-col items-center">
-            <div className="relative mb-4 flex h-20 w-20 items-center justify-center">
-              <div className="absolute inset-0 animate-ping rounded-full bg-[#EE4D2D]/20" />
-              <div className="absolute inset-0 animate-pulse rounded-full bg-[#EE4D2D]/10" />
-              <Wand2 className="relative z-10 h-8 w-8 text-[#EE4D2D] animate-pulse" />
+        <div className="vi-step-enter space-y-4 rounded-2xl border border-[#EE4D2D]/20 bg-white p-8 shadow-lg shadow-[#EE4D2D]/10 relative overflow-hidden">
+          <div className="vi-shimmer absolute inset-0 rounded-2xl opacity-30 pointer-events-none" />
+          <div className="flex flex-col items-center relative z-10">
+            <div className="relative mb-5 flex h-24 w-24 items-center justify-center">
+              <div className="absolute inset-0 animate-ping rounded-full bg-[#EE4D2D]/20" style={{ animationDuration: "1.5s" }} />
+              <div className="absolute inset-0 animate-pulse rounded-full bg-[#EE4D2D]/15" />
+              <Wand2 className="relative z-10 h-10 w-10 text-[#EE4D2D] animate-pulse" />
             </div>
-            <h3 className="text-sm font-semibold text-foreground">Gerando conteúdo com IA...</h3>
-            <div className="mt-4 w-full max-w-xs space-y-2">
+            <h3 className="text-base font-bold text-foreground">Gerando conteúdo com IA...</h3>
+            <div className="mt-5 w-full max-w-xs space-y-2.5">
               {GENERATION_STEPS.map((msg, i) => (
-                <div key={i} className={`flex items-center gap-3 rounded-lg px-4 py-2.5 text-xs font-medium transition-all duration-500 ${
+                <div key={i} className={`flex items-center gap-3 rounded-xl px-4 py-3 text-xs font-medium transition-all duration-500 ${
                   i <= genStep ? "bg-emerald-50 text-emerald-700" : "bg-gray-50 text-gray-400"}`}>
-                  {i < genStep ? <Check className="h-3.5 w-3.5 text-emerald-500" />
-                  : i === genStep ? <Loader2 className="h-3.5 w-3.5 animate-spin text-[#EE4D2D]" />
-                  : <span className="h-3.5 w-3.5 rounded-full border border-gray-300" />}
+                  {i < genStep ? <Check className="h-4 w-4 text-emerald-500" />
+                  : i === genStep ? <Loader2 className="h-4 w-4 animate-spin text-[#EE4D2D]" />
+                  : <span className="h-4 w-4 rounded-full border-2 border-gray-300" />}
                   {msg}
                 </div>))}
             </div>
@@ -592,7 +613,10 @@ const Step5Generation = memo(function Step5Generation({
       )}
 
       {genError && (
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-center">
+        <div className="vi-shake rounded-2xl border border-red-200 bg-red-50 p-6 text-center">
+          <div className="flex justify-center mb-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100"><Info className="h-6 w-6 text-red-500" /></div>
+          </div>
           <p className="text-sm font-medium text-red-700">{genError}</p>
           <Button onClick={handleGenerate} variant="outline"
             className="mt-3 h-10 rounded-xl border-red-200 bg-white text-sm font-medium text-red-600 hover:bg-red-50">
@@ -618,30 +642,28 @@ const Step6Review = memo(function Step6Review({
     <div className="space-y-6">
       <div className="flex flex-wrap gap-2">
         <RegenButton icon={RotateCw} label="Gerar outra versão" onClick={() => handleRegenerate()} />
-        <RegenButton icon={Zap} label="Versão mais curta" onClick={() => handleRegenerate("curta")} />
-        <RegenButton icon={Trophy} label="Versão mais comercial" onClick={() => handleRegenerate("comercial")} />
-        <RegenButton icon={Camera} label="Versão mais natural" onClick={() => handleRegenerate("natural")} />
+        <RegenButton icon={Zap} label="Mais curta" onClick={() => handleRegenerate("curta")} />
+        <RegenButton icon={Trophy} label="Mais comercial" onClick={() => handleRegenerate("comercial")} />
+        <RegenButton icon={Camera} label="Mais natural" onClick={() => handleRegenerate("natural")} />
       </div>
 
-      <div className="space-y-5 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm shadow-black/[0.02] ring-1 ring-black/[0.06]">
-        <EditableField label="Título da ideia" value={generatedContent.idea_title}
-          onChange={(v) => update("idea_title", v)} />
-        <EditableField label="Hook (abertura)" value={generatedContent.hook}
-          onChange={(v) => update("hook", v)} />
-        <EditableField label="Roteiro (3 cenas)" value={generatedContent.script}
-          onChange={(v) => update("script", v)} rows={6} />
-        <EditableField label="Locução / Narração" value={generatedContent.voiceover}
-          onChange={(v) => update("voiceover", v)} rows={3} />
-        <EditableField label="Textos na tela" value={generatedContent.screen_texts}
-          onChange={(v) => update("screen_texts", v)} rows={3} />
-        <EditableField label="Chamada para ação (CTA)" value={generatedContent.cta}
-          onChange={(v) => update("cta", v)} />
-        <EditableField label="Legenda" value={generatedContent.caption}
-          onChange={(v) => update("caption", v)} rows={2} />
-        <EditableField label="Hashtags" value={generatedContent.hashtags}
-          onChange={(v) => update("hashtags", v)} />
-        <EditableField label="Prompt final em inglês" value={generatedContent.final_prompt}
-          onChange={(v) => update("final_prompt", v)} rows={10} />
+      <div className="space-y-4 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm shadow-black/[0.02] ring-1 ring-black/[0.06]">
+        {([
+          { field: "idea_title" as const, label: "Título da ideia", rows: 2 },
+          { field: "hook" as const, label: "Hook (abertura)", rows: 2 },
+          { field: "script" as const, label: "Roteiro (3 cenas)", rows: 6 },
+          { field: "voiceover" as const, label: "Locução / Narração", rows: 3 },
+          { field: "screen_texts" as const, label: "Textos na tela", rows: 3 },
+          { field: "cta" as const, label: "Chamada para ação (CTA)", rows: 2 },
+          { field: "caption" as const, label: "Legenda", rows: 2 },
+          { field: "hashtags" as const, label: "Hashtags", rows: 2 },
+          { field: "final_prompt" as const, label: "Prompt final em inglês", rows: 10 },
+        ]).map(({ field, label, rows }) => (
+          <div key={field} className="vi-float-up border border-gray-100 hover:border-gray-200 rounded-2xl p-4 transition-all duration-300 focus-within:border-l-2 focus-within:border-l-[#EE4D2D] focus-within:shadow-sm">
+            <EditableField label={label} value={generatedContent[field]}
+              onChange={(v) => update(field, v)} rows={rows} />
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -973,27 +995,57 @@ function VideoIaPage() {
      RENDER
      ───────────────────────────────────────────────────────────── */
 
+  const stepDescriptions = [
+    "Escolha o produto que será o tema do vídeo",
+    "Envie imagens de qualidade para o vídeo",
+    "Preencha as informações detalhadas do produto",
+    "Configure o estilo e formato do vídeo",
+    "Gere o roteiro com inteligência artificial",
+    "Revise e edite o conteúdo gerado",
+    "Copie o prompt e abra no Google Gemini",
+  ];
+
   return (
     <DashboardShell title="Vídeo IA"
       subtitle="Crie vídeos profissionais para seus produtos com inteligência artificial. Siga os 7 passos abaixo.">
+      <style>{`
+        @keyframes fade-up { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse-orange { 0%,100% { box-shadow: 0 0 0 0 rgba(238,77,45,0.4); } 50% { box-shadow: 0 0 0 12px rgba(238,77,45,0); } }
+        @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+        @keyframes bounce-in { 0% { transform: scale(0); opacity: 0; } 60% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
+        @keyframes particle-burst { 0% { transform: translate(0,0) scale(1); opacity: 1; } 100% { transform: translate(var(--tx),var(--ty)) scale(0); opacity: 0; } }
+        @keyframes cursor-blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+        @keyframes subtle-shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+        @keyframes float-up { 0% { transform: translateY(6px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
+        .vi-step-enter { animation: fade-up 0.35s ease-out both; }
+        .vi-pulse-card { animation: pulse-orange 2s ease-out; }
+        .vi-shimmer { background: linear-gradient(90deg,transparent,rgba(255,255,255,0.4),transparent); background-size: 200% 100%; animation: shimmer 2s infinite; }
+        .vi-bounce-in { animation: bounce-in 0.5s ease-out both; }
+        .vi-particle { animation: particle-burst 0.7s ease-out forwards; }
+        .vi-shake { animation: subtle-shake 0.4s ease-out; }
+        .vi-float-up { animation: float-up 0.3s ease-out both; }
+        @media (prefers-reduced-motion: reduce) { .vi-step-enter,.vi-pulse-card,.vi-shimmer,.vi-bounce-in,.vi-particle,.vi-shake,.vi-float-up { animation: none; } }
+      `}</style>
       <div className="mx-auto w-full max-w-4xl">
         <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm shadow-black/[0.02] ring-1 ring-black/[0.06]">
           <StepIndicator currentStep={currentStep} setCurrentStep={setCurrentStep} />
+          <div className="mt-2 h-0.5 w-full rounded-full bg-gray-100">
+            <div className="h-full rounded-full bg-[#EE4D2D] transition-all duration-500"
+              style={{ width: `${(currentStep / 7) * 100}%` }} />
+          </div>
         </div>
         <div className="mt-6">
           <div className="mb-4 flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#FFF8F5]">
-              {(() => { const Icon = STEPS[currentStep - 1].icon; return <Icon className="h-5 w-5 text-[#EE4D2D]" />; })()}
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white border border-[#EE4D2D]/10 shadow-sm">
+              {(() => { const Icon = STEPS[currentStep - 1].icon; return <Icon className="h-6 w-6 text-[#EE4D2D]" />; })()}
             </div>
             <div>
               <h2 className="text-lg font-bold text-foreground">Etapa {currentStep}: {STEPS[currentStep - 1].label}</h2>
-              <p className="text-xs text-muted-foreground">
-                {["Escolha o produto que será o tema do vídeo", "Envie imagens de qualidade para o vídeo", "Preencha as informações detalhadas do produto", "Configure o estilo e formato do vídeo", "Gere o roteiro com inteligência artificial", "Revise e edite o conteúdo gerado", "Copie o prompt e abra no Google Gemini"][currentStep - 1]}
-              </p>
+              <p className="text-xs text-muted-foreground">{stepDescriptions[currentStep - 1]}</p>
             </div>
           </div>
 
-          <div className="min-h-[300px]">
+          <div className="vi-step-enter min-h-[300px]" key={currentStep}>
             {currentStep === 1 && <Step1SelectProduct productMode={productMode} setProductMode={setProductMode} productSearch={productSearch} setProductSearch={setProductSearch} selectedProduct={selectedProduct} setSelectedProduct={setSelectedProduct} manualProduct={manualProduct} setManualProduct={setManualProduct} filteredProducts={filteredProducts} step1Valid={step1Valid} />}
             {currentStep === 2 && <Step2UploadImages primaryImage={primaryImage} additionalImages={additionalImages} handlePrimaryImageSelect={handlePrimaryImageSelect} handleAdditionalImageSelect={handleAdditionalImageSelect} removePrimaryImage={removePrimaryImage} removeAdditionalImage={removeAdditionalImage} />}
             {currentStep === 3 && <Step3ProductInfo productInfo={productInfo} setProductInfo={setProductInfo} />}
@@ -1007,14 +1059,14 @@ function VideoIaPage() {
             <div className="mt-8 flex items-center justify-between gap-3">
               <Button type="button" variant="outline" onClick={handleBack}
                 disabled={currentStep === 1 || submitting || generating}
-                className="h-11 rounded-xl border-gray-200 bg-white px-5 text-sm font-medium text-gray-600 shadow-sm shadow-black/[0.02] transition-all hover:border-[#EE4D2D]/30 hover:text-[#EE4D2D] disabled:opacity-40">
-                <ChevronLeft className="mr-1.5 h-4 w-4" /> Voltar
+                className="group h-11 rounded-xl border-gray-200 bg-white px-5 text-sm font-medium text-gray-600 shadow-sm shadow-black/[0.02] transition-all hover:border-[#EE4D2D]/30 hover:text-[#EE4D2D] disabled:opacity-40">
+                <ChevronLeft className="mr-1.5 h-4 w-4 transition-transform duration-300 group-hover:-translate-x-1" /> Voltar
               </Button>
               {continueLabel[currentStep] && (
                 <Button type="button" onClick={currentStep === 4 ? handleGenerate : handleContinue}
                   disabled={submitting || generating || (currentStep === 4 && !isAdmin && dailyLimitReached)}
-                  className="h-11 min-w-[140px] rounded-xl bg-[#EE4D2D] text-sm font-semibold text-white shadow-sm shadow-[#EE4D2D]/25 transition-all hover:bg-[#EE4D2D]/90 hover:shadow-md hover:shadow-[#EE4D2D]/30 active:scale-[0.98] disabled:opacity-40">
-                  {submitting || generating ? (<span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Processando...</span>) : (<span className="flex items-center gap-2">{continueLabel[currentStep]}<ArrowRight className="h-4 w-4" /></span>)}
+                  className="group h-11 min-w-[140px] rounded-xl bg-[#EE4D2D] text-sm font-semibold text-white shadow-sm shadow-[#EE4D2D]/25 transition-all hover:bg-[#EE4D2D]/90 hover:shadow-md hover:shadow-[#EE4D2D]/30 active:scale-[0.98] disabled:opacity-40">
+                  {submitting || generating ? (<span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Processando...</span>) : (<span className="flex items-center gap-2">{continueLabel[currentStep]}<ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" /></span>)}
                 </Button>
               )}
             </div>
@@ -1022,8 +1074,8 @@ function VideoIaPage() {
           {currentStep === 5 && !generating && (
             <div className="mt-8">
               <Button type="button" variant="outline" onClick={handleBack} disabled={generating}
-                className="h-11 rounded-xl border-gray-200 bg-white px-5 text-sm font-medium text-gray-600 shadow-sm shadow-black/[0.02] transition-all hover:border-[#EE4D2D]/30 hover:text-[#EE4D2D]">
-                <ChevronLeft className="mr-1.5 h-4 w-4" /> Voltar
+                className="group h-11 rounded-xl border-gray-200 bg-white px-5 text-sm font-medium text-gray-600 shadow-sm shadow-black/[0.02] transition-all hover:border-[#EE4D2D]/30 hover:text-[#EE4D2D]">
+                <ChevronLeft className="mr-1.5 h-4 w-4 transition-transform duration-300 group-hover:-translate-x-1" /> Voltar
               </Button>
             </div>
           )}
@@ -1045,16 +1097,13 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
   return (<div className="flex items-baseline justify-between rounded-lg bg-gray-50 px-3 py-1.5"><span className="font-medium text-gray-500">{label}</span><span className="max-w-[180px] truncate text-right text-foreground">{value || "—"}</span></div>);
 }
 
-function ToggleOption({ icon: Icon, label, active, onChange }: { icon: typeof Subtitles; label: string; active: boolean; onChange: () => void }) {
-  return (<button type="button" onClick={onChange} className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-xs font-medium transition-all ${active ? "border-[#EE4D2D] bg-[#FFF8F5] text-[#EE4D2D]" : "border-gray-200 bg-white text-gray-500 hover:border-gray-300"}`}><Icon className="h-4 w-4" /> {label}</button>);
-}
 
 function RegenButton({ icon: Icon, label, onClick }: { icon: typeof RotateCw; label: string; onClick: () => void }) {
-  return (<button type="button" onClick={onClick} className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 shadow-sm transition-all hover:border-[#EE4D2D]/30 hover:text-[#EE4D2D]"><Icon className="h-3.5 w-3.5" /> {label}</button>);
+  return (<button type="button" onClick={onClick} className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3.5 py-2 text-xs font-medium text-gray-600 shadow-sm transition-all duration-300 hover:border-[#EE4D2D]/40 hover:text-[#EE4D2D] hover:shadow-md active:scale-[0.97]"><Icon className="h-3.5 w-3.5" /> {label}</button>);
 }
 
 function EditableField({ label, value, onChange, rows = 2 }: { label: string; value: string; onChange: (v: string) => void; rows?: number }) {
-  return (<div className="space-y-1.5"><Label className="text-xs font-semibold text-gray-500">{label}</Label><Textarea value={value} onChange={(e) => onChange(e.target.value)} rows={rows} className="resize-y rounded-lg border-gray-200 bg-white px-4 py-2.5 text-sm focus-visible:ring-[#EE4D2D]/30" /></div>);
+  return (<div className="space-y-1.5"><Label className="text-xs font-semibold text-gray-500 tracking-wide uppercase">{label}</Label><Textarea value={value} onChange={(e) => onChange(e.target.value)} rows={rows} className="resize-y rounded-xl bg-gray-50/50 border-0 focus:bg-white text-sm px-4 py-2.5 focus:outline-none focus:ring-1 focus:ring-[#EE4D2D]/30" /></div>);
 }
 
 function ImageUploadSlot({ image, onSelect, onRemove, large = false, dragOver = false, onDragOver, onDragLeave, onDrop }: { image: ImageSlot; onSelect: (file: File) => void; onRemove: () => void; large?: boolean; dragOver?: boolean; onDragOver?: (e: DragEvent) => void; onDragLeave?: (e: DragEvent) => void; onDrop?: (e: DragEvent) => void }) {
@@ -1063,12 +1112,15 @@ function ImageUploadSlot({ image, onSelect, onRemove, large = false, dragOver = 
   const heightClass = large ? "h-48 sm:h-56" : "h-32 sm:h-36";
   return (
     <div onClick={() => { if (!hasImage && !image.uploading) inputRef.current?.click(); }} onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}
-      className={`group relative ${heightClass} cursor-pointer overflow-hidden rounded-xl border-2 transition-all ${hasImage ? "border-solid border-emerald-300" : image.uploading ? "border-dashed border-[#EE4D2D]/50" : dragOver ? "border-dashed border-[#EE4D2D] bg-[#FFF8F5]" : "border-dotted border-gray-300 bg-gray-50/80 hover:border-[#EE4D2D]/40 hover:bg-[#FFF8F5]/50"}`}>
-      {image.uploading && (<div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white/90"><Loader2 className="mb-2 h-6 w-6 animate-spin text-[#EE4D2D]" /><span className="text-xs font-medium text-[#EE4D2D]">Enviando...</span></div>)}
+      className={`group relative ${heightClass} cursor-pointer overflow-hidden rounded-2xl border-2 transition-all duration-300 ${hasImage ? "border-solid border-emerald-300" : image.uploading ? "border-dashed border-[#EE4D2D]/50" : dragOver ? "border-dashed border-[#EE4D2D] bg-[#FFF8F5]" : "border-dashed border-gray-300 bg-gray-50/80 hover:border-[#EE4D2D]/40 hover:bg-[#FFF8F5]/50"}`}>
+      {image.uploading && hasImage && image.storagePath && (
+        <div className="absolute inset-0 z-20 vi-shimmer rounded-2xl overflow-hidden pointer-events-none" />
+      )}
+      {image.uploading && !hasImage && (<div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white/90"><div className="mb-2 relative"><div className="absolute inset-0 animate-ping rounded-full bg-[#EE4D2D]/20" /><Loader2 className="relative z-10 h-6 w-6 animate-spin text-[#EE4D2D]" /></div><span className="text-xs font-medium text-[#EE4D2D]">Enviando...</span></div>)}
       {hasImage ? (<><img src={image.preview || ""} alt="Preview" className="h-full w-full object-cover" />
         <button type="button" onClick={(e) => { e.stopPropagation(); onRemove(); }} className="absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white opacity-0 backdrop-blur-sm transition-opacity hover:bg-black/80 group-hover:opacity-100"><X className="h-3.5 w-3.5" /></button>
-        {image.storagePath && (<div className="absolute left-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/30"><Check className="h-3 w-3 text-white" /></div>)}</>)
-        : (<div className="flex h-full flex-col items-center justify-center px-3 text-center"><div className={`mb-1.5 flex items-center justify-center rounded-full bg-gray-100 transition-colors group-hover:bg-[#EE4D2D]/10 ${large ? "h-12 w-12" : "h-8 w-8"}`}><Upload className={`${large ? "h-5 w-5" : "h-3.5 w-3.5"} text-gray-400 transition-colors group-hover:text-[#EE4D2D]/60`} /></div><span className={`${large ? "text-xs" : "text-[11px]"} font-medium text-gray-400`}>{large ? "Clique ou arraste a imagem principal" : "Adicionar imagem"}</span><span className="mt-0.5 text-[10px] text-gray-300">JPG, PNG ou WEBP</span></div>)}
+        {image.storagePath && (<div className="absolute left-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/30 vi-bounce-in"><Check className="h-3 w-3 text-white" /></div>)}</>)
+        : (<div className="flex h-full flex-col items-center justify-center px-3 text-center"><div className={`mb-1.5 flex items-center justify-center rounded-full bg-gray-100 transition-all duration-300 group-hover:bg-[#EE4D2D]/10 group-hover:scale-110 ${large ? "h-12 w-12" : "h-8 w-8"}`}><Upload className={`${large ? "h-5 w-5" : "h-3.5 w-3.5"} text-gray-400 transition-colors duration-300 group-hover:text-[#EE4D2D]/60`} /></div><span className={`${large ? "text-xs" : "text-[11px]"} font-medium text-gray-400`}>{large ? "Clique ou arraste a imagem principal" : "Adicionar imagem"}</span><span className="mt-0.5 text-[10px] text-gray-300">JPG, PNG ou WEBP</span></div>)}
       <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden"
         onChange={(e) => { const file = e.target.files?.[0]; if (file) onSelect(file); e.target.value = ""; }} />
     </div>

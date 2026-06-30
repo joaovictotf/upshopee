@@ -4,7 +4,7 @@ import { Button } from "../components/ui/button";
 import { toast } from "sonner";
 import {
   Check, Sparkles, Copy, Image, Wand2, Subtitles, Play,
-  Send, Star, Lightbulb, ChevronLeft,
+  Send, Star, ChevronLeft,
 } from "lucide-react";
 
 // ── Types (mirrored from dashboard.video-ia.tsx) ────────────
@@ -173,11 +173,26 @@ function Step7GeminiChat({
   if (redirecting) {
     return (
       <div className="space-y-5">
-        <div className="flex flex-col items-center rounded-2xl border border-emerald-200 bg-emerald-50 p-6 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500 shadow-md shadow-emerald-500/20"><Check className="h-7 w-7 text-white" /></div>
-          <h3 className="mt-3 text-lg font-bold text-emerald-800">Prompt copiado e pronto!</h3>
+        <div className="relative flex flex-col items-center rounded-2xl border border-emerald-200 bg-emerald-50 p-8 text-center overflow-hidden">
+          {/* Particle burst */}
+          <div className="absolute inset-0 pointer-events-none">
+            {Array.from({ length: 10 }).map((_, i) => {
+              const angles = [45, 90, 135, 180, 225, 270, 315, 30, 150, 300];
+              const colors = ["#EE4D2D", "#10B981", "#F59E0B", "#EC4899", "#3B82F6", "#EE4D2D", "#10B981", "#F59E0B", "#EC4899", "#3B82F6"];
+              const a = angles[i] * Math.PI / 180;
+              const r = 60 + Math.random() * 40;
+              return (
+                <span key={i} className="vi-particle absolute top-1/2 left-1/2 h-2 w-2 rounded-full"
+                  style={{ '--tx': `${Math.cos(a) * r}px`, '--ty': `${Math.sin(a) * r}px`, backgroundColor: colors[i], animationDelay: `${i * 0.05}s` } as React.CSSProperties} />
+              );
+            })}
+          </div>
+          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-emerald-500 shadow-lg shadow-emerald-500/30 vi-bounce-in">
+            <Check className="h-10 w-10 text-white" />
+          </div>
+          <h3 className="mt-4 text-lg font-bold text-emerald-800">Prompt copiado e pronto!</h3>
           {countdown !== null && (
-            <p className="mt-1 text-sm text-emerald-600">Redirecionando para o Gemini em <span className="font-bold text-emerald-800 text-lg">{countdown}s</span>...</p>
+            <p className="mt-1 text-sm text-emerald-600">Redirecionando para o Gemini em <span className="font-bold text-emerald-800 text-xl">{countdown}s</span>...</p>
           )}
         </div>
         <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm shadow-black/[0.02] ring-1 ring-black/[0.06]">
@@ -190,7 +205,7 @@ function Step7GeminiChat({
               { step: 4, icon: Subtitles, text: "Selecione 9:16 (formato vertical) no Gemini", done: false },
               { step: 5, icon: Play, text: "Gere o vídeo e baixe o resultado!", done: false },
             ].map(({ step, icon: Icon, text, done }) => (
-              <div key={step} className="flex items-start gap-3">
+              <div key={step} className={`flex items-start gap-3 transition-all duration-300 ${done ? "" : "border-l-2 border-l-gray-200 pl-3"}`}>
                 <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${done ? "bg-emerald-500 text-white" : "bg-gray-100 text-gray-500"}`}>
                   {done ? <Check className="h-3.5 w-3.5" /> : step}
                 </div>
@@ -204,8 +219,9 @@ function Step7GeminiChat({
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
           <Button onClick={handleOpenGeminiNow}
-            className="h-12 flex-1 rounded-xl bg-[#EE4D2D] text-sm font-semibold text-white shadow-md shadow-[#EE4D2D]/25 hover:bg-[#EE4D2D]/90 hover:shadow-lg hover:shadow-[#EE4D2D]/30 active:scale-[0.98]">
-            <Star className="mr-2 h-4 w-4" /> Abrir Gemini agora
+            className="h-14 flex-1 rounded-2xl bg-gradient-to-r from-[#EE4D2D] to-[#FF6B3D] text-base font-semibold text-white shadow-lg shadow-[#EE4D2D]/25 hover:shadow-xl hover:shadow-[#EE4D2D]/35 active:scale-[0.98] relative overflow-hidden">
+            <span className="absolute inset-0 rounded-2xl animate-ping bg-[#EE4D2D]/10" style={{ animationDuration: "3s" }} />
+            <Star className="mr-2 h-5 w-5 relative z-10" /> <span className="relative z-10">Abrir Gemini agora</span>
           </Button>
           <Button onClick={handleBack} variant="ghost"
             className="h-12 rounded-xl text-sm font-medium text-gray-500 hover:text-[#EE4D2D]">
@@ -221,30 +237,32 @@ function Step7GeminiChat({
     <div className="flex flex-col h-[620px] max-h-[calc(100vh-280px)] min-h-[480px]">
       {/* Success header */}
       <div className="flex-shrink-0 flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 mb-4">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/20"><Check className="h-5 w-5 text-white" /></div>
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-emerald-500 shadow-lg shadow-emerald-500/30 vi-bounce-in">
+          <Check className="h-8 w-8 text-white" />
+        </div>
         <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-bold text-emerald-800">Roteiro gerado com sucesso!</h3>
-          <p className="text-xs text-emerald-600 truncate">{generatedContent.idea_title}</p>
+          <h3 className="text-lg font-bold text-emerald-800">Roteiro criado com sucesso!</h3>
+          <p className="text-sm text-emerald-600 truncate">{generatedContent.idea_title}</p>
         </div>
       </div>
 
       {/* Chat messages area */}
-      <div className="flex-1 overflow-y-auto rounded-2xl border border-gray-100 bg-[#FAFAFA] p-4 shadow-sm shadow-black/[0.02] ring-1 ring-black/[0.06] mb-3">
+      <div className="flex-1 overflow-y-auto rounded-2xl border border-gray-100 bg-[#F8F8F8] p-4 shadow-sm shadow-black/[0.02] ring-1 ring-black/[0.06] mb-3">
         <div className="space-y-4">
           {chatMessages.map((msg, i) => (
-            <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-              <div className={`max-w-[85%] sm:max-w-[70%] rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap break-words ${msg.role === "user" ? "bg-[#EE4D2D] text-white rounded-br-md shadow-sm shadow-[#EE4D2D]/15" : "bg-white text-gray-700 rounded-bl-md border border-gray-100 shadow-sm"}`}>
+            <div key={i} className={`vi-step-enter flex ${msg.role === "user" ? "justify-end" : "justify-start"}`} style={{ animationDelay: `${Math.min(i * 80, 400)}ms`, animationDuration: "0.25s" }}>
+              <div className={`max-w-[85%] sm:max-w-[70%] rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap break-words ${msg.role === "user" ? "bg-gradient-to-r from-[#EE4D2D] to-[#FF6B3D] text-white rounded-br-md shadow-sm shadow-[#EE4D2D]/15" : "bg-white text-gray-700 rounded-bl-md shadow-sm"}`}>
                 {msg.content}
               </div>
             </div>
           ))}
           {chatLoading && (
             <div className="flex justify-start">
-              <div className="rounded-2xl rounded-bl-md border border-gray-100 bg-white px-4 py-3 shadow-sm">
+              <div className="rounded-2xl rounded-bl-md bg-white px-4 py-3 shadow-sm">
                 <div className="flex items-center gap-1.5">
-                  <span className="h-2 w-2 animate-bounce rounded-full bg-gray-400" style={{ animationDelay: "0ms" }} />
-                  <span className="h-2 w-2 animate-bounce rounded-full bg-gray-400" style={{ animationDelay: "150ms" }} />
-                  <span className="h-2 w-2 animate-bounce rounded-full bg-gray-400" style={{ animationDelay: "300ms" }} />
+                  <span className="h-2 w-2 animate-bounce rounded-full bg-[#EE4D2D]" style={{ animationDelay: "0ms" }} />
+                  <span className="h-2 w-2 animate-bounce rounded-full bg-[#EE4D2D]" style={{ animationDelay: "150ms" }} />
+                  <span className="h-2 w-2 animate-bounce rounded-full bg-[#EE4D2D]" style={{ animationDelay: "300ms" }} />
                 </div>
               </div>
             </div>
@@ -254,38 +272,39 @@ function Step7GeminiChat({
       </div>
 
       {/* Input bar */}
-      <div className="flex-shrink-0 rounded-2xl border border-gray-100 bg-white p-3 shadow-sm shadow-black/[0.02] ring-1 ring-black/[0.06] mb-3">
-        <div className="flex items-end gap-2">
+      <div className="flex-shrink-0 bg-white border-t border-gray-100 rounded-2xl shadow-sm shadow-black/[0.02] ring-1 ring-black/[0.06] mb-3 focus-within:shadow-md focus-within:shadow-[#EE4D2D]/10">
+        <div className="flex items-end gap-2 p-3">
           <textarea ref={inputRef} value={chatInput} onChange={(e) => setChatInput(e.target.value)} onKeyDown={handleKeyDown}
             placeholder="Peça ajustes no roteiro..." rows={2} disabled={chatLoading}
-            className="flex-1 resize-none rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-[#EE4D2D]/40 focus:outline-none focus:ring-2 focus:ring-[#EE4D2D]/10 disabled:opacity-50" />
+            className="flex-1 resize-none rounded-2xl border-0 bg-gray-50 px-5 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-[#EE4D2D]/20 disabled:opacity-50" />
           <Button type="button" onClick={handleSendMessage} disabled={!chatInput.trim() || chatLoading}
-            className="h-10 w-10 shrink-0 rounded-xl bg-[#EE4D2D] p-0 text-white shadow-sm shadow-[#EE4D2D]/25 hover:bg-[#EE4D2D]/90 hover:shadow-md hover:shadow-[#EE4D2D]/30 active:scale-[0.97] disabled:opacity-40">
+            className="h-11 w-11 shrink-0 rounded-2xl bg-[#EE4D2D] p-0 text-white shadow-sm shadow-[#EE4D2D]/25 hover:bg-[#EE4D2D]/90 hover:shadow-md hover:shadow-[#EE4D2D]/30 active:scale-[0.97] disabled:opacity-40">
             <Send className="h-4 w-4" />
           </Button>
         </div>
-        <p className="mt-1.5 text-[10px] text-muted-foreground text-center">Enter para enviar · Shift+Enter para nova linha</p>
+        <p className="pb-2 text-[10px] text-muted-foreground text-center">Enter para enviar · Shift+Enter para nova linha</p>
       </div>
 
       {/* Action buttons */}
       <div className="flex-shrink-0 flex flex-col gap-2 sm:flex-row mb-3">
         <Button onClick={handleCopyFinalPrompt} variant="outline"
-          className="h-11 flex-1 rounded-xl border-gray-200 bg-white text-sm font-medium text-gray-600 shadow-sm hover:border-[#EE4D2D]/30 hover:text-[#EE4D2D]">
-          <Copy className="mr-2 h-4 w-4" /> 📋 Copiar prompt
+          className="h-12 flex-1 rounded-xl border-gray-200 bg-white text-sm font-medium text-gray-600 shadow-sm hover:border-[#EE4D2D]/30 hover:text-[#EE4D2D] transition-all duration-300">
+          <Copy className="mr-2 h-4 w-4" /> Copiar prompt
         </Button>
         <Button onClick={handleOpenGemini}
-          className="h-11 flex-1 rounded-xl bg-[#EE4D2D] text-sm font-semibold text-white shadow-md shadow-[#EE4D2D]/25 hover:bg-[#EE4D2D]/90 hover:shadow-lg hover:shadow-[#EE4D2D]/30 active:scale-[0.98]">
-          <Star className="mr-2 h-4 w-4" /> 🎬 Gerar vídeo no Gemini
+          className="h-12 flex-1 rounded-xl bg-[#EE4D2D] text-sm font-semibold text-white shadow-md shadow-[#EE4D2D]/25 hover:bg-[#EE4D2D]/90 hover:shadow-lg hover:shadow-[#EE4D2D]/30 active:scale-[0.98] transition-all duration-300">
+          <Star className="mr-2 h-4 w-4" /> Gerar vídeo no Gemini
         </Button>
       </div>
 
-      {/* Instructions card */}
-      <div className="flex-shrink-0 rounded-2xl border border-blue-100 bg-blue-50/50 p-4">
-        <h4 className="flex items-center gap-2 text-xs font-bold text-blue-800"><Lightbulb className="h-3.5 w-3.5" /> Como gerar seu vídeo</h4>
+      {/* Instructions card — warm tone */}
+      <div className="flex-shrink-0 rounded-2xl border border-[#EE4D2D]/10 bg-[#FFF8F5] p-4">
+        <h4 className="flex items-center gap-2 text-xs font-bold text-[#EE4D2D]"><Sparkles className="h-3.5 w-3.5" /> Como gerar seu vídeo</h4>
         <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-5">
-          {["① Clique em Gerar vídeo no Gemini", "② Envie a imagem do produto", "③ Cole o prompt copiado", "④ Selecione 9:16 (vertical)", "⑤ Gere e baixe o vídeo!"].map((tip, i) => (
+          {["Clique em Gerar vídeo no Gemini", "Envie a imagem do produto", "Cole o prompt copiado", "Selecione 9:16 (vertical)", "Gere e baixe o vídeo!"].map((tip, i) => (
             <div key={i} className="flex items-center gap-1.5">
-              <span className="text-[11px] leading-tight text-blue-700">{tip}</span>
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#EE4D2D]/10 text-xs font-bold text-[#EE4D2D]">{i + 1}</span>
+              <span className="text-[11px] leading-tight text-gray-600">{tip}</span>
             </div>
           ))}
         </div>
