@@ -5,7 +5,9 @@ import { products, categories, VALENTINE_CATEGORY, COPA_CATEGORY, type Product }
 import { ProductCard } from "../components/products/ProductCard";
 import { GenerateListingFlow } from "../components/products/GenerateListingFlow";
 import { Input } from "../components/ui/input";
+import { RolePickerDialog } from "../components/products/RolePickerDialog";
 import { Search, Heart, Trophy } from "lucide-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/dashboard/produtos")({ component: Produtos });
 
@@ -14,6 +16,7 @@ function Produtos() {
   const [cat, setCat] = useState("Todos");
   const [selected, setSelected] = useState<Product | null>(null);
   const [open, setOpen] = useState(false);
+  const [rolePickProduct, setRolePickProduct] = useState<Product | null>(null);
 
   const list = useMemo(() => {
     let l = [...products];
@@ -128,10 +131,7 @@ function Produtos() {
           <ProductCard
             key={p.id}
             product={p}
-            onSelect={(prod) => {
-              setSelected(prod);
-              setOpen(true);
-            }}
+            onSelect={(prod) => setRolePickProduct(prod)}
           />
         ))}
       </div>
@@ -152,6 +152,23 @@ function Produtos() {
         product={selected}
         open={open}
         onClose={() => setOpen(false)}
+      />
+
+      <RolePickerDialog
+        open={!!rolePickProduct}
+        productName={rolePickProduct?.name || ""}
+        onSelectVendedor={() => {
+          if (rolePickProduct) {
+            setSelected(rolePickProduct);
+            setOpen(true);
+            setRolePickProduct(null);
+          }
+        }}
+        onSelectAfiliado={() => {
+          toast.success("Programa de Afiliados será lançado em agosto de 2026!");
+          setRolePickProduct(null);
+        }}
+        onClose={() => setRolePickProduct(null)}
       />
     </DashboardShell>
   );

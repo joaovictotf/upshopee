@@ -1,4 +1,4 @@
-import { Sparkles, Flame, TrendingUp, Trophy } from "lucide-react";
+import { Flame, TrendingUp, Trophy, ShoppingBag } from "lucide-react";
 import type { Product } from "../../lib/mock/products";
 import { COPA_CATEGORY } from "../../lib/mock/products";
 import { brl } from "../../lib/format";
@@ -107,7 +107,7 @@ export function ProductCard({ product, onSelect }: { product: Product; onSelect:
           onClick={() => onSelect(product)}
           className="mt-3 h-10 w-full rounded-xl bg-[#EE4D2D] text-sm font-semibold text-white shadow-sm shadow-[#EE4D2D]/25 transition-all hover:bg-[#EE4D2D]/90 hover:shadow-md hover:shadow-[#EE4D2D]/30 active:scale-[0.98]"
         >
-          <Sparkles className="mr-1.5 h-3.5 w-3.5" /> Gerar anúncio
+          <ShoppingBag className="mr-1.5 h-3.5 w-3.5" /> Vender este produto
         </Button>
       </div>
     </div>
