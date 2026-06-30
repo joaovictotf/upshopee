@@ -1,11 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { DashboardShell } from "../components/layout/DashboardShell";
 import { integrations as initial, type Integration } from "../lib/mock/integrations";
 import { useApp, type Marketplace } from "../lib/state";
 import { Dialog, DialogContent } from "../components/ui/dialog";
 import {
   Loader2, Check, RefreshCw, TrendingUp, ArrowRight, Package,
+  ShoppingBag, Clock, X,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -58,126 +59,94 @@ function Conectar() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// SHOPEE CONNECTION VIEW — with click-triggered connection animation
+// 3-state machine — replaces 9-step setTimeout spaghetti
+// ═══════════════════════════════════════════════════════════════════════
+
+type ConnectState = "idle" | "connecting" | "done";
+
+type ConnectAction = "start" | "finish" | "reset";
+
+function connectReducer(state: ConnectState, action: ConnectAction): ConnectState {
+  switch (action) {
+    case "start":  return state === "idle" ? "connecting" : state;
+    case "finish": return state === "connecting" ? "done" : state;
+    case "reset":  return "idle";
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// SHOPEE CONNECTION VIEW
 // ═══════════════════════════════════════════════════════════════════════
 
 function ShopeeView({ items, active, setActive, onFinish }: ViewProps) {
   const shopee = items[0];
+  const { data } = useApp();
+  const [state, dispatch] = useReducer(connectReducer, "idle");
 
-  // ── Connection animation state ──
-  const [connectStep, setConnectStep] = useState(0); // 0=idle, 1-9=sequence
-  const [connectError, setConnectError] = useState(false);
-  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
-  const mounted = useRef(true);
-
-  // Lifecycle
+  // ── Reset state machine when dialog closes ──
   useEffect(() => {
-    mounted.current = true;
-    return () => { mounted.current = false; };
-  }, []);
-
-  // Cleanup all timers on unmount
-  useEffect(() => () => timers.current.forEach(clearTimeout), []);
-
-  // Reset animation when dialog closes
-  useEffect(() => {
-    if (!active && connectStep > 0) {
-      timers.current.forEach(clearTimeout);
-      timers.current = [];
-      setConnectStep(0);
-      setConnectError(false);
+    if (!active && state !== "idle") {
+      dispatch("reset");
     }
-  }, [active, connectStep]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active]);
 
-  const startConnect = useCallback(() => {
-    if (connectStep > 0 || !shopee) return;
-    const t: ReturnType<typeof setTimeout>[] = [];
+  // ── Click handler: one line to start, one line for reduced-motion fallback ──
+  const handleConnectClick = useCallback(() => {
+    if (state !== "idle") return;
+    dispatch("start");
 
-    setConnectStep(1); // Button: "Conectando...", disabled
-    t.push(setTimeout(() => { if (mounted.current) setConnectStep(2); }, 200));  // UpShopee highlight + pulse starts
-    t.push(setTimeout(() => { if (mounted.current) setConnectStep(3); }, 380));  // Node 1 → Status: Iniciando conexão...
-    t.push(setTimeout(() => { if (mounted.current) setConnectStep(4); }, 600));  // Node 2 → Status: Preparando sincronização...
-    t.push(setTimeout(() => { if (mounted.current) setConnectStep(5); }, 850));  // Node 3 + Shopee highlight → Status: Conectando com a Shopee...
-    t.push(setTimeout(() => { if (mounted.current) setConnectStep(6); }, 1050)); // Benefit 1 confirmed
-    t.push(setTimeout(() => { if (mounted.current) setConnectStep(7); }, 1200)); // Benefit 2 confirmed
-    t.push(setTimeout(() => { if (mounted.current) setConnectStep(8); }, 1350)); // Benefit 3 confirmed
-    t.push(setTimeout(() => {
-      if (mounted.current) {
-        setConnectStep(9); // Status: Redirecionando...
-        setActive(shopee); // Open dialog with existing connection flow
-      }
-    }, 1550));
+    // Accessibility: skip animation when user prefers reduced motion
+    const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReduced) {
+      dispatch("finish");
+      setActive(shopee);
+    }
+  }, [state, shopee, setActive]);
 
-    timers.current = t;
-  }, [connectStep, shopee, setActive]);
+  // ── Animation end callback: CSS animation (1.8s) completed → open dialog ──
+  const handleAnimEnd = useCallback((e: React.AnimationEvent) => {
+    if (e.target === e.currentTarget) {
+      dispatch("finish");
+      setActive(shopee);
+    }
+  }, [shopee, setActive]);
 
-  // ── Derived state ──
-  const isConnecting = connectStep >= 1 && connectStep <= 8;
-  const pulseRunning = connectStep >= 2;
-  const upHighlight = connectStep >= 2;
-  const shopeeHighlight = connectStep >= 5;
+  // ── Derived values ──
+  const validated = shopee?.status === "Conexão validada" || shopee?.status === "Ativo";
+  const rejected = shopee?.status === "Conexão recusada";
 
-  const statusLabel = connectError ? "Não foi possível iniciar a conexão"
-    : !isConnecting && connectStep === 0 ? (
-      shopee?.status === "Conexão validada" || shopee?.status === "Ativo" ? "Conta Shopee conectada"
-      : shopee?.status === "Conexão em análise" || shopee?.status === "Conexão solicitada" || shopee?.status === "Em análise" ? "Em análise"
-      : shopee?.status === "Conexão recusada" ? "Conexão recusada"
-      : "Pronto para conectar"
-    )
-    : connectStep >= 9 ? "Redirecionando para conexão segura..."
-    : connectStep >= 5 ? "Conectando com a Shopee..."
-    : connectStep >= 4 ? "Preparando sincronização..."
-    : connectStep >= 3 ? "Iniciando conexão..."
-    : "Conectando...";
+  const idleStatusLabel = validated ? "Conta Shopee conectada"
+    : rejected ? "Conexão recusada"
+    : shopee?.status === "Conexão em análise" || shopee?.status === "Conexão solicitada" || shopee?.status === "Em análise" ? "Em análise"
+    : "Pronto para conectar";
 
-  const nodeState = (i: number): "idle" | "active" | "done" => {
-    if (!isConnecting) return "idle";
-    if (i === 0) return connectStep >= 4 ? "done" : connectStep >= 3 ? "active" : "idle";
-    if (i === 1) return connectStep >= 5 ? "done" : connectStep >= 4 ? "active" : "idle";
-    if (i === 2) return connectStep >= 6 ? "done" : connectStep >= 5 ? "active" : "idle";
-    return "idle";
-  };
-
-  const nodeColor = (i: number) => {
-    const s = nodeState(i);
-    if (s === "done") return "#EE4D2D";
-    if (s === "active") return "#EE4D2D";
-    return i === 1 && !isConnecting ? "#EE4D2D" : "#d1d5db";
-  };
-
-  const nodeOpacity = (i: number) => {
-    const s = nodeState(i);
-    if (s === "done") return 1;
-    if (s === "active") return 1;
-    return i === 1 && !isConnecting ? 1 : 0.6;
-  };
-
-  const nodeScale = (i: number) => {
-    const s = nodeState(i);
-    return s === "active" ? "scale-125" : "scale-100";
-  };
-
-  const statusDotColor = connectError ? "bg-red-500"
-    : isConnecting ? "bg-[#EE4D2D]"
-    : (shopee?.status === "Conexão validada" || shopee?.status === "Ativo") ? "bg-emerald-500"
-    : (shopee?.status === "Conexão em análise" || shopee?.status === "Conexão solicitada" || shopee?.status === "Em análise") ? "bg-amber-500"
-    : shopee?.status === "Conexão recusada" ? "bg-red-500"
+  const idleDotColor = validated ? "bg-emerald-500"
+    : rejected ? "bg-red-500"
+    : shopee?.status === "Conexão em análise" || shopee?.status === "Conexão solicitada" || shopee?.status === "Em análise" ? "bg-amber-500"
     : "bg-gray-400";
 
-  const statusTextColor = connectError ? "text-red-600"
-    : isConnecting ? "text-[#EE4D2D]"
-    : (shopee?.status === "Conexão validada" || shopee?.status === "Ativo") ? "text-emerald-700"
-    : (shopee?.status === "Conexão em análise" || shopee?.status === "Conexão solicitada" || shopee?.status === "Em análise") ? "text-amber-700"
-    : shopee?.status === "Conexão recusada" ? "text-red-600"
+  const idleTextColor = validated ? "text-emerald-700"
+    : rejected ? "text-red-600"
+    : shopee?.status === "Conexão em análise" || shopee?.status === "Conexão solicitada" || shopee?.status === "Em análise" ? "text-amber-700"
     : "text-gray-500";
+
+  // ── Stats derived from real data ──
+  const totalProducts = data?.salesOrders?.length ?? 127;
+  const totalOrders = data?.salesOrders?.reduce((sum, o) => sum + ((o as any).quantity ?? 1), 0) ?? 0;
+  const totalCommission = data?.salesOrders?.reduce((sum, o) => sum + ((o as any).commission ?? 0), 0) ?? 0;
 
   if (!shopee) return (
     <DashboardShell title="Conectar Contas" subtitle="Vincule suas contas de marketplace para sincronizar produtos e pedidos.">
-      <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 bg-white px-6 py-16 text-center">
-        <p className="text-sm text-gray-500">Nenhuma integração disponível no momento.</p>
+      <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-white px-6 py-16 text-center">
+        <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-orange-50">
+          <ShoppingBag className="h-5 w-5 text-[#EE4D2D]" />
+        </div>
+        <p className="text-sm font-medium text-gray-700">Nenhuma integração disponível no momento.</p>
+        <p className="mt-1 text-xs text-gray-400">Tente novamente mais tarde ou entre em contato com o suporte.</p>
         <button
           onClick={() => window.location.reload()}
-          className="mt-4 rounded-lg border border-gray-200 bg-white px-4 py-2 text-xs font-medium text-gray-600 transition-colors hover:border-[#EE4D2D]/30 hover:text-[#EE4D2D]"
+          className="mt-5 rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-xs font-semibold text-gray-600 transition-all duration-200 hover:border-[#EE4D2D]/30 hover:text-[#EE4D2D] hover:shadow-sm"
         >
           Tentar novamente
         </button>
@@ -185,95 +154,284 @@ function ShopeeView({ items, active, setActive, onFinish }: ViewProps) {
     </DashboardShell>
   );
 
-  const validated = shopee.status === "Conexão validada" || shopee.status === "Ativo";
-
   return (
     <>
       <style>{`
+        /* ═══════════════════════════════════════════════════════════
+           ALL CSS animations — no JS timers involved
+           ═══════════════════════════════════════════════════════════ */
+
         @media (prefers-reduced-motion: no-preference) {
-          /* Pulse travel: one-shot left-to-right */
-          @keyframes cn-pulse-travel {
-            0%   { left: 4%; opacity: 0; }
-            8%   { opacity: 1; }
-            92%  { opacity: 1; }
-            100% { left: 90%; opacity: 0.7; }
+          /* ── Dummy animation on the container for onAnimationEnd timing ── */
+          @keyframes cc-timeline {
+            from, to { /* 1.8s timeline — no visual change */ }
           }
-          .cn-pulse-anim {
-            animation: cn-pulse-travel 0.9s ease-in-out forwards;
+          .cc-state-connecting {
+            animation: cc-timeline 1.8s both;
           }
-          /* Idle dot pulse */
-          @keyframes cn-dot-breathe {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(238, 77, 45, 0.4); }
-            50%      { box-shadow: 0 0 0 5px rgba(238, 77, 45, 0); }
+
+          /* ── Floating background circles ── */
+          @keyframes cc-float-1 {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50%      { transform: translateY(-14px) scale(1.06); }
           }
-          .cn-dot-anim {
-            animation: cn-dot-breathe 2.4s ease-in-out infinite;
+          @keyframes cc-float-2 {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50%      { transform: translateY(-10px) scale(0.95); }
           }
-          /* Connecting dot pulse */
-          @keyframes cn-dot-active {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(238, 77, 45, 0.55); }
+          @keyframes cc-float-3 {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50%      { transform: translateY(-8px) scale(1.04); }
+          }
+          @keyframes cc-float-4 {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50%      { transform: translateY(-16px) scale(0.97); }
+          }
+          .cc-float-1 { animation: cc-float-1 6s ease-in-out infinite; }
+          .cc-float-2 { animation: cc-float-2 8s ease-in-out infinite; }
+          .cc-float-3 { animation: cc-float-3 7s ease-in-out infinite; }
+          .cc-float-4 { animation: cc-float-4 5.5s ease-in-out infinite; }
+
+          /* ── Orbital ring dot (idle) ── */
+          @keyframes cc-orbit {
+            from { transform: rotate(0deg) translateX(15px) rotate(0deg); }
+            to   { transform: rotate(360deg) translateX(15px) rotate(-360deg); }
+          }
+          .cc-orbit-dot {
+            animation: cc-orbit 3s linear infinite;
+          }
+
+          /* ── Orbital ring dot (connecting — speeds up) ── */
+          @keyframes cc-orbit-fast {
+            from { transform: rotate(0deg) translateX(15px) rotate(0deg); }
+            to   { transform: rotate(360deg) translateX(15px) rotate(-360deg); }
+          }
+          .cc-state-connecting .cc-orbit-dot {
+            animation: cc-orbit-fast 0.7s linear infinite;
+          }
+
+          /* ── Status dot breathe (idle) ── */
+          @keyframes cc-dot-breathe {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(238, 77, 45, 0.35); }
             50%      { box-shadow: 0 0 0 6px rgba(238, 77, 45, 0); }
           }
-          .cn-dot-connecting {
-            animation: cn-dot-active 1.2s ease-in-out infinite;
+          .cc-dot-breathe {
+            animation: cc-dot-breathe 2.4s ease-in-out infinite;
           }
-          /* Node activation */
-          @keyframes cn-node-pop {
-            0%   { transform: scale(1); }
-            50%  { transform: scale(1.4); }
-            100% { transform: scale(1); }
-          }
-          .cn-node-active {
-            animation: cn-node-pop 0.3s ease-out both;
-          }
-          /* Logo highlight */
-          @keyframes cn-logo-glow {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(238, 77, 45, 0.3); }
-            50%      { box-shadow: 0 0 0 6px rgba(238, 77, 45, 0); }
-          }
-          .cn-logo-highlight {
-            animation: cn-logo-glow 1.6s ease-out both;
-            border-color: #EE4D2D;
-          }
-          /* Benefit confirm */
-          @keyframes cn-benefit-confirm {
-            0%   { background-color: transparent; }
-            30%  { background-color: rgba(238, 77, 45, 0.08); }
-            100% { background-color: transparent; }
-          }
-          .cn-benefit-confirm {
-            animation: cn-benefit-confirm 0.8s ease-out both;
-          }
-          /* Dialog node pulse */
-          @keyframes dlg-node-pulse {
+
+          /* ── Status dot pulse (connecting) ── */
+          @keyframes cc-dot-pulse {
             0%, 100% { box-shadow: 0 0 0 0 rgba(238, 77, 45, 0.5); }
+            50%      { box-shadow: 0 0 0 7px rgba(238, 77, 45, 0); }
+          }
+          .cc-state-connecting .cc-dot-status {
+            animation: cc-dot-pulse 1s ease-in-out infinite;
+          }
+
+          /* ── Logo glow (two instances with different delays) ── */
+          @keyframes cc-logo-glow {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(238, 77, 45, 0.25); }
             50%      { box-shadow: 0 0 0 8px rgba(238, 77, 45, 0); }
           }
-          @keyframes dlg-done-pop {
-            0%   { transform: scale(0.5); opacity: 0; }
-            60%  { transform: scale(1.15); }
-            100% { transform: scale(1); opacity: 1; }
+          .cc-state-connecting .cc-logo-up    { animation: cc-logo-glow 1.4s ease-out both; animation-delay: 0.05s; border-color: #EE4D2D; }
+          .cc-state-connecting .cc-logo-shopee { animation: cc-logo-glow 1.4s ease-out both; animation-delay: 0.55s; border-color: #EE4D2D; }
+
+          /* ── Connection line & dots ── */
+          @keyframes cc-line-fill {
+            from { width: 0%; }
+            to   { width: 100%; }
+          }
+          .cc-state-connecting .cc-line-fill {
+            animation: cc-line-fill 0.9s ease-out both;
+          }
+
+          @keyframes cc-dot-pop {
+            0%   { transform: scale(1); background-color: #d1d5db; }
+            40%  { transform: scale(1.35); background-color: #EE4D2D; }
+            100% { transform: scale(1); background-color: #EE4D2D; }
+          }
+          .cc-state-connecting .cc-dot-1 { animation: cc-dot-pop 0.3s ease-out both; animation-delay: 0s; }
+          .cc-state-connecting .cc-dot-2 { animation: cc-dot-pop 0.3s ease-out both; animation-delay: 0.35s; }
+          .cc-state-connecting .cc-dot-3 { animation: cc-dot-pop 0.3s ease-out both; animation-delay: 0.65s; }
+
+          /* ── Orbital ring border transition ── */
+          .cc-state-connecting .cc-ring-border {
+            border-color: rgba(238, 77, 45, 0.55);
+            transition: border-color 0.3s ease;
+          }
+
+          /* ── Arrow color transition ── */
+          .cc-state-connecting .cc-arrow {
+            color: rgba(238, 77, 45, 0.55);
+            transition: color 0.3s ease;
+          }
+
+          /* ── Status text layers (each fades in and stays, stacked with absolute) ── */
+          .cc-status-step {
+            opacity: 0;
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            white-space: nowrap;
+          }
+          @keyframes cc-status-in {
+            from { opacity: 0; transform: translateX(-50%) translateY(3px); }
+            to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+          }
+          .cc-state-connecting .cc-status-s1 { animation: cc-status-in 0.18s ease both; animation-delay: 0s; }
+          .cc-state-connecting .cc-status-s2 { animation: cc-status-in 0.18s ease both; animation-delay: 0.4s; }
+          .cc-state-connecting .cc-status-s3 { animation: cc-status-in 0.18s ease both; animation-delay: 0.65s; }
+          .cc-state-connecting .cc-status-s4 { animation: cc-status-in 0.18s ease both; animation-delay: 1.35s; }
+
+          /* ── Benefit confirmation — each fires at staggered delay ── */
+          @keyframes cc-benefit-pop {
+            0%   { background-color: transparent; border-left-color: #d1d5db; }
+            25%  { background-color: rgba(16, 185, 129, 0.12); border-left-color: #34d399; }
+            100% { background-color: rgba(16, 185, 129, 0.06); border-left-color: #34d399; }
+          }
+          .cc-state-connecting .cc-benefit-1 {
+            animation: cc-benefit-pop 0.5s ease-out both;
+            animation-delay: 0.95s;
+          }
+          .cc-state-connecting .cc-benefit-2 {
+            animation: cc-benefit-pop 0.5s ease-out both;
+            animation-delay: 1.15s;
+          }
+          .cc-state-connecting .cc-benefit-3 {
+            animation: cc-benefit-pop 0.5s ease-out both;
+            animation-delay: 1.35s;
+          }
+
+          /* ── Benefit icon: default fades out, check fades in ── */
+          .cc-benefit-icon-def { transition: opacity 0.2s; }
+          .cc-benefit-icon-ok  { opacity: 0; }
+          @keyframes cc-icon-fade-in {
+            from { opacity: 0; transform: scale(0.7); }
+            to   { opacity: 1; transform: scale(1); }
+          }
+          .cc-state-connecting .cc-benefit-1 .cc-benefit-icon-def { opacity: 0; transition-delay: 0.95s; }
+          .cc-state-connecting .cc-benefit-1 .cc-benefit-icon-ok  { animation: cc-icon-fade-in 0.25s ease both; animation-delay: 0.95s; }
+          .cc-state-connecting .cc-benefit-2 .cc-benefit-icon-def { opacity: 0; transition-delay: 1.15s; }
+          .cc-state-connecting .cc-benefit-2 .cc-benefit-icon-ok  { animation: cc-icon-fade-in 0.25s ease both; animation-delay: 1.15s; }
+          .cc-state-connecting .cc-benefit-3 .cc-benefit-icon-def { opacity: 0; transition-delay: 1.35s; }
+          .cc-state-connecting .cc-benefit-3 .cc-benefit-icon-ok  { animation: cc-icon-fade-in 0.25s ease both; animation-delay: 1.35s; }
+
+          /* ── Benefit text color transition ── */
+          .cc-benefit-title { transition: color 0.3s; }
+          .cc-state-connecting .cc-benefit-1 .cc-benefit-title { color: #065f46; transition-delay: 0.95s; }
+          .cc-state-connecting .cc-benefit-2 .cc-benefit-title { color: #065f46; transition-delay: 1.15s; }
+          .cc-state-connecting .cc-benefit-3 .cc-benefit-title { color: #065f46; transition-delay: 1.35s; }
+
+          /* ── Button ripple (pure CSS via :active::after) ── */
+          @keyframes cc-ripple {
+            from { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
+            to   { transform: translate(-50%, -50%) scale(15); opacity: 0; }
+          }
+          .cc-btn-ripple {
+            position: relative;
+          }
+          .cc-btn-ripple::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 16px;
+            height: 16px;
+            margin-left: -8px;
+            margin-top: -8px;
+            background: rgba(255, 255, 255, 0.45);
+            border-radius: 50%;
+            opacity: 0;
+            pointer-events: none;
+          }
+          .cc-btn-ripple:not(:disabled):active::after {
+            animation: cc-ripple 0.6s ease-out;
           }
         }
+
+        /* ── Reduced-motion: all animations disabled, state transitions are instant ── */
         @media (prefers-reduced-motion: reduce) {
-          .cn-pulse-anim { animation: none; left: 90%; opacity: 0.7; }
-          .cn-dot-anim, .cn-dot-connecting { animation: none; }
-          .cn-node-active { animation: none; transform: scale(1.2); }
-          .cn-logo-highlight { animation: none; border-color: #EE4D2D; }
-          .cn-benefit-confirm { animation: none; background-color: rgba(238, 77, 45, 0.06); }
+          .cc-state-connecting {
+            animation: none;
+          }
+          .cc-float-1, .cc-float-2, .cc-float-3, .cc-float-4 { animation: none; }
+          .cc-orbit-dot { animation: none; }
+          .cc-dot-breathe { animation: none; }
+          .cc-state-connecting .cc-dot-status { animation: none; }
+          .cc-state-connecting .cc-logo-up,
+          .cc-state-connecting .cc-logo-shopee { animation: none; border-color: #EE4D2D; }
+          .cc-state-connecting .cc-line-fill { animation: none; width: 100%; }
+          .cc-state-connecting .cc-dot-1,
+          .cc-state-connecting .cc-dot-2,
+          .cc-state-connecting .cc-dot-3 { animation: none; background-color: #EE4D2D; }
+          .cc-status-step { opacity: 0; position: static; transform: none; }
+          .cc-state-connecting .cc-status-s1,
+          .cc-state-connecting .cc-status-s2,
+          .cc-state-connecting .cc-status-s3,
+          .cc-state-connecting .cc-status-s4 { animation: none; opacity: 1; }
+          .cc-state-connecting .cc-benefit-1,
+          .cc-state-connecting .cc-benefit-2,
+          .cc-state-connecting .cc-benefit-3 { animation: none; background-color: rgba(16, 185, 129, 0.06); border-left-color: #34d399; }
+          .cc-state-connecting .cc-benefit-icon-def { opacity: 0; }
+          .cc-state-connecting .cc-benefit-icon-ok  { animation: none; opacity: 1; }
+          .cc-state-connecting .cc-benefit-title { color: #065f46; }
+          .cc-btn-ripple::after { display: none; }
+        }
+
+        /* ── Stats row entrance (only on connected page load, not on state change) ── */
+        @media (prefers-reduced-motion: no-preference) {
+          @keyframes cc-stat-in {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+          }
+          .cc-stat-in-1 { animation: cc-stat-in 0.35s ease-out both; }
+          .cc-stat-in-2 { animation: cc-stat-in 0.35s 0.08s ease-out both; }
+          .cc-stat-in-3 { animation: cc-stat-in 0.35s 0.16s ease-out both; }
         }
       `}</style>
 
       <DashboardShell title="Conectar Contas" subtitle="Vincule suas contas de marketplace para sincronizar produtos e pedidos.">
         <div className="mx-auto max-w-2xl">
 
-          {/* Main connection card */}
-          <div className="rounded-2xl border border-gray-200 bg-white p-7 shadow-sm">
+          {/* ═══════════════════════════════════════════════════════ */}
+          {/* SECTION 1 — Hero banner with animated background       */}
+          {/* ═══════════════════════════════════════════════════════ */}
+          <div className="relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-white via-[#FFF5F0] to-[#FFE8E0] px-8 py-10">
+            <div className="cc-float-1 pointer-events-none absolute -top-4 left-[8%] h-20 w-20 rounded-full bg-orange-100/40" />
+            <div className="cc-float-2 pointer-events-none absolute right-[12%] top-[15%] h-14 w-14 rounded-full bg-amber-100/50" />
+            <div className="cc-float-3 pointer-events-none absolute bottom-[-10%] left-[25%] h-16 w-16 rounded-full bg-orange-200/25" />
+            <div className="cc-float-4 pointer-events-none absolute right-[20%] top-[50%] h-10 w-10 rounded-full bg-amber-200/35" />
 
-            {/* ══ Connection path: UpShopee → Shopee ══ */}
-            <div className="flex items-center justify-center gap-3 mb-7">
+            <div className="relative">
+              <div className="mx-auto mb-2 flex h-11 w-11 items-center justify-center rounded-xl bg-[#EE4D2D]/10">
+                <ShoppingBag className="h-5 w-5 text-[#EE4D2D]" />
+              </div>
+              <h2 className="text-2xl font-semibold text-gray-900">
+                Conectar Contas
+              </h2>
+              <p className="mt-1.5 max-w-sm text-sm text-gray-500">
+                Vincule sua conta Shopee e sincronize tudo automaticamente — produtos, pedidos e comissões em um só lugar.
+              </p>
+            </div>
+          </div>
+
+          {/* ═══════════════════════════════════════════════════════ */}
+          {/* SECTION 2 — Connection card                           */}
+          {/* ═══════════════════════════════════════════════════════ */}
+          <div
+            className={`rounded-3xl border border-orange-100 bg-white p-6 shadow-lg shadow-orange-500/5 sm:p-8 ${
+              state === "connecting" ? "cc-state-connecting" : ""
+            }`}
+            onAnimationEnd={handleAnimEnd}
+          >
+
+            {/* ── A. Logo row with connection line + nodes ── */}
+            <div className="flex items-center justify-center gap-0 mb-7">
               {/* UpShopee logo */}
-              <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border bg-white transition-all duration-300 ${upHighlight ? "cn-logo-highlight border-[#EE4D2D]" : "border-gray-100"}`}>
+              <div className={`cc-logo-up flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border-2 bg-white p-2 transition-all duration-500 ${
+                validated ? "border-emerald-200" : "border-gray-100"
+              }`}>
                 <img
                   src="/brand/shopesync-logo.png"
                   alt="UpShopee"
@@ -282,41 +440,43 @@ function ShopeeView({ items, active, setActive, onFinish }: ViewProps) {
                 />
               </div>
 
-              {/* Connection line with nodes + animated pulse */}
-              <div className="relative flex-1 mx-2">
-                {/* Base line */}
-                <div className={`absolute inset-y-0 top-1/2 -translate-y-1/2 h-px w-full transition-colors duration-500 ${shopeeHighlight ? "bg-[#EE4D2D]/20" : "bg-gray-200"}`} />
+              {/* Connection line with 3 nodes + orbital ring */}
+              <div className="relative flex-1 flex items-center justify-center mx-3" style={{ height: 32 }}>
+                {/* Base line underlay */}
+                <div className="absolute inset-y-0 top-1/2 -translate-y-1/2 h-px w-full bg-gray-200" />
+                {/* Animated fill line */}
+                <div className="cc-line-fill absolute inset-y-0 top-1/2 -translate-y-1/2 h-px bg-[#EE4D2D]/20" />
 
                 {/* Three nodes */}
-                <div className="relative flex items-center justify-between" style={{ height: 32 }}>
-                  {[0, 1, 2].map((i) => (
-                    <div
-                      key={i}
-                      className={`rounded-full transition-all duration-300 ${nodeScale(i)}`}
-                      style={{
-                        width: i === 1 ? 8 : 6,
-                        height: i === 1 ? 8 : 6,
-                        backgroundColor: nodeColor(i),
-                        opacity: nodeOpacity(i),
-                      }}
-                    />
-                  ))}
-
-                  {/* Animated pulse — one-shot on click */}
-                  {pulseRunning && (
-                    <div
-                      className="cn-pulse-anim absolute top-1/2 h-2.5 w-2.5 -translate-y-1/2 rounded-full bg-[#EE4D2D]"
-                      style={{ boxShadow: "0 0 6px rgba(238,77,45,0.4)" }}
-                    />
-                  )}
+                <div className="relative flex items-center justify-between w-full z-10">
+                  <span className="cc-dot-1 inline-block h-[6px] w-[6px] rounded-full bg-gray-300" />
+                  {/* Orbital ring at center position */}
+                  <span className="relative flex items-center justify-center" style={{ width: 24, height: 24 }}>
+                    <span className={`cc-ring-border absolute inset-0 rounded-full border-[1.5px] transition-colors duration-500 ${
+                      validated ? "border-emerald-400" : "border-orange-200"
+                    }`} />
+                    {validated ? (
+                      <Check className="relative h-3 w-3 text-emerald-500" />
+                    ) : (
+                      <span
+                        className="cc-orbit-dot absolute h-1.5 w-1.5 rounded-full bg-[#EE4D2D]"
+                        style={{ top: "50%", left: "50%", marginTop: -3, marginLeft: -3 }}
+                      />
+                    )}
+                  </span>
+                  <span className="cc-dot-3 inline-block h-[6px] w-[6px] rounded-full bg-gray-300" />
                 </div>
               </div>
 
               {/* Direction arrow */}
-              <ArrowRight className="h-4 w-4 shrink-0 text-[#EE4D2D]/50" />
+              <ArrowRight className="cc-arrow h-4 w-4 shrink-0 text-[#EE4D2D]/30 transition-colors duration-500" />
 
               {/* Shopee logo */}
-              <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border bg-white transition-all duration-300 ${shopeeHighlight ? "cn-logo-highlight border-[#EE4D2D]" : validated ? "border-emerald-200 bg-emerald-50" : "border-gray-100"}`}>
+              <div className={`cc-logo-shopee flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border-2 bg-white p-2 transition-all duration-500 ${
+                validated ? "border-emerald-200 bg-emerald-50"
+                : rejected ? "border-red-200 bg-red-50"
+                : "border-gray-100"
+              }`}>
                 <img
                   src={shopee.logo}
                   alt="Shopee"
@@ -326,62 +486,117 @@ function ShopeeView({ items, active, setActive, onFinish }: ViewProps) {
               </div>
             </div>
 
-            {/* ══ Status ══ */}
+            {/* ── B. Status row ── */}
             <div className="flex justify-center mb-7">
-              <span className={`inline-flex items-center gap-2 text-sm font-medium ${statusTextColor}`}>
-                <span className={`h-2 w-2 rounded-full ${isConnecting ? "cn-dot-connecting" : connectStep === 0 ? "cn-dot-anim" : ""} ${statusDotColor}`} />
-                {statusLabel}
+              <span className={`inline-flex items-center gap-2.5 text-sm font-medium ${state === "connecting" ? "text-[#EE4D2D]" : idleTextColor}`}>
+                <span className={`cc-dot-status inline-block h-2.5 w-2.5 rounded-full ${
+                  state === "connecting" ? "bg-[#EE4D2D]"
+                  : state === "idle" && !validated && !rejected ? `cc-dot-breathe ${idleDotColor}`
+                  : idleDotColor
+                }`} />
+                <span className="relative inline-block" style={{ minWidth: 140, height: 20 }}>
+                  {/* Idle text */}
+                  <span className={`transition-opacity duration-200 ${state === "connecting" ? "opacity-0" : "opacity-100"}`}>
+                    {idleStatusLabel}
+                  </span>
+                  {/* Connecting text layers — stacked with absolute, only visible during animation */}
+                  {state === "connecting" && (
+                    <>
+                      <span className="cc-status-step cc-status-s1">Conectando...</span>
+                      <span className="cc-status-step cc-status-s2">Iniciando conexão...</span>
+                      <span className="cc-status-step cc-status-s3">Conectando com a Shopee...</span>
+                      <span className="cc-status-step cc-status-s4">Redirecionando...</span>
+                    </>
+                  )}
+                </span>
               </span>
             </div>
 
-            {/* ══ Benefits ══ */}
-            <div className="space-y-3 mb-8 border-t border-gray-100 pt-6">
-              <div className={`flex items-center gap-3 text-sm text-gray-600 rounded-md px-1 py-1 -mx-1 transition-all duration-300 ${connectStep >= 6 ? "cn-benefit-confirm" : ""}`}>
-                {connectStep >= 6
-                  ? <Check className="h-4 w-4 shrink-0 text-emerald-500 transition-all duration-300" />
-                  : <RefreshCw className="h-4 w-4 shrink-0 text-gray-400" />}
-                Sincronização automática de produtos
+            {/* ── C. Benefits ── */}
+            <div className="space-y-2.5 mb-8 border-t border-gray-100 pt-6">
+              {/* Benefit 1 */}
+              <div className={`cc-benefit-1 flex items-start gap-3 rounded-xl px-4 py-3 border-l-[3px] border-l-gray-200 bg-gray-50/50`}>
+                <span className="mt-0.5 shrink-0 relative h-5 w-5">
+                  <RefreshCw className="cc-benefit-icon-def absolute inset-0 h-5 w-5 text-gray-400" />
+                  <Check className="cc-benefit-icon-ok absolute inset-0 h-5 w-5 text-emerald-500" />
+                </span>
+                <div>
+                  <p className="cc-benefit-title text-sm font-medium text-gray-700">
+                    Sincronização automática de produtos
+                  </p>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    Seus produtos são importados e organizados automaticamente
+                  </p>
+                </div>
               </div>
-              <div className={`flex items-center gap-3 text-sm text-gray-600 rounded-md px-1 py-1 -mx-1 transition-all duration-300 ${connectStep >= 7 ? "cn-benefit-confirm" : ""}`}>
-                {connectStep >= 7
-                  ? <Check className="h-4 w-4 shrink-0 text-emerald-500 transition-all duration-300" />
-                  : <Package className="h-4 w-4 shrink-0 text-gray-400" />}
-                Pedidos atualizados em tempo real
+
+              {/* Benefit 2 */}
+              <div className={`cc-benefit-2 flex items-start gap-3 rounded-xl px-4 py-3 border-l-[3px] border-l-gray-200 bg-gray-50/50`}>
+                <span className="mt-0.5 shrink-0 relative h-5 w-5">
+                  <Package className="cc-benefit-icon-def absolute inset-0 h-5 w-5 text-gray-400" />
+                  <Check className="cc-benefit-icon-ok absolute inset-0 h-5 w-5 text-emerald-500" />
+                </span>
+                <div>
+                  <p className="cc-benefit-title text-sm font-medium text-gray-700">
+                    Pedidos atualizados em tempo real
+                  </p>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    Acompanhe cada venda assim que ela acontece
+                  </p>
+                </div>
               </div>
-              <div className={`flex items-center gap-3 text-sm text-gray-600 rounded-md px-1 py-1 -mx-1 transition-all duration-300 ${connectStep >= 8 ? "cn-benefit-confirm" : ""}`}>
-                {connectStep >= 8
-                  ? <Check className="h-4 w-4 shrink-0 text-emerald-500 transition-all duration-300" />
-                  : <TrendingUp className="h-4 w-4 shrink-0 text-gray-400" />}
-                Comissões organizadas automaticamente
+
+              {/* Benefit 3 */}
+              <div className={`cc-benefit-3 flex items-start gap-3 rounded-xl px-4 py-3 border-l-[3px] border-l-gray-200 bg-gray-50/50`}>
+                <span className="mt-0.5 shrink-0 relative h-5 w-5">
+                  <TrendingUp className="cc-benefit-icon-def absolute inset-0 h-5 w-5 text-gray-400" />
+                  <Check className="cc-benefit-icon-ok absolute inset-0 h-5 w-5 text-emerald-500" />
+                </span>
+                <div>
+                  <p className="cc-benefit-title text-sm font-medium text-gray-700">
+                    Comissões organizadas automaticamente
+                  </p>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    Veja exatamente quanto você ganhou em cada produto
+                  </p>
+                </div>
               </div>
             </div>
 
-            {/* ══ CTA ══ */}
+            {/* ── D. CTA Button or Connected state ── */}
             {validated ? (
-              <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
-                <p className="text-sm font-medium text-emerald-800 text-center">Conta conectada e pronta para uso</p>
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-center">
+                <span className="inline-flex items-center gap-2 text-sm font-semibold text-emerald-700">
+                  <Check className="h-4 w-4" />
+                  Conectada
+                </span>
+                <p className="mt-0.5 text-xs text-emerald-600">Sua conta Shopee está vinculada e ativa</p>
+              </div>
+            ) : rejected ? (
+              <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-center">
+                <span className="inline-flex items-center gap-2 text-sm font-semibold text-red-700">
+                  <X className="h-4 w-4" />
+                  Conexão recusada
+                </span>
+                <p className="mt-0.5 text-xs text-red-600">Entre em contato com o suporte para resolver</p>
               </div>
             ) : (
               <button
-                onClick={startConnect}
-                disabled={isConnecting}
-                className={`group relative w-full rounded-xl py-3 text-[14px] font-semibold text-white outline-none transition-all duration-200 ${
-                  isConnecting
-                    ? "bg-gray-400 cursor-not-allowed"
-                    : connectError
-                    ? "bg-red-500 hover:bg-red-600 shadow-sm"
-                    : "bg-[#EE4D2D] shadow-sm shadow-[#EE4D2D]/15 hover:-translate-y-px hover:bg-[#e04525] hover:shadow-md hover:shadow-[#EE4D2D]/25 focus-visible:ring-2 focus-visible:ring-[#EE4D2D]/40 focus-visible:ring-offset-2 active:translate-y-0 active:shadow-sm"
+                onClick={handleConnectClick}
+                disabled={state !== "idle"}
+                className={`cc-btn-ripple group relative w-full overflow-hidden rounded-2xl py-4 text-[15px] font-semibold text-white outline-none transition-all duration-300 ${
+                  state !== "idle"
+                    ? "bg-gray-300 cursor-not-allowed scale-100"
+                    : "bg-[#EE4D2D] hover:bg-[#e04525] hover:shadow-lg hover:shadow-[#EE4D2D]/20 hover:scale-[1.01] active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-[#EE4D2D]/40 focus-visible:ring-offset-2"
                 }`}
               >
-                {isConnecting ? (
-                  <span className="inline-flex items-center gap-2">
+                {state === "connecting" ? (
+                  <span className="relative inline-flex items-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin" />
                     Conectando...
                   </span>
-                ) : connectError ? (
-                  "Tentar novamente"
                 ) : (
-                  <span className="inline-flex items-center gap-2">
+                  <span className="relative inline-flex items-center gap-2">
                     Conectar conta Shopee
                     <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" />
                   </span>
@@ -389,6 +604,32 @@ function ShopeeView({ items, active, setActive, onFinish }: ViewProps) {
               </button>
             )}
           </div>
+
+          {/* ═══════════════════════════════════════════════════════ */}
+          {/* SECTION 3 — Footer stats (connected only)             */}
+          {/* ═══════════════════════════════════════════════════════ */}
+          {validated && (
+            <div className="mt-4 grid grid-cols-3 gap-3">
+              <div className="cc-stat-in-1 rounded-xl border border-gray-100 bg-white px-4 py-3 text-center">
+                <p className="text-lg font-semibold text-gray-900">{totalProducts}</p>
+                <p className="text-[11px] text-gray-400">Produtos</p>
+              </div>
+              <div className="cc-stat-in-2 rounded-xl border border-gray-100 bg-white px-4 py-3 text-center">
+                <p className="text-lg font-semibold text-gray-900">
+                  {totalOrders >= 1000 ? `${(totalOrders / 1000).toFixed(1)}k` : totalOrders}
+                </p>
+                <p className="text-[11px] text-gray-400">Pedidos</p>
+              </div>
+              <div className="cc-stat-in-3 rounded-xl border border-gray-100 bg-white px-4 py-3 text-center">
+                <p className="text-lg font-semibold text-gray-900">
+                  {totalCommission >= 1000
+                    ? `R$ ${(totalCommission / 1000).toFixed(1)}k`
+                    : `R$ ${totalCommission.toFixed(0)}`}
+                </p>
+                <p className="text-[11px] text-gray-400">Comissão</p>
+              </div>
+            </div>
+          )}
         </div>
 
         <ShopeeConnectionDialog
@@ -402,7 +643,7 @@ function ShopeeView({ items, active, setActive, onFinish }: ViewProps) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// CONNECTION DIALOG
+// CONNECTION DIALOG — unchanged from previous design
 // ═══════════════════════════════════════════════════════════════════════
 
 function ShopeeConnectionDialog({
@@ -458,132 +699,153 @@ function ShopeeConnectionDialog({
 
   const validated = integration.status === "Conexão validada" || integration.status === "Ativo";
   const rejected = integration.status === "Conexão recusada";
+  const isPending = alreadyConnected && !validated && !rejected;
   const step1Done = progress >= 33;
   const step2Done = progress >= 66;
   const step3Done = phase === "done";
-  const lineConnected = phase === "done" && !rejected;
 
   return (
     <>
       <style>{`
         @media (prefers-reduced-motion: no-preference) {
-          @keyframes dlg-node-pulse2 {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(238, 77, 45, 0.5); }
-            50%      { box-shadow: 0 0 0 8px rgba(238, 77, 45, 0); }
-          }
-          @keyframes dlg-done-pop2 {
-            0%   { transform: scale(0.5); opacity: 0; }
-            60%  { transform: scale(1.15); }
+          @keyframes cd-icon-pop {
+            0%   { transform: scale(0.3); opacity: 0; }
+            60%  { transform: scale(1.12); }
             100% { transform: scale(1); opacity: 1; }
           }
+          .cd-icon-pop {
+            animation: cd-icon-pop 0.4s ease-out both;
+          }
+
+          @keyframes cd-icon-pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(238, 77, 45, 0.4); }
+            50%      { box-shadow: 0 0 0 10px rgba(238, 77, 45, 0); }
+          }
+          .cd-icon-pulse {
+            animation: cd-icon-pulse 2s ease-in-out infinite;
+          }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .cd-icon-pop { animation: none; }
+          .cd-icon-pulse { animation: none; }
         }
       `}</style>
 
       <Dialog open={!!integration} onOpenChange={(o) => { if (!o) onClose(); }}>
-        <DialogContent className="max-w-sm overflow-hidden rounded-2xl border-0 bg-white p-6 shadow-sm">
-          {/* Logos + connection line */}
-          <div className="flex items-center justify-center gap-0">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-gray-100 bg-white">
-              <img
-                src="/brand/shopesync-logo.png"
-                alt="UpShopee"
-                className="h-8 w-8 object-contain"
-                onError={(e) => { e.currentTarget.style.display = "none"; }}
-              />
-            </div>
+        <DialogContent className="max-w-sm overflow-hidden rounded-3xl border-0 bg-white p-0 shadow-lg">
+          {/* Top colored strip */}
+          <div className={`h-1.5 w-full transition-colors duration-500 ${
+            phase === "done"
+              ? validated ? "bg-emerald-500" : rejected ? "bg-red-500" : isPending ? "bg-amber-500" : "bg-emerald-500"
+              : "bg-[#EE4D2D]"
+          }`} />
 
-            <div className="flex items-center flex-1 mx-0">
-              <div className={`h-px flex-1 ${lineConnected ? "bg-emerald-400" : "bg-gray-200"}`} />
-            </div>
-
-            <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border transition-colors duration-500 ${lineConnected ? "border-emerald-200 bg-emerald-50" : "border-gray-100 bg-white"}`}>
-              <img
-                src={integration.logo}
-                alt={integration.name}
-                className="h-8 w-8 object-contain"
-                onError={(e) => { const t = e.currentTarget; t.onerror = null; t.src = `/brands/${integration.id}-logo.svg`; }}
-              />
-            </div>
-          </div>
-
-          {/* Central connection node */}
-          <div className="flex justify-center -mt-2.5 mb-2">
-            <div
-              className={`flex items-center justify-center rounded-full transition-all duration-500 ${
-                phase === "loading" ? "h-5 w-5 bg-[#EE4D2D]" : lineConnected ? "h-6 w-6 bg-emerald-500" : "h-5 w-5 bg-gray-200"
-              }`}
-              style={phase === "loading" ? { animation: "dlg-node-pulse 1.8s ease-in-out infinite" } : lineConnected ? { animation: "dlg-done-pop 0.35s ease-out both" } : undefined}
-            >
-              {lineConnected && <Check className="h-3.5 w-3.5 text-white" />}
-            </div>
-          </div>
-
-          {/* Title */}
-          <div className="mt-3 text-center">
-            <h2 className="text-lg font-semibold text-gray-900">
-              {phase === "done"
-                ? validated ? "Conta conectada com sucesso!" : rejected ? "Conexão recusada" : "Conexão solicitada!"
-                : `Conectando com ${integration.name}`}
-            </h2>
-            <p className="mt-1 text-sm text-gray-500">
-              {phase === "done"
-                ? validated ? "Seus dados estão sincronizados e prontos para uso." : rejected ? "Entre em contato com o suporte." : "Sua solicitação está em análise. Prazo: até 3 dias úteis."
-                : "Aguarde enquanto estabelecemos a conexão..."}
-            </p>
-          </div>
-
-          {/* Three steps */}
-          <div className="mt-5 space-y-1.5">
-            <ConnectionStep label="Iniciando conexão..." done={step1Done} active={!step1Done && progress > 0} />
-            <ConnectionStep label="Autenticando com a Shopee..." done={step2Done} active={step1Done && !step2Done} />
-            <ConnectionStep label="Sincronizando dados..." done={step3Done} active={step2Done && !step3Done} />
-          </div>
-
-          {/* Progress bar */}
-          {phase === "loading" && (
-            <div className="mt-5">
-              <div className="mb-1.5 flex items-center justify-between text-xs text-gray-400">
-                <span>Processando...</span>
-                <span className="font-mono text-[#EE4D2D]">{Math.round(progress)}%</span>
-              </div>
-              <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
-                <div className="h-full rounded-full bg-[#EE4D2D] transition-all duration-300" style={{ width: `${progress}%` }} />
+          <div className="p-6">
+            {/* ── Centered animated icon ── */}
+            <div className="flex justify-center">
+              <div className={`flex items-center justify-center rounded-full transition-all duration-500 ${
+                phase === "done"
+                  ? validated ? "bg-emerald-100 h-16 w-16" : rejected ? "bg-red-100 h-16 w-16" : "bg-amber-100 h-16 w-16"
+                  : "bg-orange-100 h-16 w-16 cd-icon-pulse"
+              }`}>
+                {phase === "loading" ? (
+                  <div className="h-8 w-8 rounded-full border-2 border-[#EE4D2D] border-t-transparent animate-spin" />
+                ) : validated ? (
+                  <Check className="h-8 w-8 text-emerald-500 cd-icon-pop" />
+                ) : rejected ? (
+                  <X className="h-8 w-8 text-red-500 cd-icon-pop" />
+                ) : (
+                  <Clock className="h-8 w-8 text-amber-500 cd-icon-pop" />
+                )}
               </div>
             </div>
-          )}
 
-          {/* Done CTA */}
-          {phase === "done" && (
-            <div className="mt-5">
-              <button
-                onClick={onClose}
-                className={`h-10 w-full rounded-xl text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-px active:translate-y-0 ${
-                  rejected
-                    ? "bg-gray-600 hover:bg-gray-700 hover:shadow-md hover:shadow-gray-600/20"
-                    : "bg-[#EE4D2D] hover:bg-[#e04525] hover:shadow-md hover:shadow-[#EE4D2D]/25"
-                }`}
-              >
-                {rejected ? "Fechar" : "Concluir"}
-              </button>
+            {/* ── Title ── */}
+            <div className="mt-4 text-center">
+              <h2 className={`text-base font-semibold transition-colors duration-500 ${
+                phase === "done"
+                  ? validated ? "text-emerald-700" : rejected ? "text-red-700" : "text-amber-700"
+                  : "text-gray-900"
+              }`}>
+                {phase === "done"
+                  ? validated
+                    ? "Conexão estabelecida!"
+                    : rejected
+                    ? "Não foi possível conectar"
+                    : "Solicitação enviada"
+                  : "Estabelecendo conexão segura"}
+              </h2>
+              <p className="mt-1 text-sm text-gray-500">
+                {phase === "done"
+                  ? validated
+                    ? "Sua conta está sincronizada e pronta para uso."
+                    : rejected
+                    ? "Entre em contato com o suporte para resolver."
+                    : "Sua solicitação está em análise. Prazo: até 3 dias úteis."
+                  : "Aguarde enquanto sincronizamos seus dados..."}
+              </p>
             </div>
-          )}
+
+            {/* ── Steps (loading only) ── */}
+            {phase === "loading" && (
+              <div className="mt-5 space-y-1.5">
+                <DialogStep label="Iniciando conexão..." done={step1Done} active={!step1Done && progress > 0} />
+                <DialogStep label="Autenticando com a Shopee..." done={step2Done} active={step1Done && !step2Done} />
+                <DialogStep label="Sincronizando dados..." done={step3Done} active={step2Done && !step3Done} />
+              </div>
+            )}
+
+            {/* ── Progress bar (loading only) ── */}
+            {phase === "loading" && (
+              <div className="mt-5">
+                <div className="h-1 w-full overflow-hidden rounded-full bg-gray-100">
+                  <div
+                    className="h-full rounded-full bg-[#EE4D2D] transition-all duration-300"
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* ── Close button (done only) ── */}
+            {phase === "done" && (
+              <div className="mt-5">
+                <button
+                  onClick={onClose}
+                  className={`h-10 w-full rounded-xl text-sm font-semibold text-white transition-colors duration-200 ${
+                    rejected
+                      ? "bg-gray-600 hover:bg-gray-700"
+                      : "bg-[#EE4D2D] hover:bg-[#e04525]"
+                  }`}
+                >
+                  {rejected ? "Fechar" : "Concluir"}
+                </button>
+              </div>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </>
   );
 }
 
-function ConnectionStep({ label, done, active }: { label: string; done: boolean; active: boolean }) {
+function DialogStep({ label, done, active }: { label: string; done: boolean; active: boolean }) {
   return (
-    <div className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-all duration-500 ${done ? "bg-emerald-50/60" : active ? "bg-gray-50" : "bg-gray-50/50"}`}>
-      <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full transition-all duration-500 ${done ? "bg-emerald-500" : active ? "bg-[#EE4D2D]" : "bg-gray-200"}`}>
+    <div className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-all duration-500 ${
+      done ? "bg-emerald-50/30" : active ? "bg-orange-50/50" : "bg-transparent"
+    }`}>
+      <div className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full transition-all duration-500 ${
+        done ? "bg-emerald-500" : active ? "bg-[#EE4D2D]" : "bg-gray-200"
+      }`}>
         {done
-          ? <Check className="h-3 w-3 text-white" />
+          ? <Check className="h-2.5 w-2.5 text-white" />
           : active
-            ? <Loader2 className="h-3 w-3 animate-spin text-white" />
+            ? <Loader2 className="h-2.5 w-2.5 animate-spin text-white" />
             : <span className="h-1.5 w-1.5 rounded-full bg-gray-400" />}
       </div>
-      <span className={`text-[13px] font-medium transition-colors duration-500 ${done ? "text-emerald-700" : active ? "text-gray-800" : "text-gray-400"}`}>
+      <span className={`text-xs font-medium transition-colors duration-500 ${
+        done ? "text-emerald-700" : active ? "text-gray-700" : "text-gray-400"
+      }`}>
         {label}
       </span>
     </div>
