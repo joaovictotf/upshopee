@@ -8,6 +8,7 @@ import {
   Package, Megaphone, Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
+import { generateDivulgationText, type DivulgationTone } from "../lib/mock/divulgation-templates";
 
 export const Route = createFileRoute("/dashboard/robo-divulgador")({ component: RoboDivulgador });
 
@@ -124,34 +125,16 @@ function relativeTime(ts: number): string {
   return `${hours}h`;
 }
 
-type Tone = "entusiasmado" | "profissional" | "simples" | "desejo";
-
-const TONE_OPTIONS: { value: Tone; label: string; emoji: string }[] = [
-  { value: "entusiasmado", label: "Entusiasmado", emoji: "🎉" },
-  { value: "profissional", label: "Profissional", emoji: "💼" },
-  { value: "simples", label: "Simples", emoji: "💬" },
-  { value: "desejo", label: "Desejo", emoji: "💫" },
+const TONE_OPTIONS: { value: DivulgationTone; label: string }[] = [
+  { value: "curioso", label: "🤔 Curioso" },
+  { value: "entusiasmado", label: "🎉 Entusiasmado" },
+  { value: "profissional", label: "💼 Profissional" },
+  { value: "urgente", label: "⏰ Urgente" },
+  { value: "emocional", label: "💝 Emocional" },
+  { value: "simples", label: "💬 Simples" },
+  { value: "exclusivo", label: "👑 Exclusivo" },
+  { value: "desejo", label: "💫 Desejo" },
 ];
-
-const TONE_TEMPLATES: Record<Tone, string[]> = {
-  entusiasmado: [
-    "🔥 ACABEI DE ACHAR! {product} na Shopee e tô CHOCADA! 😍 Preço incrível, qualidade absurda! Corre que vai acabar! 🏃‍♀️💨",
-    "GENTE!!! {product} — isso aqui é SURREAL de bom! 🤩 Comprei, chegou em 2 dias e já virei fã! Link na bio pra vocês aproveitarem também! 🔥",
-    "PARE TUDO! 🛑 {product} com preço que eu NUNCA vi antes! Já garanti o meu e vim correndo avisar! Não deixa pra depois! ⚡",
-  ],
-  profissional: [
-    "📊 Análise: {product} — excelente custo-benefício. Material de qualidade, entrega rápida e suporte confiável. Recomendo para quem busca profissionalismo.",
-    "✅ {product} avaliado e aprovado. Especificações técnicas superam expectativas. Ótima aquisição para quem valoriza eficiência. Link na bio.",
-  ],
-  simples: [
-    "Olha que legal: {product} na Shopee! 😊 Gostei bastante, chegou certinho. Dá uma olhada no link!",
-    "{product} — preço bom, entrega rápida. Recomendo! 👍",
-  ],
-  desejo: [
-    "Imagina chegar {product} na sua casa hoje... ✨ Perfeito pra você que merece o melhor. Se presenteia! 💫",
-    "Você merece {product}. Sério. Seu dia vai ficar muito melhor com isso. Clique e descubra! 💝",
-  ],
-};
 
 type ViewProps = {
   active: boolean;
@@ -168,8 +151,8 @@ type ViewProps = {
   groupsReached: number;
   productName: string;
   setProductName: (v: string) => void;
-  divulgationTone: Tone;
-  setDivulgationTone: (v: Tone) => void;
+  divulgationTone: DivulgationTone;
+  setDivulgationTone: (v: DivulgationTone) => void;
   generatedText: string;
   setGeneratedText: (v: string) => void;
   isGenerating: boolean;
@@ -211,7 +194,7 @@ function RoboDivulgador() {
   // ── Link + product + tone + generation ──
   const [affiliateLink, setAffiliateLink] = useState("");
   const [productName, setProductName] = useState("");
-  const [divulgationTone, setDivulgationTone] = useState<Tone>("entusiasmado");
+  const [divulgationTone, setDivulgationTone] = useState<DivulgationTone>("curioso");
   const [generatedText, setGeneratedText] = useState("");
   const generatedTextRef = useRef("");
   useEffect(() => { generatedTextRef.current = generatedText; }, [generatedText]);
@@ -225,28 +208,15 @@ function RoboDivulgador() {
     }
     setIsGenerating(true);
     setGenStep(0);
-
-    const steps = ["Gerando texto de divulgação...", "Gerando imagem para divulgação..."];
-    const stepInterval = setInterval(() => {
-      setGenStep((s) => {
-        if (s >= steps.length - 1) {
-          clearInterval(stepInterval);
-          return s;
-        }
-        return s + 1;
-      });
-    }, 1200);
-
+    const stepInterval = setInterval(() => setGenStep((s) => Math.min(s + 1, 1)), 1000);
     setTimeout(() => {
       clearInterval(stepInterval);
       setGenStep(2);
-
-      const pool = TONE_TEMPLATES[divulgationTone] || TONE_TEMPLATES.entusiasmado;
-      const text = pick(pool).replace("{product}", productName.trim());
+      const text = generateDivulgationText(productName.trim(), divulgationTone);
       setGeneratedText(text);
       setIsGenerating(false);
       toast.success("Texto de divulgação gerado!");
-    }, 2400);
+    }, 2000);
   }, [productName, divulgationTone]);
 
   // ── Channels + activity ──
@@ -273,9 +243,9 @@ function RoboDivulgador() {
         const ch = pick(channels);
         const conf = CHANNEL_CONFIG.find((c) => c.id === ch)!;
         // Rotate between personalized text and generic channel messages
-        const usePersonalized = generatedTextRef.current && Math.random() < 0.4;
+        const usePersonalized = generatedTextRef.current && Math.random() > 0.3;
         const msg = usePersonalized
-          ? generatedTextRef.current.slice(0, 80) + (generatedTextRef.current.length > 80 ? "..." : "")
+          ? generatedTextRef.current.slice(0, 100) + (generatedTextRef.current.length > 100 ? "..." : "") + " 🔗"
           : pick(conf.messages);
         const cost = rand(POST_CREDIT_COST_MIN, POST_CREDIT_COST_MAX);
         setCurrentMsg({ text: msg, channel: ch });
@@ -409,7 +379,7 @@ function IAView({
               <Megaphone className="h-4 w-4 text-gray-500" />
               <h3 className="text-sm font-semibold text-gray-900">Tom da Divulgação</h3>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {TONE_OPTIONS.map((tone) => {
                 const active_tone = divulgationTone === tone.value;
                 return (
@@ -417,13 +387,12 @@ function IAView({
                     key={tone.value}
                     onClick={() => setDivulgationTone(tone.value)}
                     disabled={active || isGenerating}
-                    className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-medium border-2 transition-all duration-200 disabled:opacity-60 ${
+                    className={`inline-flex items-center justify-center gap-1 rounded-xl px-3 py-2.5 text-xs font-medium border-2 transition-all duration-200 disabled:opacity-60 ${
                       active_tone
                         ? "border-[#EE4D2D] bg-[#FFF8F5] text-[#EE4D2D]"
                         : "border-gray-200 bg-white text-gray-500 hover:border-gray-300"
                     }`}
                   >
-                    <span className="text-sm">{tone.emoji}</span>
                     {tone.label}
                     {active_tone && <Check className="h-3 w-3" />}
                   </button>
