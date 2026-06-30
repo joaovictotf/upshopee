@@ -356,8 +356,7 @@ export function GenerateListingFlow({ product, open, onClose }: { product: Produ
             </div>
             <h3 className="mt-5 text-lg font-bold text-gray-900">Anúncio enviado!</h3>
             <p className="mt-1 text-sm text-gray-500 text-center max-w-xs">Seu produto está em configuração e estará disponível em até 3 dias úteis.</p>
-            <div className="mt-6 flex flex-wrap justify-center gap-3">
-              <Link to="/dashboard/meus-produtos"><Button variant="outline" className="rounded-xl">Ver Meus Produtos</Button></Link>
+            <div className="mt-6 flex justify-center">
               <Link to="/dashboard/grupos"><Button className="rounded-xl bg-[#EE4D2D] text-white hover:bg-[#d93e22]">Divulgar nos Grupos <ArrowRight className="ml-1 h-3.5 w-3.5" /></Button></Link>
             </div>
           </div>
