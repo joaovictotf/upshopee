@@ -56,7 +56,7 @@ function CopaPopup({ onClose, onView }: { onClose: () => void; onView: () => voi
 type NavItem = { to: string; label: string; icon: typeof Grid3X3; exact?: boolean; special?: "fire" | "impulsionar"; adminOnly?: boolean };
 const baseNav: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: Grid3X3, exact: true },
-  { to: "/dashboard/produtos", label: "Produtos", icon: ShoppingBag },
+  { to: "/dashboard/produtos", label: "Produtos Afiliados", icon: ShoppingBag },
 
 
 
