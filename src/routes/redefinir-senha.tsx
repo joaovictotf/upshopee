@@ -62,10 +62,7 @@ function PasswordResetPage() {
     <div className="min-h-screen grid lg:grid-cols-2 bg-background">
       {/* Left panel — brand */}
       <div className="hidden lg:flex flex-col justify-between p-12 bg-gradient-to-br from-primary/15 via-card to-background border-r border-border">
-        <div className="flex items-center gap-2">
-          <img src="/brand/logo.png" alt="UpShopee" className="h-16 w-auto object-contain" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
-          <span className="font-bold text-lg">UpShopee</span>
-        </div>
+        <img src="/brand/logo.png" alt="UpShopee" className="h-12 w-auto object-contain drop-shadow-sm" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
         <div>
           <div className="inline-flex items-center gap-2 rounded-full bg-orange-100 px-4 py-1.5 text-sm font-semibold text-[#EE4D2D]">
             <ShieldCheck className="h-4 w-4" />

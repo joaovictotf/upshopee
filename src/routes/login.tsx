@@ -62,7 +62,7 @@ function LoginPage() {
         </div>
 
         <div className="relative z-10">
-          <img src="/brand/logo.png" alt="UpShopee" className="h-20 w-auto object-contain brightness-0 invert" onError={(e)=>{e.currentTarget.style.display='none'}} />
+          <img src="/brand/logo.png" alt="UpShopee" className="h-16 w-auto object-contain" onError={(e)=>{e.currentTarget.style.display='none'}} />
         </div>
 
         <div className="relative z-10">
@@ -88,7 +88,7 @@ function LoginPage() {
       <div className="flex flex-1 items-center justify-center px-4 py-12 sm:px-6">
         <div className="w-full max-w-[400px]">
           {/* Mobile logo */}
-          <img src="/brand/logo.png" alt="UpShopee" className="mb-8 mx-auto block h-12 w-auto object-contain lg:hidden" onError={(e)=>{e.currentTarget.style.display='none'}} />
+          <img src="/brand/logo.png" alt="UpShopee" className="mb-8 mx-auto block h-10 w-auto object-contain drop-shadow-sm lg:hidden" onError={(e)=>{e.currentTarget.style.display='none'}} />
 
           <Card className="border-0 shadow-lg shadow-black/[0.04] ring-1 ring-black/[0.06]">
             <CardContent className="p-6 sm:p-8">

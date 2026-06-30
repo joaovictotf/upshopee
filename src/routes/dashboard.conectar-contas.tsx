@@ -435,7 +435,7 @@ function ShopeeView({ items, active, setActive, onFinish }: ViewProps) {
                 <img
                   src="/brand/logo.png"
                   alt="UpShopee"
-                  className="h-12 w-auto object-contain"
+                  className="h-10 w-auto object-contain drop-shadow-sm"
                   onError={(e) => { e.currentTarget.style.display = "none"; }}
                 />
               </div>
