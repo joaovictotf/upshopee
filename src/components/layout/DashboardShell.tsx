@@ -60,7 +60,7 @@ const baseNav: NavItem[] = [
 
 
 
-  { to: "/dashboard/impulsionar-vendas", label: "Impulsionar vendas", icon: TrendingUp, special: "impulsionar" },
+  { to: "/dashboard/impulsionar-vendas", label: "Subir Anúncios", icon: TrendingUp },
   { to: "/dashboard/grupos", label: "Grupos de Divulgação", icon: Users },
   { to: "/dashboard/robo-divulgador", label: "Robô Divulgador", icon: Radio },
   { to: "/dashboard/video-ia", label: "Vídeo IA", icon: Clapperboard },
@@ -120,9 +120,8 @@ export function DashboardShell({ children, title, subtitle, actions, onLightning
 
   const NavList = (
     <nav className="flex-1 space-y-0.5 px-3">
-      {nav.map(({ to, label, icon: Icon, exact, special }) => {
+      {nav.map(({ to, label, icon: Icon, exact }) => {
         const active = exact ? pathname === to : pathname.startsWith(to);
-        const isImpulsionar = special === "impulsionar";
 
         return (
           <Link
@@ -145,12 +144,6 @@ export function DashboardShell({ children, title, subtitle, actions, onLightning
               <Icon className={`h-[18px] w-[18px] ${active ? "text-[#EE4D2D]" : ""}`} />
             </span>
             <span className={active ? "font-semibold" : ""}>{label}</span>
-            {isImpulsionar && (
-              <span className="ml-auto flex items-center gap-1">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#EE4D2D]" />
-                <span className="text-[10px] font-semibold text-[#EE4D2D]/70">Novo</span>
-              </span>
-            )}
           </Link>
         );
       })}
