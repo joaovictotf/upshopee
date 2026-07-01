@@ -1,41 +1,36 @@
-import { useCallback, useEffect, useRef, useState, memo } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, memo } from "react";
 import { Button } from "./ui/button";
 import { toast } from "sonner";
 import { Check, Play, RotateCw, Sparkles, Video } from "lucide-react";
 import type { ProductInfo, StyleConfig, GeneratedContent } from "./Step7GeminiChat";
 
-// ── 4 real affiliate products for admin ──
+// ── Video auto-detection from product name ──
 
-const ADMIN_AFFILIATE_PRODUCTS = [
-  {
-    id: "admin-prod-1",
-    name: "Pacote de Figurinhas da Copa 2026",
-    videoPath: "/videos/admin-video-1.mp4",
-    thumbnail: "",
-    description: "Estilo Cinematográfico · Tom Emocional",
-  },
-  {
-    id: "admin-prod-2",
-    name: "Toalha do Brasil — Versão 1",
-    videoPath: "/videos/admin-video-2.mp4",
-    thumbnail: "",
-    description: "Estilo Unboxing · Tom Casual",
-  },
-  {
-    id: "admin-prod-3",
-    name: "Toalha do Brasil — Versão 2",
-    videoPath: "/videos/admin-video-3.mp4",
-    thumbnail: "",
-    description: "Estilo Unboxing · Tom Entusiasmado",
-  },
-  {
-    id: "admin-prod-4",
-    name: "Álbum da Copa do Mundo 2026",
-    videoPath: "/videos/admin-video-4.mp4",
-    thumbnail: "",
-    description: "Estilo Demonstração · Tom Profissional",
-  },
-];
+type VideoEntry = { name: string; description: string; videoPath: string };
+
+const ALL_VIDEOS: Record<string, VideoEntry[]> = {
+  figurinha: [
+    { name: "Pacote de Figurinhas da Copa 2026", description: "Estilo Cinematográfico", videoPath: "/videos/admin-video-1.mp4" },
+  ],
+  toalha: [
+    { name: "Toalha do Brasil", description: "Estilo Unboxing · Tom Casual", videoPath: "/videos/admin-video-2.mp4" },
+    { name: "Toalha do Brasil — Versão Alternativa", description: "Estilo Unboxing · Tom Entusiasmado", videoPath: "/videos/admin-video-3.mp4" },
+  ],
+  album: [
+    { name: "Álbum da Copa do Mundo 2026", description: "Estilo Demonstração", videoPath: "/videos/admin-video-4.mp4" },
+  ],
+};
+
+function detectVideo(productName: string, variant: number): VideoEntry {
+  const n = productName.toLowerCase();
+  if (n.includes("toalha")) {
+    const list = ALL_VIDEOS.toalha;
+    return list[Math.min(variant, list.length - 1)];
+  }
+  if (n.includes("album") || n.includes("álbum")) return ALL_VIDEOS.album[0];
+  if (n.includes("figurinha")) return ALL_VIDEOS.figurinha[0];
+  return ALL_VIDEOS.figurinha[0];
+}
 
 // ── 10 generation phases, shown at 4-second intervals (40s total) ──
 
@@ -66,7 +61,7 @@ function AdminStep7Video({
   productInfo, styleConfig, generatedContent, projectId, handleBack,
 }: AdminStep7VideoProps) {
 
-  const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
+  const [variant, setVariant] = useState(0);
   const [phase, setPhase] = useState<"idle" | "generating" | "done">("idle");
   const [genPhase, setGenPhase] = useState(0);
   const [progress, setProgress] = useState(0);
@@ -77,6 +72,14 @@ function AdminStep7Video({
   const progressRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mounted = useRef(true);
+
+  // ── Reset variant when product changes (admin goes back and picks different product) ──
+  useEffect(() => {
+    setVariant(0);
+  }, [productInfo.name]);
+
+  // ── Compute current video from product name + variant ──
+  const currentVideo = useMemo(() => detectVideo(productInfo.name, variant), [productInfo.name, variant]);
 
   // ── Cleanup ALL timers on unmount ──
   useEffect(() => {
@@ -89,19 +92,11 @@ function AdminStep7Video({
     };
   }, []);
 
-  const selected = ADMIN_AFFILIATE_PRODUCTS.find((p) => p.id === selectedProduct);
-
-  // ── Helper: clean up any previous timers ──
-  const clearAllTimers = useCallback(() => {
+  // ── Start generation ──
+  const handleGenerate = useCallback(() => {
     if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
     if (progressRef.current) { clearInterval(progressRef.current); progressRef.current = null; }
     if (timeoutRef.current) { clearTimeout(timeoutRef.current); timeoutRef.current = null; }
-  }, []);
-
-  // ── Start generation ──
-  const handleGenerate = useCallback(() => {
-    if (!selectedProduct) return;
-    clearAllTimers();
 
     setPhase("generating");
     setGenPhase(0);
@@ -126,27 +121,35 @@ function AdminStep7Video({
     // Done after 40 seconds
     timeoutRef.current = setTimeout(() => {
       if (!mounted.current) return;
-      clearAllTimers();
+      if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
+      if (progressRef.current) { clearInterval(progressRef.current); progressRef.current = null; }
       setGenPhase(GEN_PHASES.length - 1);
       setProgress(100);
       setPhase("done");
     }, 40000);
-  }, [selectedProduct, clearAllTimers]);
+  }, []);
 
   // ── Regenerate ──
   const handleRegenerate = useCallback(() => {
-    clearAllTimers();
+    if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
+    if (progressRef.current) { clearInterval(progressRef.current); progressRef.current = null; }
+    if (timeoutRef.current) { clearTimeout(timeoutRef.current); timeoutRef.current = null; }
     if (videoRef.current) { videoRef.current.pause(); videoRef.current.currentTime = 0; }
+
+    // Move to next variant (toalha: 0→1 switches to video-3, wraps around for other products)
+    setVariant((prev) => prev + 1);
+
+    if (feedbackText.trim()) toast.success("Mensagem enviada! Regenerando vídeo...");
+
     setPhase("idle");
     setGenPhase(0);
     setProgress(0);
-    if (feedbackText.trim()) toast.success("Mensagem enviada! Regenerando vídeo...");
     // Small delay to let React flush the idle state before restarting
     setTimeout(() => { if (mounted.current) handleGenerate(); }, 300);
-  }, [feedbackText, handleGenerate, clearAllTimers]);
+  }, [feedbackText, handleGenerate]);
 
   // ═══════════════════════════════════════════
-  // PHASE 1 — IDLE: Product selection
+  // PHASE 1 — IDLE: Auto-detected product, ready to generate
   // ═══════════════════════════════════════════
   if (phase === "idle") {
     return (
@@ -159,43 +162,26 @@ function AdminStep7Video({
             </div>
             <div>
               <h3 className="text-base font-bold text-gray-900">Gerar Vídeo</h3>
-              <p className="text-xs text-gray-500">Escolha um produto afiliado para gerar o vídeo final</p>
+              <p className="text-xs text-gray-500">Seu vídeo está pronto para ser gerado</p>
             </div>
           </div>
         </div>
 
-        {/* Product cards */}
-        <div>
-          <p className="text-sm font-semibold text-gray-700 mb-3">Seus Produtos Afiliados</p>
-          <div className="grid gap-3">
-            {ADMIN_AFFILIATE_PRODUCTS.map((prod) => {
-              const active = selectedProduct === prod.id;
-              return (
-                <button key={prod.id} type="button" onClick={() => setSelectedProduct(prod.id)}
-                  className={`flex items-center gap-4 rounded-2xl border-2 p-4 text-left transition-all duration-300 ${
-                    active ? "border-[#EE4D2D] bg-[#FFF8F5] shadow-md shadow-[#EE4D2D]/10" : "border-gray-100 bg-white hover:border-gray-200 hover:shadow-sm"
-                  }`}>
-                  <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${active ? "bg-[#EE4D2D]/10" : "bg-gray-50"}`}>
-                    <Video className={`h-6 w-6 ${active ? "text-[#EE4D2D]" : "text-gray-400"}`} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-gray-900">{prod.name}</p>
-                    <p className="text-xs text-gray-400">{prod.description}</p>
-                  </div>
-                  {active && (
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#EE4D2D]">
-                      <Check className="h-3.5 w-3.5 text-white" />
-                    </div>
-                  )}
-                </button>
-              );
-            })}
+        {/* Detected product */}
+        <div className="rounded-2xl border border-[#EE4D2D]/20 bg-[#FFF8F5] p-5">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EE4D2D]/10">
+              <Sparkles className="h-5 w-5 text-[#EE4D2D]" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-gray-900">{currentVideo.name}</p>
+              <p className="text-xs text-gray-500">{currentVideo.description}</p>
+            </div>
           </div>
         </div>
 
-        {/* Generate button */}
-        <Button onClick={handleGenerate} disabled={!selectedProduct}
-          className="h-14 w-full rounded-2xl bg-[#EE4D2D] text-base font-semibold text-white shadow-md shadow-[#EE4D2D]/25 transition-all hover:bg-[#d93e22] hover:shadow-lg hover:shadow-[#EE4D2D]/30 active:scale-[0.98] disabled:opacity-40">
+        <Button onClick={handleGenerate}
+          className="h-14 w-full rounded-2xl bg-[#EE4D2D] text-base font-semibold text-white shadow-md shadow-[#EE4D2D]/25 transition-all hover:bg-[#d93e22] hover:shadow-lg hover:shadow-[#EE4D2D]/30 active:scale-[0.98]">
           <Play className="mr-2 h-5 w-5" /> Gerar Vídeo com IA
         </Button>
 
@@ -267,7 +253,7 @@ function AdminStep7Video({
   // ═══════════════════════════════════════════
   // PHASE 3 — DONE: Video player
   // ═══════════════════════════════════════════
-  if (phase === "done" && selected) {
+  if (phase === "done") {
     return (
       <div className="space-y-6 vi-step-enter">
         {/* Success header */}
@@ -276,12 +262,12 @@ function AdminStep7Video({
             <Check className="h-8 w-8 text-white" />
           </div>
           <h3 className="mt-4 text-lg font-bold text-emerald-800">Vídeo gerado com sucesso!</h3>
-          <p className="mt-1 text-sm text-emerald-600">{selected.name} — {selected.description}</p>
+          <p className="mt-1 text-sm text-emerald-600">{currentVideo.name} — {currentVideo.description}</p>
         </div>
 
         {/* Video player */}
         <div className="overflow-hidden rounded-2xl border border-gray-200 bg-black shadow-lg">
-          <video ref={videoRef} src={selected.videoPath} poster={selected.thumbnail || undefined}
+          <video ref={videoRef} src={currentVideo.videoPath} poster={undefined}
             controls autoPlay playsInline
             className="w-full aspect-[9/16] max-h-[70vh] object-contain bg-black"
             onError={() => toast.error("Erro ao carregar o vídeo. Tente gerar novamente.")}
@@ -295,8 +281,8 @@ function AdminStep7Video({
               <Video className="h-5 w-5 text-[#EE4D2D]" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-gray-900">{selected.name}</p>
-              <p className="text-xs text-gray-400">{selected.description}</p>
+              <p className="text-sm font-semibold text-gray-900">{currentVideo.name}</p>
+              <p className="text-xs text-gray-400">{currentVideo.description}</p>
             </div>
           </div>
         </div>
