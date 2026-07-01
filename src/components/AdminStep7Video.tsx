@@ -66,12 +66,30 @@ function AdminStep7Video({
   const [genPhase, setGenPhase] = useState(0);
   const [progress, setProgress] = useState(0);
   const [feedbackText, setFeedbackText] = useState("");
+  const [isPlaying, setIsPlaying] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const progressRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mounted = useRef(true);
+
+  // ── Track video play state for custom play button overlay ──
+  useEffect(() => {
+    const el = videoRef.current;
+    if (!el) return;
+    const onPlay = () => setIsPlaying(true);
+    const onPause = () => setIsPlaying(false);
+    const onEnded = () => setIsPlaying(false);
+    el.addEventListener("play", onPlay);
+    el.addEventListener("pause", onPause);
+    el.addEventListener("ended", onEnded);
+    return () => {
+      el.removeEventListener("play", onPlay);
+      el.removeEventListener("pause", onPause);
+      el.removeEventListener("ended", onEnded);
+    };
+  }, [phase]); // Re-attach when phase changes (new video element)
 
   // ── Reset variant when product changes (admin goes back and picks different product) ──
   useEffect(() => {
@@ -135,6 +153,7 @@ function AdminStep7Video({
     if (progressRef.current) { clearInterval(progressRef.current); progressRef.current = null; }
     if (timeoutRef.current) { clearTimeout(timeoutRef.current); timeoutRef.current = null; }
     if (videoRef.current) { videoRef.current.pause(); videoRef.current.currentTime = 0; }
+    setIsPlaying(false);
 
     // Move to next variant (toalha: 0→1 switches to video-3, wraps around for other products)
     setVariant((prev) => prev + 1);
@@ -265,13 +284,39 @@ function AdminStep7Video({
           <p className="mt-1 text-sm text-emerald-600">{currentVideo.name} — {currentVideo.description}</p>
         </div>
 
-        {/* Video player */}
-        <div className="overflow-hidden rounded-2xl border border-gray-200 bg-black shadow-lg">
-          <video ref={videoRef} src={currentVideo.videoPath} poster={undefined}
-            controls autoPlay playsInline
-            className="w-full aspect-[9/16] max-h-[70vh] object-contain bg-black"
-            onError={() => toast.error("Erro ao carregar o vídeo. Tente gerar novamente.")}
-          />
+        {/* CSS animations for LED border + play pulse */}
+        <style>{`
+          @keyframes led-flow {
+            0% { background-position: 0% 0%; }
+            100% { background-position: 200% 0%; }
+          }
+          @keyframes play-pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(238,77,45,0.6); }
+            50% { box-shadow: 0 0 0 16px rgba(238,77,45,0); }
+          }
+        `}</style>
+
+        {/* Video player with LED border */}
+        <div style={{ padding: "3px", background: "linear-gradient(90deg, #EE4D2D, #FF8C5A, #F59E0B, #FF8C5A, #EE4D2D)", backgroundSize: "200% 100%", animation: "led-flow 3s linear infinite", borderRadius: "18px" }}>
+          <div className="relative overflow-hidden rounded-2xl bg-gray-100">
+            <video ref={videoRef} src={currentVideo.videoPath} playsInline
+              className="w-full max-h-[70vh] object-contain rounded-2xl"
+              onError={() => toast.error("Erro ao carregar o vídeo.")}
+            />
+
+            {/* Custom play button overlay */}
+            {!isPlaying && (
+              <button
+                type="button"
+                onClick={() => { videoRef.current?.play().catch(() => {}); }}
+                className="absolute inset-0 flex items-center justify-center bg-black/20 hover:bg-black/30 transition-colors group"
+              >
+                <div className="flex h-20 w-20 items-center justify-center rounded-full backdrop-blur-sm" style={{ background: "rgba(238,77,45,0.15)", animation: "play-pulse 2.5s ease-in-out infinite" }}>
+                  <Play className="h-9 w-9 text-white fill-white ml-1" />
+                </div>
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Product info */}
