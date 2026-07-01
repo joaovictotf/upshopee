@@ -860,7 +860,10 @@ function VideoIaPage() {
 
   // ── Step 5: Call Edge Function ──
   const handleGenerate = useCallback(async () => {
-    if (!currentUserId) return;
+    if (!currentUserId) {
+      toast.error("Sessão não encontrada. Faça login novamente.");
+      return;
+    }
     if (!isAdmin && dailyLimitReached) {
       toast.error(`Limite diário de ${DAILY_LIMIT} roteiros atingido. Volte amanhã!`);
       return;
@@ -888,7 +891,7 @@ function VideoIaPage() {
       setDailyCount((c) => c + 1);
       if (dailyCount + 1 >= DAILY_LIMIT) setDailyLimitReached(true);
       toast.success("Conteúdo gerado com sucesso!");
-      setCurrentStep(6);
+      setCurrentStep(5);
     } catch (err: any) {
       setGenError(err?.name === "AbortError" ? "Tempo limite excedido (35s). O servidor demorou muito. Tente novamente." : err?.message || "Erro ao gerar conteúdo. Tente novamente.");
     } finally {
