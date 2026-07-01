@@ -4,31 +4,36 @@ import { toast } from "sonner";
 import { Check, Play, RotateCw, Sparkles, Video } from "lucide-react";
 import type { ProductInfo, StyleConfig, GeneratedContent } from "./Step7GeminiChat";
 
-// ── 3 affiliate products for admin ──
-// Only product 1 has a real video in /public/videos/
-// Products 2-3 use a public placeholder video for testing
+// ── 4 real affiliate products for admin ──
 
 const ADMIN_AFFILIATE_PRODUCTS = [
   {
     id: "admin-prod-1",
-    name: "Produto 1",
+    name: "Pacote de Figurinhas da Copa 2026",
     videoPath: "/videos/admin-video-1.mp4",
     thumbnail: "",
-    description: "Vídeo gerado com estilo cinema e tom emocional",
+    description: "Estilo Cinematográfico · Tom Emocional",
   },
   {
     id: "admin-prod-2",
-    name: "Produto 2",
-    videoPath: "https://www.w3schools.com/html/mov_bbb.mp4",
+    name: "Toalha do Brasil — Versão 1",
+    videoPath: "/videos/admin-video-2.mp4",
     thumbnail: "",
-    description: "Vídeo gerado com estilo destaque e tom entusiasmado (placeholder)",
+    description: "Estilo Unboxing · Tom Casual",
   },
   {
     id: "admin-prod-3",
-    name: "Produto 3",
-    videoPath: "https://www.w3schools.com/html/mov_bbb.mp4",
+    name: "Toalha do Brasil — Versão 2",
+    videoPath: "/videos/admin-video-3.mp4",
     thumbnail: "",
-    description: "Vídeo gerado com estilo UGC e tom casual (placeholder)",
+    description: "Estilo Unboxing · Tom Entusiasmado",
+  },
+  {
+    id: "admin-prod-4",
+    name: "Álbum da Copa do Mundo 2026",
+    videoPath: "/videos/admin-video-4.mp4",
+    thumbnail: "",
+    description: "Estilo Demonstração · Tom Profissional",
   },
 ];
 
