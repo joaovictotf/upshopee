@@ -868,6 +868,9 @@ function VideoIaPage() {
       toast.error(`Limite diário de ${DAILY_LIMIT} roteiros atingido. Volte amanhã!`);
       return;
     }
+
+    // Advance to step 5 immediately — show generation animation
+    setCurrentStep(5);
     setGenerating(true);
     setGenError(null);
     setGenStep(0);
@@ -891,7 +894,7 @@ function VideoIaPage() {
       setDailyCount((c) => c + 1);
       if (dailyCount + 1 >= DAILY_LIMIT) setDailyLimitReached(true);
       toast.success("Conteúdo gerado com sucesso!");
-      setCurrentStep(5);
+      setCurrentStep(6);
     } catch (err: any) {
       setGenError(err?.name === "AbortError" ? "Tempo limite excedido (35s). O servidor demorou muito. Tente novamente." : err?.message || "Erro ao gerar conteúdo. Tente novamente.");
     } finally {
