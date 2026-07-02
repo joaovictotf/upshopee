@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Fragment, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { DashboardShell } from "../components/layout/DashboardShell";
 import { groups } from "../lib/mock/groups";
 import { Button } from "../components/ui/button";
@@ -148,20 +148,57 @@ function Grupos() {
   const step = !text && !loading ? 1 : text && !selectedGroupId ? 2 : 3;
 
   return (
-    <DashboardShell title="Grupos de Divulgação" subtitle="Gere um texto com IA e divulgue nos grupos recomendados.">
-      {/* ═══ GUIDED STEPPER ═══ */}
-      <div className="mb-6 flex items-center gap-2 text-sm">
-        {([{ n: 1, label: "Gere seu texto" }, { n: 2, label: "Escolha o grupo" }, { n: 3, label: "Copie e publique" }] as const).map(({ n, label }, i) => (
-          <Fragment key={n}>
-            {i > 0 && <div className="h-px flex-1 bg-gray-200" />}
-            <div className={`flex items-center gap-1.5 font-medium transition-colors ${step === n ? "text-[#EE4D2D]" : step > n ? "text-gray-400 line-through" : "text-gray-400"}`}>
-              <span className={`grid h-6 w-6 place-items-center rounded-full text-xs font-bold ${step === n ? "bg-[#EE4D2D] text-white" : step > n ? "bg-gray-200 text-gray-500" : "bg-gray-100 text-gray-400"}`}>
-                {n}
-              </span>
-              <span className="hidden sm:inline">{label}</span>
-            </div>
-          </Fragment>
-        ))}
+    <DashboardShell title="Grupos de Divulgação">
+      {/* ═══ ANIMATED STEPPER ═══ */}
+      <div className="relative mb-6 overflow-hidden rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-[#EE4D2D]/5 blur-3xl pointer-events-none" />
+        <div className="relative flex items-stretch gap-0">
+          {([
+            { n: 1, icon: Sparkles, label: "Gere o texto", desc: "IA cria copy para divulgação" },
+            { n: 2, icon: ExternalLink, label: "Escolha o grupo", desc: "Encontre onde publicar" },
+            { n: 3, icon: Copy, label: "Copie e publique", desc: "Divulgue nos grupos agora" },
+          ] as const).map(({ n, icon: Icon, label, desc }, i) => {
+            const isActive = step === n;
+            const isDone = step > n;
+            const isLast = i === 2;
+            return (
+              <div key={n} className="flex items-center flex-1">
+                <div className={`relative flex flex-1 flex-col items-center rounded-xl p-3 text-center transition-all duration-500 ${
+                  isActive ? "bg-[#FFF8F5] ring-2 ring-[#EE4D2D]/20 scale-105 z-10" :
+                  isDone ? "bg-emerald-50/50" :
+                  "bg-gray-50/50"
+                }`}>
+                  <div className={`relative flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-500 ${
+                    isActive ? "bg-[#EE4D2D] shadow-lg shadow-[#EE4D2D]/30" :
+                    isDone ? "bg-emerald-500 shadow-md shadow-emerald-500/20" :
+                    "bg-gray-100"
+                  }`}>
+                    {isActive && (
+                      <div className="absolute inset-0 rounded-xl animate-ping bg-[#EE4D2D]/20" style={{ animationDuration: "2s" }} />
+                    )}
+                    {isDone ? <CheckCircle2 className="h-5 w-5 text-white" /> : <Icon className={`h-5 w-5 ${isActive ? "text-white" : "text-gray-400"}`} />}
+                  </div>
+                  <div className="mt-2">
+                    <span className={`text-xs font-semibold transition-colors duration-500 block ${
+                      isActive ? "text-[#EE4D2D]" : isDone ? "text-emerald-700" : "text-gray-400"
+                    }`}>{label}</span>
+                    <span className="text-[10px] text-gray-400 leading-tight mt-0.5 hidden sm:block">{desc}</span>
+                  </div>
+                  {isActive && (
+                    <span className="absolute -bottom-1 h-1.5 w-1.5 rounded-full bg-[#EE4D2D] animate-bounce" />
+                  )}
+                </div>
+                {!isLast && (
+                  <div className="flex-shrink-0 w-4 sm:w-8 mx-1">
+                    <div className={`h-0.5 rounded-full transition-all duration-500 ${
+                      isDone ? "bg-emerald-400" : "bg-gray-200"
+                    }`} />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
