@@ -149,55 +149,130 @@ function Grupos() {
 
   return (
     <DashboardShell title="Grupos de Divulgação">
-      {/* ═══ ANIMATED STEPPER ═══ */}
-      <div className="relative mb-6 overflow-hidden rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-        <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-[#EE4D2D]/5 blur-3xl pointer-events-none" />
-        <div className="relative flex items-stretch gap-0">
+      {/* ═══════════════════════════════════════ */}
+      {/* ANIMATED STEP HEADER                    */}
+      {/* ═══════════════════════════════════════ */}
+      <style>{`
+        @keyframes grp-float-in {
+          from { opacity: 0; transform: translateY(16px) scale(0.95); }
+          to { opacity: 1; transform: none; }
+        }
+        @keyframes grp-pulse-ring {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(238,77,45,0.45); }
+          50%      { box-shadow: 0 0 0 14px rgba(238,77,45,0); }
+        }
+        @keyframes grp-line-grow {
+          from { width: 0; }
+          to { width: 100%; }
+        }
+        .grp-step-card {
+          animation: grp-float-in 0.5s ease both;
+        }
+        .grp-step-card:nth-child(2) { animation-delay: 0.15s; }
+        .grp-step-card:nth-child(3) { animation-delay: 0.3s; }
+        .grp-active-ring { animation: grp-pulse-ring 2.2s ease-in-out infinite; }
+        .grp-line { animation: grp-line-grow 0.7s ease both; }
+        .grp-line:nth-child(2) { animation-delay: 0.15s; }
+        .grp-line:nth-child(3) { animation-delay: 0.3s; }
+      `}</style>
+
+      <div className="relative mb-8 overflow-hidden rounded-3xl border border-gray-100 bg-white p-6 sm:p-8 shadow-sm">
+        {/* Decorative gradient blob */}
+        <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[#EE4D2D]/[0.03] blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-10 left-1/4 h-32 w-32 rounded-full bg-amber-400/[0.04] blur-2xl" />
+
+        {/* Section label */}
+        <div className="relative mb-6 flex items-center gap-2">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#FFF8F5]">
+            <Sparkles className="h-3.5 w-3.5 text-[#EE4D2D]" />
+          </div>
+          <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#EE4D2D]">Como divulgar</span>
+        </div>
+
+        {/* Three steps in a row */}
+        <div className="relative grid grid-cols-3 gap-3 sm:gap-6">
           {([
-            { n: 1, icon: Sparkles, label: "Gere o texto", desc: "IA cria copy para divulgação" },
-            { n: 2, icon: ExternalLink, label: "Escolha o grupo", desc: "Encontre onde publicar" },
-            { n: 3, icon: Copy, label: "Copie e publique", desc: "Divulgue nos grupos agora" },
-          ] as const).map(({ n, icon: Icon, label, desc }, i) => {
+            {
+              n: 1, icon: Sparkles,
+              title: "Gere o texto",
+              desc: "A IA analisa seu produto, preço e tom ideal para criar uma copy pronta para publicar nos grupos.",
+            },
+            {
+              n: 2, icon: ExternalLink,
+              title: "Escolha o grupo",
+              desc: "Filtre por plataforma, categoria ou pesquise. Encontre os grupos com maior engajamento.",
+            },
+            {
+              n: 3, icon: Copy,
+              title: "Copie e publique",
+              desc: "Com um clique o texto vai para a área de transferência. Cole no grupo e aguarde os resultados.",
+            },
+          ] as const).map(({ n, icon: Icon, title, desc }, i) => {
             const isActive = step === n;
             const isDone = step > n;
-            const isLast = i === 2;
             return (
-              <div key={n} className="flex items-center flex-1">
-                <div className={`relative flex flex-1 flex-col items-center rounded-xl p-3 text-center transition-all duration-500 ${
-                  isActive ? "bg-[#FFF8F5] ring-2 ring-[#EE4D2D]/20 scale-105 z-10" :
-                  isDone ? "bg-emerald-50/50" :
-                  "bg-gray-50/50"
+              <div key={n} className="grp-step-card relative flex flex-col items-center text-center">
+                {/* Number + Icon circle */}
+                <div className={`relative mb-3 flex h-14 w-14 items-center justify-center rounded-2xl transition-all duration-500 ${
+                  isActive
+                    ? "grp-active-ring bg-[#EE4D2D] text-white scale-110 z-10"
+                    : isDone
+                    ? "bg-emerald-500 text-white"
+                    : "bg-gray-100 text-gray-400"
                 }`}>
-                  <div className={`relative flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-500 ${
-                    isActive ? "bg-[#EE4D2D] shadow-lg shadow-[#EE4D2D]/30" :
-                    isDone ? "bg-emerald-500 shadow-md shadow-emerald-500/20" :
-                    "bg-gray-100"
+                  {isDone ? <CheckCircle2 className="h-6 w-6" /> : <Icon className="h-6 w-6" />}
+                  {/* Number badge */}
+                  <span className={`absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold ${
+                    isActive ? "bg-white text-[#EE4D2D]" : isDone ? "bg-emerald-200 text-emerald-700" : "bg-gray-200 text-gray-500"
                   }`}>
-                    {isActive && (
-                      <div className="absolute inset-0 rounded-xl animate-ping bg-[#EE4D2D]/20" style={{ animationDuration: "2s" }} />
-                    )}
-                    {isDone ? <CheckCircle2 className="h-5 w-5 text-white" /> : <Icon className={`h-5 w-5 ${isActive ? "text-white" : "text-gray-400"}`} />}
-                  </div>
-                  <div className="mt-2">
-                    <span className={`text-xs font-semibold transition-colors duration-500 block ${
-                      isActive ? "text-[#EE4D2D]" : isDone ? "text-emerald-700" : "text-gray-400"
-                    }`}>{label}</span>
-                    <span className="text-[10px] text-gray-400 leading-tight mt-0.5 hidden sm:block">{desc}</span>
-                  </div>
-                  {isActive && (
-                    <span className="absolute -bottom-1 h-1.5 w-1.5 rounded-full bg-[#EE4D2D] animate-bounce" />
-                  )}
+                    {n}
+                  </span>
                 </div>
-                {!isLast && (
-                  <div className="flex-shrink-0 w-4 sm:w-8 mx-1">
-                    <div className={`h-0.5 rounded-full transition-all duration-500 ${
-                      isDone ? "bg-emerald-400" : "bg-gray-200"
-                    }`} />
-                  </div>
+
+                {/* Title */}
+                <h4 className={`text-sm font-bold transition-colors duration-500 ${
+                  isActive ? "text-[#EE4D2D]" : isDone ? "text-emerald-700" : "text-gray-500"
+                }`}>
+                  {title}
+                </h4>
+
+                {/* Description */}
+                <p className="mt-1.5 text-xs leading-relaxed text-gray-400 hidden sm:block max-w-[200px]">
+                  {desc}
+                </p>
+
+                {/* Active indicator bar */}
+                {isActive && (
+                  <div className="mt-3 h-1 w-12 rounded-full bg-[#EE4D2D]" />
                 )}
               </div>
             );
           })}
+
+          {/* Connection lines behind the cards */}
+          <div className="absolute left-[calc(16.66%+28px)] right-[calc(16.66%+28px)] top-7 hidden sm:block" style={{ zIndex: 0 }}>
+            <div className="flex h-full items-center">
+              {[0, 1].map((i) => {
+                const done = step > i + 1;
+                return (
+                  <div key={i} className="grp-line flex-1">
+                    <div className={`h-0.5 rounded-full transition-colors duration-500 ${
+                      done ? "bg-emerald-400" : step === i + 1 ? "bg-[#EE4D2D]/30" : "bg-gray-200"
+                    }`} />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Progress track at bottom */}
+        <div className="relative mt-6 flex items-center gap-2">
+          <div className="h-1 flex-1 rounded-full bg-gray-100 overflow-hidden">
+            <div className="h-full rounded-full bg-[#EE4D2D] transition-all duration-700"
+              style={{ width: `${(step / 3) * 100}%` }} />
+          </div>
+          <span className="text-[10px] font-medium text-gray-400 tabular-nums">{step}/3</span>
         </div>
       </div>
 
