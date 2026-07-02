@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, memo } from "react";
 import { Button } from "./ui/button";
 import { toast } from "sonner";
-import { Check, Play, RotateCw, Sparkles, Video } from "lucide-react";
+import { Check, Download, Play, RotateCw, Share2, Sparkles, Video } from "lucide-react";
 import type { ProductInfo, StyleConfig, GeneratedContent } from "./Step7GeminiChat";
 
 // ── Video auto-detection from product name ──
@@ -316,6 +316,26 @@ function AdminStep7Video({
               </div>
             </button>
           </div>
+        </div>
+
+        {/* Download and Share buttons */}
+        <div className="flex gap-3">
+          <a href={currentVideo.videoPath} download
+            className="flex-1 inline-flex items-center justify-center gap-2 h-11 rounded-xl bg-[#EE4D2D] text-sm font-semibold text-white shadow-sm shadow-[#EE4D2D]/25 transition-all hover:bg-[#d93e22] hover:shadow-md hover:shadow-[#EE4D2D]/30 active:scale-[0.98] no-underline">
+            <Download className="h-4 w-4" /> Baixar vídeo
+          </a>
+          <button type="button"
+            onClick={() => {
+              if (navigator.share) {
+                navigator.share({ title: currentVideo.name, url: window.location.origin + currentVideo.videoPath }).catch(() => {});
+              } else {
+                navigator.clipboard.writeText(window.location.origin + currentVideo.videoPath);
+                toast.success("Link copiado!");
+              }
+            }}
+            className="flex-1 inline-flex items-center justify-center gap-2 h-11 rounded-xl bg-[#EE4D2D] text-sm font-semibold text-white shadow-sm shadow-[#EE4D2D]/25 transition-all hover:bg-[#d93e22] hover:shadow-md hover:shadow-[#EE4D2D]/30 active:scale-[0.98]">
+            <Share2 className="h-4 w-4" /> Compartilhar
+          </button>
         </div>
 
         {/* Product info */}
