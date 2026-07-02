@@ -7,7 +7,6 @@ import { GenerateListingFlow } from "../components/products/GenerateListingFlow"
 import { Input } from "../components/ui/input";
 import { RolePickerDialog } from "../components/products/RolePickerDialog";
 import { Search } from "lucide-react";
-import { toast } from "sonner";
 
 export const Route = createFileRoute("/dashboard/produtos")({ component: Produtos });
 
@@ -120,8 +119,8 @@ function Produtos() {
           }
         }}
         onSelectAfiliado={() => {
-          toast.success("Programa de Afiliados será lançado em agosto de 2026!");
           setRolePickProduct(null);
+          window.open("https://affiliate.shopee.com.br/dashboard", "_blank", "noopener,noreferrer");
         }}
         onClose={() => setRolePickProduct(null)}
       />
