@@ -75,8 +75,13 @@ const adminExtraNav: NavItem[] = [
 
 function Logo() {
   return (
-    <div className="flex flex-col items-start gap-0">
-      <img src="/brand/logo.png" alt="UpShopee" className="h-16 w-auto object-contain mix-blend-multiply" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+    <div className="flex flex-col items-start py-4">
+      <img
+        src="/brand/logo.png"
+        alt="UpShopee"
+        className="w-full max-w-[180px] object-contain"
+        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+      />
     </div>
   );
 }
