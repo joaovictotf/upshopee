@@ -1,57 +1,12 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
-import { Grid3X3, ShoppingBag, TrendingUp, Users, Radio, Clapperboard, Link2, Settings2, LogOut, Bell, Loader2, Search, Zap, Eye, EyeOff, ShieldCheck, Info, Menu, Trophy, X, Crown } from "lucide-react";
+import { Grid3X3, ShoppingBag, TrendingUp, Users, Radio, Clapperboard, Link2, Settings2, LogOut, Bell, Loader2, Search, Zap, Eye, EyeOff, ShieldCheck, Info, Menu, Crown } from "lucide-react";
 import { useApp, MARKETPLACE_LABEL } from "../../lib/state";
 import { brl } from "../../lib/format";
 import { toast } from "sonner";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "../ui/sheet";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { WhatsAppSupportButton } from "../WhatsAppSupportButton";
-import { WhatsAppChannelPopup } from "../WhatsAppChannelPopup";
-
-const COPA_POPUP_KEY = "shopesync.copa_new_products_v1";
-
-function CopaPopup({ onClose, onView }: { onClose: () => void; onView: () => void }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={onClose}>
-      <div
-        className="relative w-full max-w-sm overflow-hidden rounded-2xl border border-green-500/30 bg-card shadow-2xl shadow-green-500/20"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="h-1.5 w-full" style={{ background: "linear-gradient(90deg,#16a34a,#ca8a04,#16a34a)", backgroundSize: "200% 100%", animation: "copa-shine 2s linear infinite" }} />
-        <button onClick={onClose} className="absolute right-3 top-3 grid h-7 w-7 place-items-center rounded-full border border-border bg-card text-muted-foreground hover:text-foreground">
-          <X className="h-3.5 w-3.5" />
-        </button>
-        <div className="p-6">
-          <div className="mb-4 flex justify-center">
-            <div className="grid h-16 w-16 place-items-center rounded-2xl" style={{ background: "linear-gradient(135deg,#15803d,#ca8a04)" }}>
-              <Trophy className="h-8 w-8 text-white" />
-            </div>
-          </div>
-          <div className="text-center">
-            <div className="copa-badge-new inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-green-600 to-yellow-500 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-white">🏆 Novidade</div>
-            <h2 className="mt-3 text-xl font-extrabold tracking-tight">Novos Produtos Adicionados!</h2>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              <span className="font-semibold text-green-500">10 novos produtos Copa do Mundo 2026</span> foram adicionados com alta demanda e ótimas margens de comissão.
-            </p>
-          </div>
-          <div className="mt-4 flex flex-wrap justify-center gap-1.5">
-            {["Camisa Feminina","Bola Oficial","Messi #10","Kit Torcedor","Squeeze"].map((n) => (
-              <span key={n} className="rounded-full border border-green-500/30 bg-green-500/10 px-2.5 py-0.5 text-[10px] font-medium text-green-400">{n}</span>
-            ))}
-            <span className="rounded-full border border-yellow-500/30 bg-yellow-500/10 px-2.5 py-0.5 text-[10px] font-medium text-yellow-400">+5 mais</span>
-          </div>
-          <div className="mt-5 flex gap-2">
-            <button onClick={onView} className="flex-1 rounded-xl py-2.5 text-sm font-bold text-white shadow-lg transition hover:brightness-110" style={{ background: "linear-gradient(135deg,#15803d,#ca8a04)" }}>
-              🏆 Ver produtos
-            </button>
-            <button onClick={onClose} className="rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground">Depois</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 type NavItem = { to: string; label: string; icon: typeof Grid3X3; exact?: boolean; special?: "fire" | "impulsionar"; adminOnly?: boolean };
 const baseNav: NavItem[] = [
@@ -90,21 +45,7 @@ export function DashboardShell({ children, title, subtitle, actions, onLightning
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [showCopaPopup, setShowCopaPopup] = useState(false);
   const [lightningLoading, setLightningLoading] = useState(false);
-
-  // Show Copa popup once per user on any dashboard page
-  useEffect(() => {
-    if (!user) return;
-    const already = localStorage.getItem(COPA_POPUP_KEY);
-    if (!already) {
-      const t = setTimeout(() => setShowCopaPopup(true), 900);
-      return () => clearTimeout(t);
-    }
-  }, [user]);
-
-  const handleCopaClose = () => { localStorage.setItem(COPA_POPUP_KEY, "1"); setShowCopaPopup(false); };
-  const handleCopaView = () => { localStorage.setItem(COPA_POPUP_KEY, "1"); setShowCopaPopup(false); navigate({ to: "/dashboard/produtos" }); };
 
   useEffect(() => {
     if (!user) navigate({ to: "/login" });
@@ -263,12 +204,6 @@ export function DashboardShell({ children, title, subtitle, actions, onLightning
 
       {/* WhatsApp Support — visível em todas as páginas do dashboard */}
       <WhatsAppSupportButton />
-
-      {/* WhatsApp Channel Popup — apenas para usuários logados no dashboard */}
-      <WhatsAppChannelPopup />
-
-      {/* Copa popup — aparece 1x em qualquer página */}
-      {showCopaPopup && <CopaPopup onClose={handleCopaClose} onView={handleCopaView} />}
 
       {hasLightningAccess && (
         <div className="flex gap-2 fixed bottom-6 left-6 z-50">

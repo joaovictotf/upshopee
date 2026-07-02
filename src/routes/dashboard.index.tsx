@@ -21,11 +21,9 @@ import {
   ShoppingBag,
   Boxes,
   Package,
-  Flame,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { WithdrawalButton } from "../components/withdrawal/WithdrawalDialog";
-import { BoostPromoModal } from "../components/boost/BoostPromoModal";
 import { products as catalogProducts } from "../lib/mock/products";
 
 export const Route = createFileRoute("/dashboard/")({ component: DashboardHome });
@@ -232,8 +230,6 @@ function NewDashboard() {
 
   return (
     <DashboardShell title="Dashboard" subtitle="Painel UpShopee para Shopee">
-      <BoostActiveMiniCard />
-      <BoostPromoModal />
       <NewShopeeHeroPanel valor={metrics.totalCommission} privacy={privacy} stamp={stamp} />
       <div className="mt-4 flex flex-col gap-4 lg:grid lg:grid-cols-12 lg:items-stretch">
         <div className="lg:col-span-3 flex flex-col">
@@ -682,8 +678,6 @@ function OldDashboard() {
 
   return (
     <DashboardShell title="Dashboard" subtitle="Painel UpShopee para Shopee">
-      <BoostActiveMiniCard />
-      <BoostPromoModal />
       <div className="relative pb-4">
         <ShopeeHeroPanel
           valor={commissionValue}
@@ -1020,31 +1014,6 @@ function Top5Block({
           })}
         </ol>
       )}
-    </div>
-  );
-}
-
-function BoostActiveMiniCard() {
-  const { myActiveBoost } = useApp();
-  if (!myActiveBoost || myActiveBoost.completed) return null;
-  const pct = Math.min(100, Math.max(0, myActiveBoost.progressPct));
-  return (
-    <div className="mb-4 rounded-2xl border border-amber-300 bg-gradient-to-br from-amber-50 to-orange-50 p-4 shadow-sm">
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="grid h-10 w-10 place-items-center rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 text-white">
-          <Flame className="h-5 w-5" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="text-[10px] font-semibold uppercase tracking-widest text-amber-700">Impulsionamento ativo</div>
-          <div className="text-sm font-bold text-amber-900">{myActiveBoost.packName}</div>
-          <div className="text-xs text-amber-900/80">
-            {myActiveBoost.eventsReleased} {myActiveBoost.eventsReleased === 1 ? "venda gerada" : "vendas geradas"} • {brl(myActiveBoost.commissionTotal)} em comissões • {pct}% concluído
-          </div>
-          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-amber-200/60">
-            <div className="h-full bg-gradient-to-r from-amber-500 to-orange-500" style={{ width: `${pct}%` }} />
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
