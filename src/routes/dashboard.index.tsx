@@ -419,7 +419,7 @@ function NewSalesChart({
         let ontemSum = 0;
         for (const o of salesData) {
           const oTs = o.saleDate;
-          const oSp = oTs.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" });
+          const oSp = new Date(oTs).toLocaleString("en-US", { timeZone: "America/Sao_Paulo" });
           const oD = new Date(oSp);
           const oKey = `${oD.getFullYear()}-${String(oD.getMonth() + 1).padStart(2, "0")}-${String(oD.getDate()).padStart(2, "0")}`;
           if (oD.getHours() === i) {
