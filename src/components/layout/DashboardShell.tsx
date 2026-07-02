@@ -173,7 +173,7 @@ export function DashboardShell({ children, title, subtitle, actions, onLightning
                   <Menu className="h-4 w-4" />
                 </button>
               </SheetTrigger>
-              <SheetContent side="right" className="w-72 bg-sidebar p-0">
+              <SheetContent side="right" className="w-[85vw] sm:w-72 bg-sidebar p-0">
                 <SheetTitle className="sr-only">Menu</SheetTitle>
                 <div className="border-b border-border/50 px-5 pb-4 pt-5 mb-2">
                   <Logo />

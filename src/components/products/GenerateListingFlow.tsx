@@ -267,7 +267,7 @@ export function GenerateListingFlow({ product, open, onClose }: { product: Produ
                     );
                   })}
                 </div>
-                <div className="flex justify-between gap-2">
+                <div className="flex flex-col gap-2 sm:flex-row sm:justify-between">
                   <Link to="/dashboard/conectar-contas"><Button variant="outline" className="rounded-xl">Conectar mais contas</Button></Link>
                   <Button onClick={() => { if (selectedMPs.length === 0) { toast.error("Selecione pelo menos um marketplace para continuar."); return; } setStep("preco"); }} className="rounded-xl bg-[#EE4D2D] text-white hover:bg-[#d93e22]">
                     Continuar para precificação <ArrowRight className="ml-1 h-3.5 w-3.5" />

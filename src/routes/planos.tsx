@@ -866,7 +866,7 @@ function EcosystemSection() {
       <div style={{ overflow: "hidden" }}>
         <div className="carousel-track" style={{ display: "flex" }}>
           {doubled.map((card, i) => (
-            <div key={i} className="reveal ecosystem-card" style={{ minWidth: 280, height: 380, borderRadius: 24, background: "#0D0D14", border: "1px solid rgba(255,255,255,0.08)", overflow: "hidden", display: "flex", flexDirection: "column", flexShrink: 0, marginLeft: 10, marginRight: 10, transitionDelay: `${i * 0.1}s` }}>
+            <div key={i} className="reveal ecosystem-card" style={{ minWidth: 260, height: 380, borderRadius: 24, background: "#0D0D14", border: "1px solid rgba(255,255,255,0.08)", overflow: "hidden", display: "flex", flexDirection: "column", flexShrink: 0, marginLeft: 6, marginRight: 6, transitionDelay: `${i * 0.1}s` }}>
               <div style={{ height: 200, background: card.topBg, position: "relative", flexShrink: 0, overflow: "hidden" }}>
                 <div style={{ position: "absolute", inset: 0, background: card.glow, zIndex: 1 }} />
                 {card.illustration}
@@ -1233,7 +1233,7 @@ function GuaranteeSection() {
 
         <a
           href="https://go.ironpayapp.com.br/jxzfsyhoci"
-          className="inline-block bg-[#EE4D2D] text-white font-black text-lg uppercase tracking-widest rounded-full px-12 py-5 shadow-[0_0_40px_rgba(238,77,45,0.4)] hover:scale-[1.03] transition-all duration-200 w-full md:w-auto reveal"
+          className="inline-block bg-[#EE4D2D] text-white font-black text-base sm:text-lg uppercase tracking-widest rounded-full px-6 sm:px-12 py-5 shadow-[0_0_40px_rgba(238,77,45,0.4)] hover:scale-[1.03] transition-all duration-200 w-full md:w-auto reveal"
         >
           🛡️ QUERO MEU ACESSO COM GARANTIA
         </a>

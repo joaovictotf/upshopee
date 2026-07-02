@@ -234,7 +234,7 @@ function Step7GeminiChat({
 
   // ── Normal chat state ──
   return (
-    <div className="flex flex-col h-[620px] max-h-[calc(100vh-280px)] min-h-[480px]">
+    <div className="flex flex-col max-h-[calc(100dvh-200px)] min-h-[300px]">
       {/* Success header */}
       <div className="flex-shrink-0 flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 mb-4">
         <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-emerald-500 shadow-lg shadow-emerald-500/30 vi-bounce-in">
@@ -300,7 +300,7 @@ function Step7GeminiChat({
       {/* Instructions card — warm tone */}
       <div className="flex-shrink-0 rounded-2xl border border-[#EE4D2D]/10 bg-[#FFF8F5] p-4">
         <h4 className="flex items-center gap-2 text-xs font-bold text-[#EE4D2D]"><Sparkles className="h-3.5 w-3.5" /> Como gerar seu vídeo</h4>
-        <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-5">
+        <div className="mt-2 flex flex-wrap gap-1.5">
           {["Clique em Gerar vídeo no Gemini", "Envie a imagem do produto", "Cole o prompt copiado", "Selecione 9:16 (vertical)", "Gere e baixe o vídeo!"].map((tip, i) => (
             <div key={i} className="flex items-center gap-1.5">
               <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#EE4D2D]/10 text-xs font-bold text-[#EE4D2D]">{i + 1}</span>

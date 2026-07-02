@@ -69,7 +69,7 @@ function Config() {
           <BankField label="CPF ou CNPJ" value={bank.documento} onChange={setBankField("documento")} error={bankErrors.documento} inputMode="numeric" />
           <BankField label="Chave PIX" value={bank.chavePix} onChange={setBankField("chavePix")} error={bankErrors.chavePix} />
           <BankField label="Banco" value={bank.banco} onChange={setBankField("banco")} error={bankErrors.banco} />
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <BankField label="Agência" value={bank.agencia} onChange={setBankField("agencia")} error={bankErrors.agencia} inputMode="numeric" />
             <BankField label="Conta" value={bank.conta} onChange={setBankField("conta")} error={bankErrors.conta} />
           </div>

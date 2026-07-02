@@ -397,7 +397,7 @@ function ShopeeView({ items, active, setActive, onFinish }: ViewProps) {
           {/* ═══════════════════════════════════════════════════════ */}
           {/* SECTION 1 — Hero banner with animated background       */}
           {/* ═══════════════════════════════════════════════════════ */}
-          <div className="relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-white via-[#FFF5F0] to-[#FFE8E0] px-8 py-10">
+          <div className="relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-white via-[#FFF5F0] to-[#FFE8E0] px-5 sm:px-8 py-10">
             <div className="cc-float-1 pointer-events-none absolute -top-4 left-[8%] h-20 w-20 rounded-full bg-orange-100/40" />
             <div className="cc-float-2 pointer-events-none absolute right-[12%] top-[15%] h-14 w-14 rounded-full bg-amber-100/50" />
             <div className="cc-float-3 pointer-events-none absolute bottom-[-10%] left-[25%] h-16 w-16 rounded-full bg-orange-200/25" />

@@ -102,7 +102,7 @@ function RegisterPage() {
           <img src="/brand/logo.png" alt="UpShopee" className="mb-8 mx-auto block h-10 w-auto object-contain drop-shadow-sm lg:hidden" onError={(e)=>{e.currentTarget.style.display='none'}} />
 
           <Card className="border-0 shadow-lg shadow-black/[0.04] ring-1 ring-black/[0.06]">
-            <CardContent className="p-6 sm:p-8">
+            <CardContent className="p-4 sm:p-8">
               <div className="mb-6">
                 <h1 className="text-2xl font-bold tracking-tight text-foreground">
                   Crie sua conta

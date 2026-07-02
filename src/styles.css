@@ -315,7 +315,7 @@
 @media (max-width: 640px) {
   .whatsapp-support-btn {
     /* Acima do ⚡ e da bottom nav do navegador */
-    bottom: 96px;
+    bottom: 140px;
     left: 16px;
     padding: 12px;
     gap: 0;

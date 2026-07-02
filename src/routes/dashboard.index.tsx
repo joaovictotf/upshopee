@@ -288,8 +288,8 @@ function NewMetricsBlock({
 
 function NewMetricCell({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-card p-4 text-center">
-      <div className="text-[11px] font-medium text-[#EE4D2D] leading-tight">{label}</div>
+    <div className="bg-card p-2 sm:p-4 text-center">
+      <div className="text-[11px] font-medium text-[#EE4D2D] leading-tight truncate">{label}</div>
       <div
         className="mt-1.5 text-2xl font-bold text-foreground tabular-nums"
         style={{

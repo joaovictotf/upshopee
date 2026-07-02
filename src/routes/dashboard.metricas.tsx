@@ -150,7 +150,7 @@ function MetricasPage() {
         className="overflow-x-auto"
         style={{ borderBottom: `1px solid ${BORDER}` }}
       >
-      <div className="flex items-end justify-between min-w-[600px]">
+      <div className="flex items-end justify-between min-w-0 sm:min-w-[600px]">
         {/* Main nav tabs (decorative) */}
         <nav className="flex items-end">
           {SHOPEE_TABS.map((tab) => {

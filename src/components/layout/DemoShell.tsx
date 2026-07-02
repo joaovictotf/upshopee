@@ -124,7 +124,7 @@ export function DemoShell({
                   <Menu className="h-4 w-4" />
                 </button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-72 bg-sidebar p-0">
+              <SheetContent side="left" className="w-[85vw] sm:w-72 bg-sidebar p-0">
                 <SheetTitle className="sr-only">Menu</SheetTitle>
                 <div className="px-5 py-5">
                   <LogoArea />

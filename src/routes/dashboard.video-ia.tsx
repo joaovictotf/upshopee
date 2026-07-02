@@ -459,7 +459,7 @@ const Step4Style = memo(function Step4Style({
                   <Icon className={`h-6 w-6 transition-colors duration-300 ${active ? "text-[#EE4D2D]" : "text-gray-400"}`} />
                 </div>
                 <div>
-                  <span className={`text-sm font-semibold leading-tight ${active ? "text-[#EE4D2D]" : "text-foreground"}`}>{opt.label}</span>
+                  <span className={`text-sm font-semibold leading-tight truncate block ${active ? "text-[#EE4D2D]" : "text-foreground"}`}>{opt.label}</span>
                   <p className="text-[11px] leading-tight text-muted-foreground mt-0.5 hidden sm:block">{opt.desc}</p>
                 </div>
               </button>
@@ -1077,7 +1077,7 @@ function VideoIaPage() {
               {continueLabel[currentStep] && (
                 <Button type="button" onClick={currentStep === 4 ? handleGenerate : handleContinue}
                   disabled={submitting || generating || (currentStep === 4 && !isAdmin && dailyLimitReached)}
-                  className="group h-11 min-w-[140px] rounded-xl bg-[#EE4D2D] text-sm font-semibold text-white shadow-sm shadow-[#EE4D2D]/25 transition-all hover:bg-[#EE4D2D]/90 hover:shadow-md hover:shadow-[#EE4D2D]/30 active:scale-[0.98] disabled:opacity-40">
+                  className="group h-11 min-w-0 sm:min-w-[140px] rounded-xl bg-[#EE4D2D] text-sm font-semibold text-white shadow-sm shadow-[#EE4D2D]/25 transition-all hover:bg-[#EE4D2D]/90 hover:shadow-md hover:shadow-[#EE4D2D]/30 active:scale-[0.98] disabled:opacity-40">
                   {submitting || generating ? (<span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Processando...</span>) : (<span className="flex items-center gap-2">{continueLabel[currentStep]}<ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" /></span>)}
                 </Button>
               )}
