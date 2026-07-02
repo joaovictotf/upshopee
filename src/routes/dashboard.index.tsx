@@ -138,6 +138,20 @@ function generateHistoricalSales(): SaleRecord[] {
     }
     if (accumulated >= target30d) break;
   }
+  // Force today's sales — always include current day
+  const todayCount = 3 + Math.floor(Math.random() * 6); // 3-8 sales today
+  for (let s = 0; s < todayCount; s++) {
+    const product = FAKE_PRODUCTS[Math.floor(Math.random() * FAKE_PRODUCTS.length)];
+    const profit = Math.round((20 + Math.random() * 180) * 100) / 100;
+    const minutesAgo = Math.floor(Math.random() * 12 * 60); // Last 12 hours
+    sales.push({
+      saleDate: now - minutesAgo * 60 * 1000,
+      netProfit: profit,
+      productId: product.id,
+      productName: product.name,
+      productImage: product.image,
+    });
+  }
   return sales.sort((a: SaleRecord, b: SaleRecord) => b.saleDate - a.saleDate);
 }
 
