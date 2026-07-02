@@ -1,7 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { DashboardShell } from "../components/layout/DashboardShell";
-import { useApp, getProductImage } from "../lib/state";
-import { useShopSyncData, type Period } from "../hooks/useShopSyncData";
+import { useApp } from "../lib/state";
 import { brl, num } from "../lib/format";
 import {
   CartesianGrid,
@@ -91,72 +90,115 @@ function DashboardHome() {
   return <NewDashboard />;
 }
 
+// ── Fake data generator ──
+
+const FAKE_PRODUCTS = [
+  { id: "fp-1", name: "Camisa Feminina Seleção Brasileira 2026", image: "https://picsum.photos/seed/fp1/100/100" },
+  { id: "fp-2", name: "Fone Bluetooth TWS Cancelamento Ruído", image: "https://picsum.photos/seed/fp2/100/100" },
+  { id: "fp-3", name: "Kit Maquiagem Completo 24 Cores", image: "https://picsum.photos/seed/fp3/100/100" },
+  { id: "fp-4", name: "Organizador de Gavetas Dobrável 6 Peças", image: "https://picsum.photos/seed/fp4/100/100" },
+  { id: "fp-5", name: "Air Fryer 4L Digital", image: "https://picsum.photos/seed/fp5/100/100" },
+  { id: "fp-6", name: "Bola de Futebol Oficial Copa 2026", image: "https://picsum.photos/seed/fp6/100/100" },
+  { id: "fp-7", name: "Smartwatch Relógio Inteligente", image: "https://picsum.photos/seed/fp7/100/100" },
+  { id: "fp-8", name: "Protetor Solar FPS 50 Bastão", image: "https://picsum.photos/seed/fp8/100/100" },
+  { id: "fp-9", name: "Jogo de Panelas Antiaderente 5 Peças", image: "https://picsum.photos/seed/fp9/100/100" },
+  { id: "fp-10", name: "Garrafa Térmica Inox 500ml", image: "https://picsum.photos/seed/fp10/100/100" },
+];
+
+type FakeSale = {
+  saleDate: number;
+  netProfit: number;
+  productId: string;
+  productName: string;
+  productImage: string;
+};
+
+function generateFakeSales(): FakeSale[] {
+  const sales: FakeSale[] = [];
+  const now = Date.now();
+  for (let day = 0; day < 30; day++) {
+    const dayTs = now - day * 24 * 60 * 60 * 1000;
+    const count = 3 + Math.floor(Math.random() * 13); // 3-15 per day
+    for (let s = 0; s < count; s++) {
+      const product = FAKE_PRODUCTS[Math.floor(Math.random() * FAKE_PRODUCTS.length)];
+      const profit = Math.round((15 + Math.random() * 285) * 100) / 100;
+      const minutesOffset = Math.floor(Math.random() * 24 * 60);
+      sales.push({
+        saleDate: dayTs - minutesOffset * 60 * 1000,
+        netProfit: profit,
+        productId: product.id,
+        productName: product.name,
+        productImage: product.image,
+      });
+    }
+  }
+  return sales.sort((a, b) => b.saleDate - a.saleDate);
+}
+
 // ---------------------------------------------------------------------------
-// NEW DASHBOARD (admin-only)
+// NEW DASHBOARD
 // ---------------------------------------------------------------------------
 
 function NewDashboard() {
-  const { privacy, getCommissionSum } = useApp();
+  const { privacy } = useApp();
   const [range, setRange] = useState<RangeKey>("today");
   const [stamp, setStamp] = useState(() => formatStamp());
+  const [salesData] = useState(() => generateFakeSales());
 
+  // Clock
   useEffect(() => {
     const id = setInterval(() => setStamp(formatStamp()), 1000);
     return () => clearInterval(id);
   }, []);
 
-  const period: Period = range === "today" ? "today" : range === "7d" ? "7days" : "30days";
-  const {
-    totalOrders: hookOrders,
-    totalUnits: hookUnits,
-    totalBuyers: hookBuyers,
-    topProducts,
-  } = useShopSyncData(period);
+  // Compute metrics from fake data
+  const spNow = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+  const todayStart = new Date(spNow.getFullYear(), spNow.getMonth(), spNow.getDate()).getTime();
+  const rangeStart = range === "today"
+    ? todayStart
+    : range === "7d"
+    ? todayStart - 7 * 24 * 60 * 60 * 1000
+    : todayStart - 30 * 24 * 60 * 60 * 1000;
 
-  const totalCommission = getCommissionSum("shopee", range);
-
-  const displayCommission = totalCommission;
-  const displayOrders = hookOrders;
-  const displayUnits = hookUnits;
-  const displayBuyers = hookBuyers;
-  const displayVisitors = Math.max(0, displayOrders * 18);
-  const displayViews = Math.max(0, displayOrders * 55);
+  const inRange = salesData.filter((o) => o.saleDate >= rangeStart);
+  const totalCommission = inRange.reduce((sum, o) => sum + o.netProfit, 0);
+  const displayOrders = inRange.length;
+  const displayUnits = displayOrders + Math.floor(Math.random() * Math.max(1, Math.floor(displayOrders * 0.3)));
+  const displayBuyers = Math.max(1, Math.floor(displayOrders * 0.6));
+  const displayVisitors = Math.max(displayOrders, displayOrders * 18 + Math.floor(Math.random() * 100));
+  const displayViews = Math.max(displayVisitors, displayVisitors * 3 + Math.floor(Math.random() * 200));
   const displayConversionRate =
     displayOrders === 0 || displayVisitors === 0
       ? "0.00"
       : ((displayOrders / displayVisitors) * 100).toFixed(2);
 
-  const top5 = topProducts.map((p) => ({
-    productId: p.productId,
-    name: p.name,
-    image: p.image,
-    sales: p.orders,
-    revenue: p.revenue,
-  }));
+  // Top 5
+  const productMap = new Map<string, { name: string; image: string; orders: number; revenue: number }>();
+  for (const o of inRange) {
+    const e = productMap.get(o.productId);
+    if (e) { e.orders++; e.revenue += o.netProfit; }
+    else { productMap.set(o.productId, { name: o.productName, image: o.productImage, orders: 1, revenue: o.netProfit }); }
+  }
+  const top5 = Array.from(productMap.entries())
+    .sort((a, b) => b[1].orders - a[1].orders)
+    .slice(0, 5)
+    .map(([productId, data]) => ({ productId, ...data }));
 
   return (
     <DashboardShell title="Dashboard" subtitle="Painel UpShopee para Shopee">
       <BoostActiveMiniCard />
       <BoostPromoModal />
-      <NewShopeeHeroPanel
-        valor={displayCommission}
-        privacy={privacy}
-        stamp={stamp}
-      />
+      <NewShopeeHeroPanel valor={totalCommission} privacy={privacy} stamp={stamp} />
       <div className="mt-4 flex flex-col gap-4 lg:grid lg:grid-cols-12 lg:items-stretch">
         <div className="lg:col-span-3 flex flex-col">
           <NewMetricsBlock
-            visitors={displayVisitors}
-            views={displayViews}
-            orders={displayOrders}
-            units={displayUnits}
-            buyers={displayBuyers}
-            conversionRate={displayConversionRate}
+            visitors={displayVisitors} views={displayViews} orders={displayOrders}
+            units={displayUnits} buyers={displayBuyers} conversionRate={displayConversionRate}
             privacy={privacy}
           />
         </div>
         <div className="lg:col-span-6 flex flex-col">
-          <NewSalesChart range={range} onRangeChange={setRange} />
+          <NewSalesChart range={range} onRangeChange={setRange} salesData={salesData} />
         </div>
         <div className="lg:col-span-3 flex flex-col">
           <Top5Block items={top5} />
@@ -308,11 +350,12 @@ function NewMetricCell({ label, value }: { label: string; value: string }) {
 function NewSalesChart({
   range,
   onRangeChange,
+  salesData,
 }: {
   range: RangeKey;
   onRangeChange: (r: RangeKey) => void;
+  salesData: FakeSale[];
 }) {
-  const { data } = useApp();
   const chartData = useMemo(() => {
     if (range === "today") {
       const now = new Date();
@@ -328,7 +371,7 @@ function NewSalesChart({
       for (let i = 0; i < 24; i++) {
         let hojeSum = 0;
         let ontemSum = 0;
-        for (const o of data.salesOrders) {
+        for (const o of salesData) {
           const oTs = o.saleDate;
           const oSp = oTs.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" });
           const oD = new Date(oSp);
@@ -356,7 +399,7 @@ function NewSalesChart({
       labels.push(`${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}`);
     }
     const daySums: Record<string, number> = {};
-    for (const o of data.salesOrders) {
+    for (const o of salesData) {
       const oSp = new Date(o.saleDate).toLocaleString("en-US", { timeZone: "America/Sao_Paulo" });
       const oD = new Date(oSp);
       const oKey = `${oD.getFullYear()}-${String(oD.getMonth() + 1).padStart(2, "0")}-${String(oD.getDate()).padStart(2, "0")}`;
@@ -368,7 +411,7 @@ function NewSalesChart({
       hoje: Math.round(daySums[k] || 0),
       ontem: Math.round(daySums[keys[Math.min(i + 1, keys.length - 1)]] || 0), // shifted comparison
     }));
-  }, [range, data.salesOrders]);
+  }, [range, salesData]);
 
   // Yesterday's date label for legend
   const spNow = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
