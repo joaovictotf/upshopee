@@ -200,6 +200,12 @@ export function DashboardShell({ children, title, subtitle, actions, onLightning
             <div className="hidden items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground md:flex">
               <Search className="h-3.5 w-3.5" /> Buscar...
             </div>
+            <Link
+              to="/planosup"
+              className="hidden items-center gap-1.5 rounded-lg border border-[#EE4D2D]/20 bg-[#FFF8F5] px-3 py-1.5 text-xs font-semibold text-[#EE4D2D] transition-all hover:bg-[#EE4D2D]/10 hover:border-[#EE4D2D]/40 md:flex"
+            >
+              <Zap className="h-3.5 w-3.5" /> Planos
+            </Link>
             <button
               onClick={() => setPrivacy(!privacy)}
               aria-label={privacy ? "Mostrar valores" : "Ocultar valores"}
