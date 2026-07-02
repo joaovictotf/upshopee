@@ -96,7 +96,7 @@ function DashboardHome() {
 // ---------------------------------------------------------------------------
 
 function NewDashboard() {
-  const { privacy, getCommissionSum, isTodayReset } = useApp();
+  const { privacy, getCommissionSum } = useApp();
   const [range, setRange] = useState<RangeKey>("today");
   const [stamp, setStamp] = useState(() => formatStamp());
 
@@ -125,9 +125,6 @@ function NewDashboard() {
     displayOrders === 0 || displayVisitors === 0
       ? "0.00"
       : ((displayOrders / displayVisitors) * 100).toFixed(2);
-
-  const todayCommission = getCommissionSum("shopee", "today");
-  const todayFlat = isTodayReset && todayCommission === 0;
 
   const top5 = topProducts.map((p) => ({
     productId: p.productId,
@@ -159,7 +156,7 @@ function NewDashboard() {
           />
         </div>
         <div className="lg:col-span-6 flex flex-col">
-          <NewSalesChart range={range} onRangeChange={setRange} todayFlat={todayFlat} />
+          <NewSalesChart range={range} onRangeChange={setRange} />
         </div>
         <div className="lg:col-span-3 flex flex-col">
           <Top5Block items={top5} />
@@ -311,11 +308,9 @@ function NewMetricCell({ label, value }: { label: string; value: string }) {
 function NewSalesChart({
   range,
   onRangeChange,
-  todayFlat,
 }: {
   range: RangeKey;
   onRangeChange: (r: RangeKey) => void;
-  todayFlat?: boolean;
 }) {
   const { data } = useApp();
   const chartData = useMemo(() => {
@@ -343,7 +338,7 @@ function NewSalesChart({
             else if (oKey === spYest) ontemSum += o.netProfit;
           }
         }
-        const hoje = i <= spH ? (todayFlat ? 0 : Math.round(hojeSum)) : null;
+        const hoje = i <= spH ? Math.round(hojeSum) : null;
         arr.push({ label: pad2(i), hoje, ontem: Math.round(ontemSum) });
       }
       return arr;
@@ -373,7 +368,7 @@ function NewSalesChart({
       hoje: Math.round(daySums[k] || 0),
       ontem: Math.round(daySums[keys[Math.min(i + 1, keys.length - 1)]] || 0), // shifted comparison
     }));
-  }, [range, todayFlat, data.salesOrders]);
+  }, [range, data.salesOrders]);
 
   // Yesterday's date label for legend
   const spNow = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
