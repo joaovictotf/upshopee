@@ -160,29 +160,32 @@ function NewDashboard() {
     ? todayStart - 7 * 24 * 60 * 60 * 1000
     : todayStart - 30 * 24 * 60 * 60 * 1000;
 
-  const inRange = salesData.filter((o) => o.saleDate >= rangeStart);
-  const totalCommission = inRange.reduce((sum, o) => sum + o.netProfit, 0);
+  const inRange = useMemo(() => salesData.filter((o) => o.saleDate >= rangeStart), [salesData, rangeStart]);
+  const totalCommission = useMemo(() => Math.round(inRange.reduce((sum, o) => sum + o.netProfit, 0) * 100) / 100, [inRange]);
   const displayOrders = inRange.length;
-  const displayUnits = displayOrders + Math.floor(Math.random() * Math.max(1, Math.floor(displayOrders * 0.3)));
-  const displayBuyers = Math.max(1, Math.floor(displayOrders * 0.6));
-  const displayVisitors = Math.max(displayOrders, displayOrders * 18 + Math.floor(Math.random() * 100));
-  const displayViews = Math.max(displayVisitors, displayVisitors * 3 + Math.floor(Math.random() * 200));
-  const displayConversionRate =
+  const displayUnits = useMemo(() => displayOrders + Math.floor(Math.random() * Math.max(1, Math.floor(displayOrders * 0.3))), [displayOrders]);
+  const displayBuyers = useMemo(() => Math.max(1, Math.floor(displayOrders * 0.6)), [displayOrders]);
+  const displayVisitors = useMemo(() => Math.max(displayOrders, displayOrders * 18 + Math.floor(Math.random() * 100)), [displayOrders]);
+  const displayViews = useMemo(() => Math.max(displayVisitors, displayVisitors * 3 + Math.floor(Math.random() * 200)), [displayVisitors]);
+  const displayConversionRate = useMemo(() =>
     displayOrders === 0 || displayVisitors === 0
       ? "0.00"
-      : ((displayOrders / displayVisitors) * 100).toFixed(2);
+      : ((displayOrders / displayVisitors) * 100).toFixed(2),
+  [displayOrders, displayVisitors]);
 
   // Top 5
-  const productMap = new Map<string, { name: string; image: string; orders: number; revenue: number }>();
-  for (const o of inRange) {
-    const e = productMap.get(o.productId);
-    if (e) { e.orders++; e.revenue += o.netProfit; }
-    else { productMap.set(o.productId, { name: o.productName, image: o.productImage, orders: 1, revenue: o.netProfit }); }
-  }
-  const top5 = Array.from(productMap.entries())
-    .sort((a, b) => b[1].orders - a[1].orders)
-    .slice(0, 5)
-    .map(([productId, data]) => ({ productId, ...data }));
+  const top5 = useMemo(() => {
+    const productMap = new Map<string, { name: string; image: string; orders: number; revenue: number }>();
+    for (const o of inRange) {
+      const e = productMap.get(o.productId);
+      if (e) { e.orders++; e.revenue += o.netProfit; }
+      else { productMap.set(o.productId, { name: o.productName, image: o.productImage, orders: 1, revenue: o.netProfit }); }
+    }
+    return Array.from(productMap.entries())
+      .sort((a, b) => b[1].orders - a[1].orders)
+      .slice(0, 5)
+      .map(([productId, data]) => ({ productId, ...data }));
+  }, [inRange]);
 
   return (
     <DashboardShell title="Dashboard" subtitle="Painel UpShopee para Shopee">
