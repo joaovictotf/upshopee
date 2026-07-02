@@ -90,7 +90,7 @@ export function DemoShell({
         <div className="mt-0.5 text-[11px] text-muted-foreground">Dados ilustrativos</div>
       </div>
       <Link
-        to="/planos"
+        to="/vendas"
         className="flex w-full items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 text-sm font-bold text-white transition hover:brightness-90"
         style={{ background: "#EE4D2D" }}
       >

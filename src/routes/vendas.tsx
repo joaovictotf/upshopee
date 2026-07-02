@@ -17,7 +17,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 
-export const Route = createFileRoute("/planos")({ component: PlanosPage });
+export const Route = createFileRoute("/vendas")({ component: PlanosPage });
 
 // ═══════════════════════════════════════════════════════════════════
 // CONFIG — change these when replacing placeholders

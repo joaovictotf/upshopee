@@ -9,11 +9,11 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as VendasRouteImport } from './routes/vendas'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as Planos3RouteImport } from './routes/planos3'
 import { Route as Planos2RouteImport } from './routes/planos2'
-import { Route as PlanosRouteImport } from './routes/planos'
 import { Route as PagamentoBloqueadoRouteImport } from './routes/pagamento-bloqueado'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DemoRouteImport } from './routes/demo'
@@ -38,6 +38,11 @@ import { Route as DashboardConfiguracoesRouteImport } from './routes/dashboard.c
 import { Route as DashboardConectarContasRouteImport } from './routes/dashboard.conectar-contas'
 import { Route as DashboardImpulsionarVendasBackupRouteImport } from './routes/dashboard.impulsionar-vendas.backup'
 
+const VendasRoute = VendasRouteImport.update({
+  id: '/vendas',
+  path: '/vendas',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
   path: '/register',
@@ -56,11 +61,6 @@ const Planos3Route = Planos3RouteImport.update({
 const Planos2Route = Planos2RouteImport.update({
   id: '/planos2',
   path: '/planos2',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PlanosRoute = PlanosRouteImport.update({
-  id: '/planos',
-  path: '/planos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PagamentoBloqueadoRoute = PagamentoBloqueadoRouteImport.update({
@@ -189,11 +189,11 @@ export interface FileRoutesByFullPath {
   '/demo': typeof DemoRouteWithChildren
   '/login': typeof LoginRoute
   '/pagamento-bloqueado': typeof PagamentoBloqueadoRoute
-  '/planos': typeof PlanosRoute
   '/planos2': typeof Planos2Route
   '/planos3': typeof Planos3Route
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/register': typeof RegisterRoute
+  '/vendas': typeof VendasRoute
   '/dashboard/conectar-contas': typeof DashboardConectarContasRoute
   '/dashboard/configuracoes': typeof DashboardConfiguracoesRoute
   '/dashboard/grupos': typeof DashboardGruposRoute
@@ -217,11 +217,11 @@ export interface FileRoutesByTo {
   '/conta-em-analise': typeof ContaEmAnaliseRoute
   '/login': typeof LoginRoute
   '/pagamento-bloqueado': typeof PagamentoBloqueadoRoute
-  '/planos': typeof PlanosRoute
   '/planos2': typeof Planos2Route
   '/planos3': typeof Planos3Route
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/register': typeof RegisterRoute
+  '/vendas': typeof VendasRoute
   '/dashboard/conectar-contas': typeof DashboardConectarContasRoute
   '/dashboard/configuracoes': typeof DashboardConfiguracoesRoute
   '/dashboard/grupos': typeof DashboardGruposRoute
@@ -248,11 +248,11 @@ export interface FileRoutesById {
   '/demo': typeof DemoRouteWithChildren
   '/login': typeof LoginRoute
   '/pagamento-bloqueado': typeof PagamentoBloqueadoRoute
-  '/planos': typeof PlanosRoute
   '/planos2': typeof Planos2Route
   '/planos3': typeof Planos3Route
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/register': typeof RegisterRoute
+  '/vendas': typeof VendasRoute
   '/dashboard/conectar-contas': typeof DashboardConectarContasRoute
   '/dashboard/configuracoes': typeof DashboardConfiguracoesRoute
   '/dashboard/grupos': typeof DashboardGruposRoute
@@ -280,11 +280,11 @@ export interface FileRouteTypes {
     | '/demo'
     | '/login'
     | '/pagamento-bloqueado'
-    | '/planos'
     | '/planos2'
     | '/planos3'
     | '/redefinir-senha'
     | '/register'
+    | '/vendas'
     | '/dashboard/conectar-contas'
     | '/dashboard/configuracoes'
     | '/dashboard/grupos'
@@ -308,11 +308,11 @@ export interface FileRouteTypes {
     | '/conta-em-analise'
     | '/login'
     | '/pagamento-bloqueado'
-    | '/planos'
     | '/planos2'
     | '/planos3'
     | '/redefinir-senha'
     | '/register'
+    | '/vendas'
     | '/dashboard/conectar-contas'
     | '/dashboard/configuracoes'
     | '/dashboard/grupos'
@@ -338,11 +338,11 @@ export interface FileRouteTypes {
     | '/demo'
     | '/login'
     | '/pagamento-bloqueado'
-    | '/planos'
     | '/planos2'
     | '/planos3'
     | '/redefinir-senha'
     | '/register'
+    | '/vendas'
     | '/dashboard/conectar-contas'
     | '/dashboard/configuracoes'
     | '/dashboard/grupos'
@@ -369,15 +369,22 @@ export interface RootRouteChildren {
   DemoRoute: typeof DemoRouteWithChildren
   LoginRoute: typeof LoginRoute
   PagamentoBloqueadoRoute: typeof PagamentoBloqueadoRoute
-  PlanosRoute: typeof PlanosRoute
   Planos2Route: typeof Planos2Route
   Planos3Route: typeof Planos3Route
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
   RegisterRoute: typeof RegisterRoute
+  VendasRoute: typeof VendasRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/vendas': {
+      id: '/vendas'
+      path: '/vendas'
+      fullPath: '/vendas'
+      preLoaderRoute: typeof VendasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/register': {
       id: '/register'
       path: '/register'
@@ -404,13 +411,6 @@ declare module '@tanstack/react-router' {
       path: '/planos2'
       fullPath: '/planos2'
       preLoaderRoute: typeof Planos2RouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/planos': {
-      id: '/planos'
-      path: '/planos'
-      fullPath: '/planos'
-      preLoaderRoute: typeof PlanosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pagamento-bloqueado': {
@@ -649,11 +649,11 @@ const rootRouteChildren: RootRouteChildren = {
   DemoRoute: DemoRouteWithChildren,
   LoginRoute: LoginRoute,
   PagamentoBloqueadoRoute: PagamentoBloqueadoRoute,
-  PlanosRoute: PlanosRoute,
   Planos2Route: Planos2Route,
   Planos3Route: Planos3Route,
   RedefinirSenhaRoute: RedefinirSenhaRoute,
   RegisterRoute: RegisterRoute,
+  VendasRoute: VendasRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
