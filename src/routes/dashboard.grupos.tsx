@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useRef, useState } from "react";
 import { DashboardShell } from "../components/layout/DashboardShell";
 import { groups } from "../lib/mock/groups";
@@ -295,11 +295,11 @@ function Grupos() {
                 <Sparkles className="h-6 w-6 text-[#EE4D2D]/60" />
               </div>
               <p className="mt-3 text-sm text-gray-500">Você ainda não possui produtos para divulgar.</p>
-              <Link to="/dashboard/grupos" className="mt-3 inline-block">
+              <a href="https://affiliate.shopee.com.br/dashboard" target="_blank" rel="noopener noreferrer" className="mt-3 inline-block">
                 <Button size="sm" variant="outline" className="rounded-xl border-gray-200 bg-white text-sm font-medium text-gray-600 shadow-sm shadow-black/[0.02] transition-all hover:border-[#EE4D2D]/30 hover:text-[#EE4D2D]">
-                  Ver meus produtos
+                  <ExternalLink className="mr-1.5 h-3.5 w-3.5" /> Cadastrar na Shopee Afiliados
                 </Button>
-              </Link>
+              </a>
             </div>
           ) : (
             <div className="mt-4 space-y-3">
