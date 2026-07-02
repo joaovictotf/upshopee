@@ -44,14 +44,14 @@ function PagamentoBloqueado() {
   useEffect(() => {
     redirectTimer.current = setTimeout(() => {
       redirectTimer.current = null;
-      navigate({ to: "/vendas" });
+      navigate({ to: "/planosup" });
     }, AUTO_REDIRECT_MS);
     return () => cancelAutoRedirect();
   }, [navigate, cancelAutoRedirect]);
 
   const goToPlans = useCallback(() => {
     cancelAutoRedirect();
-    navigate({ to: "/vendas" });
+    navigate({ to: "/planosup" });
   }, [cancelAutoRedirect, navigate]);
 
   return (

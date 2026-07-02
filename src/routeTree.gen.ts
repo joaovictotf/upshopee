@@ -9,7 +9,6 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as VendasRouteImport } from './routes/vendas'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as PlanosupRouteImport } from './routes/planosup'
@@ -39,11 +38,6 @@ import { Route as DashboardConfiguracoesRouteImport } from './routes/dashboard.c
 import { Route as DashboardConectarContasRouteImport } from './routes/dashboard.conectar-contas'
 import { Route as DashboardImpulsionarVendasBackupRouteImport } from './routes/dashboard.impulsionar-vendas.backup'
 
-const VendasRoute = VendasRouteImport.update({
-  id: '/vendas',
-  path: '/vendas',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
   path: '/register',
@@ -200,7 +194,6 @@ export interface FileRoutesByFullPath {
   '/planosup': typeof PlanosupRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/register': typeof RegisterRoute
-  '/vendas': typeof VendasRoute
   '/dashboard/conectar-contas': typeof DashboardConectarContasRoute
   '/dashboard/configuracoes': typeof DashboardConfiguracoesRoute
   '/dashboard/grupos': typeof DashboardGruposRoute
@@ -229,7 +222,6 @@ export interface FileRoutesByTo {
   '/planosup': typeof PlanosupRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/register': typeof RegisterRoute
-  '/vendas': typeof VendasRoute
   '/dashboard/conectar-contas': typeof DashboardConectarContasRoute
   '/dashboard/configuracoes': typeof DashboardConfiguracoesRoute
   '/dashboard/grupos': typeof DashboardGruposRoute
@@ -261,7 +253,6 @@ export interface FileRoutesById {
   '/planosup': typeof PlanosupRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/register': typeof RegisterRoute
-  '/vendas': typeof VendasRoute
   '/dashboard/conectar-contas': typeof DashboardConectarContasRoute
   '/dashboard/configuracoes': typeof DashboardConfiguracoesRoute
   '/dashboard/grupos': typeof DashboardGruposRoute
@@ -294,7 +285,6 @@ export interface FileRouteTypes {
     | '/planosup'
     | '/redefinir-senha'
     | '/register'
-    | '/vendas'
     | '/dashboard/conectar-contas'
     | '/dashboard/configuracoes'
     | '/dashboard/grupos'
@@ -323,7 +313,6 @@ export interface FileRouteTypes {
     | '/planosup'
     | '/redefinir-senha'
     | '/register'
-    | '/vendas'
     | '/dashboard/conectar-contas'
     | '/dashboard/configuracoes'
     | '/dashboard/grupos'
@@ -354,7 +343,6 @@ export interface FileRouteTypes {
     | '/planosup'
     | '/redefinir-senha'
     | '/register'
-    | '/vendas'
     | '/dashboard/conectar-contas'
     | '/dashboard/configuracoes'
     | '/dashboard/grupos'
@@ -386,18 +374,10 @@ export interface RootRouteChildren {
   PlanosupRoute: typeof PlanosupRoute
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
   RegisterRoute: typeof RegisterRoute
-  VendasRoute: typeof VendasRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/vendas': {
-      id: '/vendas'
-      path: '/vendas'
-      fullPath: '/vendas'
-      preLoaderRoute: typeof VendasRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/register': {
       id: '/register'
       path: '/register'
@@ -674,7 +654,6 @@ const rootRouteChildren: RootRouteChildren = {
   PlanosupRoute: PlanosupRoute,
   RedefinirSenhaRoute: RedefinirSenhaRoute,
   RegisterRoute: RegisterRoute,
-  VendasRoute: VendasRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

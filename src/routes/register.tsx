@@ -235,7 +235,7 @@ function RegisterPage() {
                 </p>
                 <p className="text-xs text-muted-foreground">
                   <Link
-                    to="/vendas"
+                    to="/planosup"
                     className="font-medium text-gray-400 hover:text-[#EE4D2D] transition-colors"
                   >
                     Ver planos e preços →

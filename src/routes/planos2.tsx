@@ -190,7 +190,7 @@ function Navbar() {
       transition: "background 0.35s, border-color 0.35s",
     }}>
       <div style={{ maxWidth: 1180, margin: "0 auto", padding: "0 20px", height: 64, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-        <Link to="/vendas" style={{ display: "flex", alignItems: "center", gap: 9, textDecoration: "none", flexShrink: 0 }}>
+        <Link to="/planosup" style={{ display: "flex", alignItems: "center", gap: 9, textDecoration: "none", flexShrink: 0 }}>
           <img src="/brand/logo.png" alt="UpShopee" style={{ height: 52, objectFit: "contain" }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
           <span style={{ fontWeight: 800, fontSize: 16, color: "#FFFFFF", letterSpacing: "-0.3px", fontFamily: "'Barlow', sans-serif" }}>UpShopee</span>
         </Link>

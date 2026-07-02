@@ -65,7 +65,6 @@ const baseNav: NavItem[] = [
   { to: "/dashboard/robo-divulgador", label: "IA Divulgadora", icon: Radio },
   { to: "/dashboard/video-ia", label: "Vídeo IA", icon: Clapperboard },
   { to: "/dashboard/conectar-contas", label: "Conectar Contas", icon: Link2 },
-  { to: "/vendas", label: "Planos", icon: Crown },
   { to: "/dashboard/configuracoes", label: "Configurações", icon: Settings2 },
 
 ];
