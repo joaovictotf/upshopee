@@ -1,12 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { DashboardShell } from "../components/layout/DashboardShell";
-import { products, categories, VALENTINE_CATEGORY, COPA_CATEGORY, type Product } from "../lib/mock/products";
+import { products, categories, type Product } from "../lib/mock/products";
 import { ProductCard } from "../components/products/ProductCard";
 import { GenerateListingFlow } from "../components/products/GenerateListingFlow";
 import { Input } from "../components/ui/input";
 import { RolePickerDialog } from "../components/products/RolePickerDialog";
-import { Search, Heart, Trophy } from "lucide-react";
+import { Search } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/dashboard/produtos")({ component: Produtos });
@@ -31,12 +31,6 @@ function Produtos() {
       const pa = Number(!!a.pinned);
       const pb = Number(!!b.pinned);
       if (pa !== pb) return pb - pa;
-      const ca = Number(a.category === COPA_CATEGORY);
-      const cb = Number(b.category === COPA_CATEGORY);
-      if (ca !== cb) return cb - ca;
-      const va = Number(a.category === VALENTINE_CATEGORY);
-      const vb = Number(b.category === VALENTINE_CATEGORY);
-      if (va !== vb) return vb - va;
       return 0;
     });
     // Shuffle randomly so products change position on each filter/search change
@@ -68,54 +62,15 @@ function Produtos() {
         {/* Category chips */}
         <div className="flex flex-wrap gap-1.5">
           {categories.map((c) => {
-            const isValentine = c === VALENTINE_CATEGORY;
-            const isCopa = c === COPA_CATEGORY;
             const active = cat === c;
-
-            if (isCopa) {
-              return (
-                <button
-                  key={c}
-                  onClick={() => setCat(c)}
-                  className={`copa-chip relative inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition ${
-                    active ? "copa-chip-active" : ""
-                  }`}
-                >
-                  <Trophy className="h-3 w-3" />
-                  {c}
-                  <span className="copa-badge-new ml-1 rounded-full bg-white/90 px-1.5 py-px text-[9px] font-bold uppercase tracking-wide text-green-700">
-                    Novo
-                  </span>
-                </button>
-              );
-            }
-
-            if (isValentine) {
-              return (
-                <button
-                  key={c}
-                  onClick={() => setCat(c)}
-                  className={`valentine-chip relative inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition ${
-                    active ? "valentine-chip-active" : ""
-                  }`}
-                >
-                  <Heart className="h-3 w-3" />
-                  {c}
-                  <span className="ml-1 rounded-full bg-white/90 px-1.5 py-px text-[9px] font-bold uppercase tracking-wide text-rose-600">
-                    Alta procura
-                  </span>
-                </button>
-              );
-            }
-
             return (
               <button
                 key={c}
                 onClick={() => setCat(c)}
-                className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-all ${
+                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition ${
                   active
                     ? "border-[#EE4D2D] bg-[#EE4D2D] text-white shadow-sm shadow-[#EE4D2D]/25"
-                    : "border-gray-200 bg-white text-gray-500 hover:border-[#EE4D2D]/40 hover:text-[#EE4D2D]"
+                    : "border border-gray-200 bg-white text-gray-500 hover:border-[#EE4D2D]/30 hover:text-[#EE4D2D]"
                 }`}
               >
                 {c}

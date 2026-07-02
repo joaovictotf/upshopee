@@ -1,15 +1,12 @@
-import { Flame, TrendingUp, Trophy, ShoppingBag } from "lucide-react";
+import { Flame, TrendingUp, ShoppingBag } from "lucide-react";
 import type { Product } from "../../lib/mock/products";
-import { COPA_CATEGORY } from "../../lib/mock/products";
 import { brl } from "../../lib/format";
 import { Button } from "../ui/button";
 
 export function ProductCard({ product, onSelect }: { product: Product; onSelect: (p: Product) => void }) {
-  const isCopa = product.category === COPA_CATEGORY;
-
   return (
     <div
-      className={`group flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm shadow-black/[0.04] ring-1 ring-black/[0.06] transition-all hover:shadow-md hover:shadow-[#EE4D2D]/5 hover:ring-[#EE4D2D]/20 hover:-translate-y-0.5${isCopa ? " copa-card" : ""}`}
+      className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm shadow-black/[0.04] ring-1 ring-black/[0.06] transition-all hover:shadow-md hover:shadow-[#EE4D2D]/5 hover:ring-[#EE4D2D]/20 hover:-translate-y-0.5"
     >
       {/* Image section */}
       <div className="relative aspect-square overflow-hidden bg-gray-50">
@@ -38,12 +35,6 @@ export function ProductCard({ product, onSelect }: { product: Product; onSelect:
           </span>
         )}
 
-        {/* Copa badge — bottom left */}
-        {isCopa && (
-          <span className="copa-badge-new absolute bottom-2 left-2 inline-flex items-center gap-1 rounded-md bg-gradient-to-r from-green-600 to-yellow-500 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white shadow">
-            <Trophy className="h-3 w-3" /> NOVO
-          </span>
-        )}
       </div>
 
       {/* Info section */}
