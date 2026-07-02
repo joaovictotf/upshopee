@@ -1,6 +1,6 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
-import { Grid3X3, ShoppingBag, TrendingUp, Users, Radio, Clapperboard, Link2, Settings2, LogOut, Bell, Loader2, Search, Zap, Eye, EyeOff, ShieldCheck, Info, Menu, Trophy, X } from "lucide-react";
+import { Grid3X3, ShoppingBag, TrendingUp, Users, Radio, Clapperboard, Link2, Settings2, LogOut, Bell, Loader2, Search, Zap, Eye, EyeOff, ShieldCheck, Info, Menu, Trophy, X, Crown } from "lucide-react";
 import { useApp, MARKETPLACE_LABEL } from "../../lib/state";
 import { brl } from "../../lib/format";
 import { toast } from "sonner";
@@ -65,6 +65,7 @@ const baseNav: NavItem[] = [
   { to: "/dashboard/robo-divulgador", label: "IA Divulgadora", icon: Radio },
   { to: "/dashboard/video-ia", label: "Vídeo IA", icon: Clapperboard },
   { to: "/dashboard/conectar-contas", label: "Conectar Contas", icon: Link2 },
+  { to: "/vendas", label: "Planos", icon: Crown },
   { to: "/dashboard/configuracoes", label: "Configurações", icon: Settings2 },
 
 ];

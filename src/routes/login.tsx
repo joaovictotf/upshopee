@@ -201,7 +201,7 @@ function LoginPage() {
                 </Button>
               </form>
 
-              <div className="mt-6 text-center">
+              <div className="mt-6 text-center space-y-2">
                 <p className="text-sm text-muted-foreground">
                   Ainda nao tem uma conta?{" "}
                   <Link
@@ -209,6 +209,14 @@ function LoginPage() {
                     className="font-semibold text-[#EE4D2D] hover:text-[#EE4D2D]/80 transition-colors"
                   >
                     Criar conta
+                  </Link>
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  <Link
+                    to="/vendas"
+                    className="font-medium text-gray-400 hover:text-[#EE4D2D] transition-colors"
+                  >
+                    Ver planos e preços →
                   </Link>
                 </p>
               </div>
