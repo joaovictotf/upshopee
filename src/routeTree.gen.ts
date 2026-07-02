@@ -15,6 +15,7 @@ import { Route as PlanosupRouteImport } from './routes/planosup'
 import { Route as Planos3RouteImport } from './routes/planos3'
 import { Route as Planos2RouteImport } from './routes/planos2'
 import { Route as PagamentoBloqueadoRouteImport } from './routes/pagamento-bloqueado'
+import { Route as OfertasRouteImport } from './routes/ofertas'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DemoRouteImport } from './routes/demo'
 import { Route as DashboardRouteImport } from './routes/dashboard'
@@ -66,6 +67,11 @@ const Planos2Route = Planos2RouteImport.update({
 const PagamentoBloqueadoRoute = PagamentoBloqueadoRouteImport.update({
   id: '/pagamento-bloqueado',
   path: '/pagamento-bloqueado',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OfertasRoute = OfertasRouteImport.update({
+  id: '/ofertas',
+  path: '/ofertas',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -188,6 +194,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRouteWithChildren
   '/demo': typeof DemoRouteWithChildren
   '/login': typeof LoginRoute
+  '/ofertas': typeof OfertasRoute
   '/pagamento-bloqueado': typeof PagamentoBloqueadoRoute
   '/planos2': typeof Planos2Route
   '/planos3': typeof Planos3Route
@@ -216,6 +223,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/conta-em-analise': typeof ContaEmAnaliseRoute
   '/login': typeof LoginRoute
+  '/ofertas': typeof OfertasRoute
   '/pagamento-bloqueado': typeof PagamentoBloqueadoRoute
   '/planos2': typeof Planos2Route
   '/planos3': typeof Planos3Route
@@ -247,6 +255,7 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRouteWithChildren
   '/demo': typeof DemoRouteWithChildren
   '/login': typeof LoginRoute
+  '/ofertas': typeof OfertasRoute
   '/pagamento-bloqueado': typeof PagamentoBloqueadoRoute
   '/planos2': typeof Planos2Route
   '/planos3': typeof Planos3Route
@@ -279,6 +288,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/demo'
     | '/login'
+    | '/ofertas'
     | '/pagamento-bloqueado'
     | '/planos2'
     | '/planos3'
@@ -307,6 +317,7 @@ export interface FileRouteTypes {
     | '/'
     | '/conta-em-analise'
     | '/login'
+    | '/ofertas'
     | '/pagamento-bloqueado'
     | '/planos2'
     | '/planos3'
@@ -337,6 +348,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/demo'
     | '/login'
+    | '/ofertas'
     | '/pagamento-bloqueado'
     | '/planos2'
     | '/planos3'
@@ -368,6 +380,7 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRouteWithChildren
   DemoRoute: typeof DemoRouteWithChildren
   LoginRoute: typeof LoginRoute
+  OfertasRoute: typeof OfertasRoute
   PagamentoBloqueadoRoute: typeof PagamentoBloqueadoRoute
   Planos2Route: typeof Planos2Route
   Planos3Route: typeof Planos3Route
@@ -418,6 +431,13 @@ declare module '@tanstack/react-router' {
       path: '/pagamento-bloqueado'
       fullPath: '/pagamento-bloqueado'
       preLoaderRoute: typeof PagamentoBloqueadoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ofertas': {
+      id: '/ofertas'
+      path: '/ofertas'
+      fullPath: '/ofertas'
+      preLoaderRoute: typeof OfertasRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -648,6 +668,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRouteWithChildren,
   DemoRoute: DemoRouteWithChildren,
   LoginRoute: LoginRoute,
+  OfertasRoute: OfertasRoute,
   PagamentoBloqueadoRoute: PagamentoBloqueadoRoute,
   Planos2Route: Planos2Route,
   Planos3Route: Planos3Route,
