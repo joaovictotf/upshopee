@@ -295,7 +295,7 @@ export function DashboardShell({ children, title, subtitle, actions, onLightning
               try {
                 const r = await recordLightningClick();
                 if (!r.ok) { toast.error(r.error || "Não foi possível registrar a comissão."); }
-                else { toast.success(`Nova comissão registrada — ${brl(r.amount ?? 0)}`, { description: `Comissão adicionada ao painel em ${MARKETPLACE_LABEL[selectedMarketplace]}.` }); }
+                else { toast.success(`Nova comissão registrada — ${brl(r.amount ?? 0)}`, { description: `Comissão adicionada ao painel em ${MARKETPLACE_LABEL[selectedMarketplace]}.` }); window.dispatchEvent(new CustomEvent("upshopee-lightning", { detail: r.amount })); }
               } finally {
                 setLightningLoading(false);
               }

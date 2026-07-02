@@ -23,7 +23,7 @@ import {
   Package,
   Flame,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { WithdrawalButton } from "../components/withdrawal/WithdrawalDialog";
 import { BoostPromoModal } from "../components/boost/BoostPromoModal";
 
@@ -96,7 +96,7 @@ const FAKE_PRODUCTS = [
   { id: "fp-1", name: "Camisa Feminina Seleção Brasileira 2026", image: "https://picsum.photos/seed/fp1/100/100" },
   { id: "fp-2", name: "Fone Bluetooth TWS Cancelamento Ruído", image: "https://picsum.photos/seed/fp2/100/100" },
   { id: "fp-3", name: "Kit Maquiagem Completo 24 Cores", image: "https://picsum.photos/seed/fp3/100/100" },
-  { id: "fp-4", name: "Organizador de Gavetas Dobrável 6 Peças", image: "https://picsum.photos/seed/fp4/100/100" },
+  { id: "fp-4", name: "Organizador de Gavetas Dobrável", image: "https://picsum.photos/seed/fp4/100/100" },
   { id: "fp-5", name: "Air Fryer 4L Digital", image: "https://picsum.photos/seed/fp5/100/100" },
   { id: "fp-6", name: "Bola de Futebol Oficial Copa 2026", image: "https://picsum.photos/seed/fp6/100/100" },
   { id: "fp-7", name: "Smartwatch Relógio Inteligente", image: "https://picsum.photos/seed/fp7/100/100" },
@@ -105,7 +105,7 @@ const FAKE_PRODUCTS = [
   { id: "fp-10", name: "Garrafa Térmica Inox 500ml", image: "https://picsum.photos/seed/fp10/100/100" },
 ];
 
-type FakeSale = {
+type SaleRecord = {
   saleDate: number;
   netProfit: number;
   productId: string;
@@ -113,26 +113,32 @@ type FakeSale = {
   productImage: string;
 };
 
-function generateFakeSales(): FakeSale[] {
-  const sales: FakeSale[] = [];
+function generateHistoricalSales(): SaleRecord[] {
+  const sales: SaleRecord[] = [];
   const now = Date.now();
+  let accumulated = 0;
+  const target30d = 250000;
   for (let day = 0; day < 30; day++) {
-    const dayTs = now - day * 24 * 60 * 60 * 1000;
-    const count = 3 + Math.floor(Math.random() * 13); // 3-15 per day
+    const dayStart = now - day * 24 * 60 * 60 * 1000;
+    const count = Math.floor(8 + Math.random() * 12 + (30 - day) * 0.3);
     for (let s = 0; s < count; s++) {
       const product = FAKE_PRODUCTS[Math.floor(Math.random() * FAKE_PRODUCTS.length)];
-      const profit = Math.round((15 + Math.random() * 285) * 100) / 100;
-      const minutesOffset = Math.floor(Math.random() * 24 * 60);
+      const profit = Math.round((20 + Math.random() * 180) * 100) / 100;
+      const hour = 6 + Math.floor(Math.random() * 18);
+      const hourOffset = (hour * 60 + Math.floor(Math.random() * 60)) * 60 * 1000;
       sales.push({
-        saleDate: dayTs - minutesOffset * 60 * 1000,
+        saleDate: dayStart - hourOffset,
         netProfit: profit,
         productId: product.id,
         productName: product.name,
         productImage: product.image,
       });
+      accumulated += profit;
+      if (accumulated >= target30d) break;
     }
+    if (accumulated >= target30d) break;
   }
-  return sales.sort((a, b) => b.saleDate - a.saleDate);
+  return sales.sort((a: SaleRecord, b: SaleRecord) => b.saleDate - a.saleDate);
 }
 
 // ---------------------------------------------------------------------------
@@ -143,7 +149,35 @@ function NewDashboard() {
   const { privacy } = useApp();
   const [range, setRange] = useState<RangeKey>("today");
   const [stamp, setStamp] = useState(() => formatStamp());
-  const [salesData] = useState(() => generateFakeSales());
+  const [salesHistory, setSalesHistory] = useState<SaleRecord[]>(() => generateHistoricalSales());
+  const addSaleRef = useRef<((amount: number) => void) | null>(null);
+
+  // Keep addSaleRef current — solves stale closure
+  const addSale = useCallback((amount: number) => {
+    const product = FAKE_PRODUCTS[Math.floor(Math.random() * FAKE_PRODUCTS.length)];
+    const newSale: SaleRecord = {
+      saleDate: Date.now(),
+      netProfit: amount,
+      productId: product.id,
+      productName: product.name,
+      productImage: product.image,
+    };
+    setSalesHistory((prev) => [newSale, ...prev]);
+  }, []);
+
+  useEffect(() => { addSaleRef.current = addSale; }, [addSale]);
+
+  // Listen for raio events from DashboardShell
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (addSaleRef.current && typeof detail === "number") {
+        addSaleRef.current(detail);
+      }
+    };
+    window.addEventListener("upshopee-lightning", handler);
+    return () => window.removeEventListener("upshopee-lightning", handler);
+  }, []);
 
   // Clock
   useEffect(() => {
@@ -151,57 +185,64 @@ function NewDashboard() {
     return () => clearInterval(id);
   }, []);
 
-  // Compute metrics from fake data
+  // ── Compute metrics (stable — only salesHistory changes trigger recalculation) ──
   const spNow = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
   const todayStart = new Date(spNow.getFullYear(), spNow.getMonth(), spNow.getDate()).getTime();
-  const rangeStart = range === "today"
-    ? todayStart
-    : range === "7d"
-    ? todayStart - 7 * 24 * 60 * 60 * 1000
+  const rangeStart = range === "today" ? todayStart
+    : range === "7d" ? todayStart - 7 * 24 * 60 * 60 * 1000
     : todayStart - 30 * 24 * 60 * 60 * 1000;
 
-  const inRange = useMemo(() => salesData.filter((o) => o.saleDate >= rangeStart), [salesData, rangeStart]);
-  const totalCommission = useMemo(() => Math.round(inRange.reduce((sum, o) => sum + o.netProfit, 0) * 100) / 100, [inRange]);
-  const displayOrders = inRange.length;
-  const displayUnits = useMemo(() => displayOrders + Math.floor(Math.random() * Math.max(1, Math.floor(displayOrders * 0.3))), [displayOrders]);
-  const displayBuyers = useMemo(() => Math.max(1, Math.floor(displayOrders * 0.6)), [displayOrders]);
-  const displayVisitors = useMemo(() => Math.max(displayOrders, displayOrders * 18 + Math.floor(Math.random() * 100)), [displayOrders]);
-  const displayViews = useMemo(() => Math.max(displayVisitors, displayVisitors * 3 + Math.floor(Math.random() * 200)), [displayVisitors]);
+  // Use useMemo for derived metrics that use Math.random() — lock them to salesHistory changes
+  const metrics = useMemo(() => {
+    const inRange = salesHistory.filter((o) => o.saleDate >= rangeStart);
+    const totalCommission = inRange.reduce((sum, o) => sum + o.netProfit, 0);
+    const orders = inRange.length;
+    return {
+      totalCommission: Math.round(totalCommission * 100) / 100,
+      orders,
+      units: orders + Math.floor(Math.random() * Math.max(1, Math.floor(orders * 0.3))),
+      buyers: Math.max(1, Math.floor(orders * 0.6)),
+      visitors: Math.max(orders, orders * 18 + Math.floor(Math.random() * 100)),
+      views: 0, // computed below
+      inRange,
+    };
+  }, [salesHistory, rangeStart]);
+
+  // views depends on visitors (computed inside metrics)
+  const displayViews = useMemo(() =>
+    Math.max(metrics.visitors, metrics.visitors * 3 + Math.floor(Math.random() * 200)),
+  [metrics.visitors]);
+
   const displayConversionRate = useMemo(() =>
-    displayOrders === 0 || displayVisitors === 0
-      ? "0.00"
-      : ((displayOrders / displayVisitors) * 100).toFixed(2),
-  [displayOrders, displayVisitors]);
+    metrics.orders === 0 || metrics.visitors === 0 ? "0.00" : ((metrics.orders / metrics.visitors) * 100).toFixed(2),
+  [metrics.orders, metrics.visitors]);
 
   // Top 5
   const top5 = useMemo(() => {
-    const productMap = new Map<string, { name: string; image: string; orders: number; revenue: number }>();
-    for (const o of inRange) {
-      const e = productMap.get(o.productId);
+    const map = new Map<string, { name: string; image: string; orders: number; revenue: number }>();
+    for (const o of metrics.inRange) {
+      const e = map.get(o.productId);
       if (e) { e.orders++; e.revenue += o.netProfit; }
-      else { productMap.set(o.productId, { name: o.productName, image: o.productImage, orders: 1, revenue: o.netProfit }); }
+      else { map.set(o.productId, { name: o.productName, image: o.productImage, orders: 1, revenue: o.netProfit }); }
     }
-    return Array.from(productMap.entries())
-      .sort((a, b) => b[1].orders - a[1].orders)
-      .slice(0, 5)
-      .map(([productId, data]) => ({ productId, ...data }));
-  }, [inRange]);
+    return Array.from(map.entries()).sort((a, b) => b[1].orders - a[1].orders).slice(0, 5).map(([id, d]) => ({ productId: id, ...d }));
+  }, [metrics.inRange]);
 
   return (
     <DashboardShell title="Dashboard" subtitle="Painel UpShopee para Shopee">
       <BoostActiveMiniCard />
       <BoostPromoModal />
-      <NewShopeeHeroPanel valor={totalCommission} privacy={privacy} stamp={stamp} />
+      <NewShopeeHeroPanel valor={metrics.totalCommission} privacy={privacy} stamp={stamp} />
       <div className="mt-4 flex flex-col gap-4 lg:grid lg:grid-cols-12 lg:items-stretch">
         <div className="lg:col-span-3 flex flex-col">
           <NewMetricsBlock
-            visitors={displayVisitors} views={displayViews} orders={displayOrders}
-            units={displayUnits} buyers={displayBuyers} conversionRate={displayConversionRate}
+            visitors={metrics.visitors} views={displayViews} orders={metrics.orders}
+            units={metrics.units} buyers={metrics.buyers} conversionRate={displayConversionRate}
             privacy={privacy}
           />
         </div>
         <div className="lg:col-span-6 flex flex-col">
-          <NewSalesChart range={range} onRangeChange={setRange} salesData={salesData} />
+          <NewSalesChart range={range} onRangeChange={setRange} salesData={salesHistory} />
         </div>
         <div className="lg:col-span-3 flex flex-col">
           <Top5Block items={top5} />
@@ -357,7 +398,7 @@ function NewSalesChart({
 }: {
   range: RangeKey;
   onRangeChange: (r: RangeKey) => void;
-  salesData: FakeSale[];
+  salesData: SaleRecord[];
 }) {
   const chartData = useMemo(() => {
     if (range === "today") {
@@ -916,7 +957,8 @@ function Top5Block({
     productId: string;
     name: string;
     image: string;
-    sales: number;
+    sales?: number;
+    orders?: number;
     revenue: number;
   }>;
 }) {
@@ -935,7 +977,9 @@ function Top5Block({
         </div>
       ) : (
         <ol className="mt-3 divide-y divide-border/60">
-          {items.map((it, idx) => (
+          {items.map((it, idx) => {
+            const salesCount = it.orders ?? it.sales ?? 0;
+            return (
             <li key={it.productId} className="flex items-center gap-3 py-2.5">
               <span className="w-4 shrink-0 text-center text-sm font-bold text-[#EE4D2D]">{idx + 1}</span>
               <div className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-white p-1 ring-1 ring-border/60 overflow-hidden">
@@ -964,11 +1008,12 @@ function Top5Block({
               </div>
               <div className="min-w-0 flex-1">
                 <div className="line-clamp-2 text-[11px] font-medium text-foreground leading-tight">{it.name}</div>
-                <div className="mt-0.5 text-[10px] text-muted-foreground">{it.sales} {it.sales === 1 ? "unidade vendida" : "unidades vendidas"}</div>
+                <div className="mt-0.5 text-[10px] text-muted-foreground">{salesCount} {salesCount === 1 ? "unidade vendida" : "unidades vendidas"}</div>
               </div>
               <div className="text-right text-xs font-bold text-[#EE4D2D] tabular-nums" style={{ fontFamily: 'Arial, Helvetica, sans-serif', letterSpacing: '-0.3px' }}>{brl(it.revenue)}</div>
             </li>
-          ))}
+            );
+          })}
         </ol>
       )}
     </div>
