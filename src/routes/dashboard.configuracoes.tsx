@@ -9,7 +9,6 @@ import { Button } from "../components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Zap, Shield } from "lucide-react";
 import { toast } from "sonner";
-import { WithdrawalButton } from "../components/withdrawal/WithdrawalDialog";
 import { type BankInfo, type BankInfoErrors, loadBankInfo, saveBankInfo, validateBankInfo } from "../lib/bankinfo";
 
 export const Route = createFileRoute("/dashboard/configuracoes")({ component: Config });
@@ -148,9 +147,6 @@ function Config() {
                 </p>
               </div>
             </div>
-          </div>
-          <div className="pt-1">
-            <WithdrawalButton />
           </div>
         </SettingsCard>
 

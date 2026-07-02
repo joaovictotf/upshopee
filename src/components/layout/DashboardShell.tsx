@@ -6,7 +6,6 @@ import { brl } from "../../lib/format";
 import { toast } from "sonner";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "../ui/sheet";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
-import { WhatsAppSupportButton } from "../WhatsAppSupportButton";
 
 type NavItem = { to: string; label: string; icon: typeof Grid3X3; exact?: boolean; special?: "fire" | "impulsionar"; adminOnly?: boolean };
 const baseNav: NavItem[] = [
@@ -201,9 +200,6 @@ export function DashboardShell({ children, title, subtitle, actions, onLightning
           {children}
         </main>
       </div>
-
-      {/* WhatsApp Support — visível em todas as páginas do dashboard */}
-      <WhatsAppSupportButton />
 
       {hasLightningAccess && (
         <div className="flex gap-2 fixed bottom-6 left-6 z-50">

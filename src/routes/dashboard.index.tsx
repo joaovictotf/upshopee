@@ -23,7 +23,6 @@ import {
   Package,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { WithdrawalButton } from "../components/withdrawal/WithdrawalDialog";
 import { products as catalogProducts } from "../lib/mock/products";
 
 export const Route = createFileRoute("/dashboard/")({ component: DashboardHome });
@@ -318,11 +317,6 @@ function NewShopeeHeroPanel({
               {privacy ? "•••••" : animated_formatted}
             </span>
           </div>
-          {!isAdmin && (
-            <div className="mt-3">
-              <WithdrawalButton />
-            </div>
-          )}
         </div>
       </div>
     </div>
@@ -792,9 +786,6 @@ function ShopeeHeroPanel({
             >
               {privacy ? "•••••" : formatted}
             </span>
-          </div>
-          <div className="mt-5 flex justify-center">
-            <WithdrawalButton />
           </div>
         </div>
       </div>
