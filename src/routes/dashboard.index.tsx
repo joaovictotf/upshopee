@@ -26,6 +26,7 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { WithdrawalButton } from "../components/withdrawal/WithdrawalDialog";
 import { BoostPromoModal } from "../components/boost/BoostPromoModal";
+import { products as catalogProducts } from "../lib/mock/products";
 
 export const Route = createFileRoute("/dashboard/")({ component: DashboardHome });
 
@@ -90,20 +91,7 @@ function DashboardHome() {
   return <NewDashboard />;
 }
 
-// ── Fake data generator ──
-
-const FAKE_PRODUCTS = [
-  { id: "fp-1", name: "Camisa Feminina Seleção Brasileira 2026", image: "https://picsum.photos/seed/fp1/100/100" },
-  { id: "fp-2", name: "Fone Bluetooth TWS Cancelamento Ruído", image: "https://picsum.photos/seed/fp2/100/100" },
-  { id: "fp-3", name: "Kit Maquiagem Completo 24 Cores", image: "https://picsum.photos/seed/fp3/100/100" },
-  { id: "fp-4", name: "Organizador de Gavetas Dobrável", image: "https://picsum.photos/seed/fp4/100/100" },
-  { id: "fp-5", name: "Air Fryer 4L Digital", image: "https://picsum.photos/seed/fp5/100/100" },
-  { id: "fp-6", name: "Bola de Futebol Oficial Copa 2026", image: "https://picsum.photos/seed/fp6/100/100" },
-  { id: "fp-7", name: "Smartwatch Relógio Inteligente", image: "https://picsum.photos/seed/fp7/100/100" },
-  { id: "fp-8", name: "Protetor Solar FPS 50 Bastão", image: "https://picsum.photos/seed/fp8/100/100" },
-  { id: "fp-9", name: "Jogo de Panelas Antiaderente 5 Peças", image: "https://picsum.photos/seed/fp9/100/100" },
-  { id: "fp-10", name: "Garrafa Térmica Inox 500ml", image: "https://picsum.photos/seed/fp10/100/100" },
-];
+// ── Data generator ──
 
 type SaleRecord = {
   saleDate: number;
@@ -122,7 +110,7 @@ function generateHistoricalSales(): SaleRecord[] {
     const dayStart = now - day * 24 * 60 * 60 * 1000;
     const count = Math.floor(8 + Math.random() * 12 + (30 - day) * 0.3);
     for (let s = 0; s < count; s++) {
-      const product = FAKE_PRODUCTS[Math.floor(Math.random() * FAKE_PRODUCTS.length)];
+      const product = catalogProducts[Math.floor(Math.random() * catalogProducts.length)];
       const profit = Math.round((20 + Math.random() * 180) * 100) / 100;
       const hour = 6 + Math.floor(Math.random() * 18);
       const hourOffset = (hour * 60 + Math.floor(Math.random() * 60)) * 60 * 1000;
@@ -141,7 +129,7 @@ function generateHistoricalSales(): SaleRecord[] {
   // Force today's sales — always include current day
   const todayCount = 3 + Math.floor(Math.random() * 6); // 3-8 sales today
   for (let s = 0; s < todayCount; s++) {
-    const product = FAKE_PRODUCTS[Math.floor(Math.random() * FAKE_PRODUCTS.length)];
+    const product = catalogProducts[Math.floor(Math.random() * catalogProducts.length)];
     const profit = Math.round((20 + Math.random() * 180) * 100) / 100;
     const minutesAgo = Math.floor(Math.random() * 12 * 60); // Last 12 hours
     sales.push({
@@ -168,7 +156,7 @@ function NewDashboard() {
 
   // Keep addSaleRef current — solves stale closure
   const addSale = useCallback((amount: number) => {
-    const product = FAKE_PRODUCTS[Math.floor(Math.random() * FAKE_PRODUCTS.length)];
+    const product = catalogProducts[Math.floor(Math.random() * catalogProducts.length)];
     const newSale: SaleRecord = {
       saleDate: Date.now(),
       netProfit: amount,
