@@ -1,6 +1,6 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
-import { Grid3X3, ShoppingBag, TrendingUp, Users, Radio, Clapperboard, Link2, Settings2, LogOut, Bell, Search, Zap, Eye, EyeOff, ShieldCheck, Info, Menu, Trophy, X } from "lucide-react";
+import { Grid3X3, ShoppingBag, TrendingUp, Users, Radio, Clapperboard, Link2, Settings2, LogOut, Bell, Loader2, Search, Zap, Eye, EyeOff, ShieldCheck, Info, Menu, Trophy, X } from "lucide-react";
 import { useApp, MARKETPLACE_LABEL } from "../../lib/state";
 import { brl } from "../../lib/format";
 import { toast } from "sonner";
@@ -86,6 +86,7 @@ export function DashboardShell({ children, title, subtitle, actions, onLightning
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [mobileOpen, setMobileOpen] = useState(false);
   const [showCopaPopup, setShowCopaPopup] = useState(false);
+  const [lightningLoading, setLightningLoading] = useState(false);
 
   // Show Copa popup once per user on any dashboard page
   useEffect(() => {
@@ -280,24 +281,24 @@ export function DashboardShell({ children, title, subtitle, actions, onLightning
             ✕
           </button>
           <button
-            onClick={() => {
+            onClick={async () => {
+              if (lightningLoading) return;
+              setLightningLoading(true);
               onLightningClick?.();
-              void (async () => {
+              try {
                 const r = await recordLightningClick();
-                if (!r.ok) {
-                  toast.error(r.error || "Não foi possível registrar a comissão.");
-                  return;
-                }
-                toast.success(`Nova comissão registrada — ${brl(r.amount ?? 0)}`, {
-                  description: `Comissão adicionada ao painel em ${MARKETPLACE_LABEL[selectedMarketplace]}.`,
-                });
-              })();
+                if (!r.ok) { toast.error(r.error || "Não foi possível registrar a comissão."); }
+                else { toast.success(`Nova comissão registrada — ${brl(r.amount ?? 0)}`, { description: `Comissão adicionada ao painel em ${MARKETPLACE_LABEL[selectedMarketplace]}.` }); }
+              } finally {
+                setLightningLoading(false);
+              }
             }}
+            disabled={lightningLoading}
             aria-label={`Simular venda em ${MARKETPLACE_LABEL[selectedMarketplace]}`}
             title={`Simular venda em ${MARKETPLACE_LABEL[selectedMarketplace]}`}
-            className="grid h-12 w-12 place-items-center rounded-full bg-primary text-primary-foreground shadow-2xl shadow-primary/40 ring-1 ring-primary/40 transition hover:scale-105"
+            className={`grid h-12 w-12 place-items-center rounded-full shadow-2xl shadow-primary/40 ring-1 ring-primary/40 transition hover:scale-105 ${lightningLoading ? "bg-gray-400 cursor-not-allowed" : "bg-primary text-primary-foreground"}`}
           >
-            <Zap className="h-5 w-5" />
+            {lightningLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Zap className="h-5 w-5" />}
           </button>
         </div>
       )}
