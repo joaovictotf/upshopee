@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as VendasRouteImport } from './routes/vendas'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
+import { Route as PlanosupRouteImport } from './routes/planosup'
 import { Route as Planos3RouteImport } from './routes/planos3'
 import { Route as Planos2RouteImport } from './routes/planos2'
 import { Route as PagamentoBloqueadoRouteImport } from './routes/pagamento-bloqueado'
@@ -51,6 +52,11 @@ const RegisterRoute = RegisterRouteImport.update({
 const RedefinirSenhaRoute = RedefinirSenhaRouteImport.update({
   id: '/redefinir-senha',
   path: '/redefinir-senha',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlanosupRoute = PlanosupRouteImport.update({
+  id: '/planosup',
+  path: '/planosup',
   getParentRoute: () => rootRouteImport,
 } as any)
 const Planos3Route = Planos3RouteImport.update({
@@ -191,6 +197,7 @@ export interface FileRoutesByFullPath {
   '/pagamento-bloqueado': typeof PagamentoBloqueadoRoute
   '/planos2': typeof Planos2Route
   '/planos3': typeof Planos3Route
+  '/planosup': typeof PlanosupRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/register': typeof RegisterRoute
   '/vendas': typeof VendasRoute
@@ -219,6 +226,7 @@ export interface FileRoutesByTo {
   '/pagamento-bloqueado': typeof PagamentoBloqueadoRoute
   '/planos2': typeof Planos2Route
   '/planos3': typeof Planos3Route
+  '/planosup': typeof PlanosupRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/register': typeof RegisterRoute
   '/vendas': typeof VendasRoute
@@ -250,6 +258,7 @@ export interface FileRoutesById {
   '/pagamento-bloqueado': typeof PagamentoBloqueadoRoute
   '/planos2': typeof Planos2Route
   '/planos3': typeof Planos3Route
+  '/planosup': typeof PlanosupRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/register': typeof RegisterRoute
   '/vendas': typeof VendasRoute
@@ -282,6 +291,7 @@ export interface FileRouteTypes {
     | '/pagamento-bloqueado'
     | '/planos2'
     | '/planos3'
+    | '/planosup'
     | '/redefinir-senha'
     | '/register'
     | '/vendas'
@@ -310,6 +320,7 @@ export interface FileRouteTypes {
     | '/pagamento-bloqueado'
     | '/planos2'
     | '/planos3'
+    | '/planosup'
     | '/redefinir-senha'
     | '/register'
     | '/vendas'
@@ -340,6 +351,7 @@ export interface FileRouteTypes {
     | '/pagamento-bloqueado'
     | '/planos2'
     | '/planos3'
+    | '/planosup'
     | '/redefinir-senha'
     | '/register'
     | '/vendas'
@@ -371,6 +383,7 @@ export interface RootRouteChildren {
   PagamentoBloqueadoRoute: typeof PagamentoBloqueadoRoute
   Planos2Route: typeof Planos2Route
   Planos3Route: typeof Planos3Route
+  PlanosupRoute: typeof PlanosupRoute
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
   RegisterRoute: typeof RegisterRoute
   VendasRoute: typeof VendasRoute
@@ -397,6 +410,13 @@ declare module '@tanstack/react-router' {
       path: '/redefinir-senha'
       fullPath: '/redefinir-senha'
       preLoaderRoute: typeof RedefinirSenhaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/planosup': {
+      id: '/planosup'
+      path: '/planosup'
+      fullPath: '/planosup'
+      preLoaderRoute: typeof PlanosupRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/planos3': {
@@ -651,6 +671,7 @@ const rootRouteChildren: RootRouteChildren = {
   PagamentoBloqueadoRoute: PagamentoBloqueadoRoute,
   Planos2Route: Planos2Route,
   Planos3Route: Planos3Route,
+  PlanosupRoute: PlanosupRoute,
   RedefinirSenhaRoute: RedefinirSenhaRoute,
   RegisterRoute: RegisterRoute,
   VendasRoute: VendasRoute,
