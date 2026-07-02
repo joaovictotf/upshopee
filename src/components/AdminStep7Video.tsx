@@ -297,25 +297,24 @@ function AdminStep7Video({
         `}</style>
 
         {/* Video player with LED border */}
-        <div style={{ padding: "3px", background: "linear-gradient(90deg, #EE4D2D, #FF8C5A, #F59E0B, #FF8C5A, #EE4D2D)", backgroundSize: "200% 100%", animation: "led-flow 3s linear infinite", borderRadius: "18px" }}>
+        <div className="mx-auto" style={{ maxWidth: "400px", padding: "3px", background: "linear-gradient(90deg, #EE4D2D, #FF8C5A, #F59E0B, #FF8C5A, #EE4D2D)", backgroundSize: "200% 100%", animation: "led-flow 3s linear infinite", borderRadius: "18px" }}>
           <div className="relative overflow-hidden rounded-2xl">
             <video ref={videoRef} src={currentVideo.videoPath} playsInline
-              className="w-full max-h-[70vh] rounded-2xl"
+              className="w-full aspect-[9/16] object-cover rounded-2xl"
               onError={() => toast.error("Erro ao carregar o vídeo.")}
             />
 
             {/* Custom play button overlay */}
-            {!isPlaying && (
-              <button
-                type="button"
-                onClick={() => { videoRef.current?.play().catch(() => {}); }}
-                className="absolute inset-0 flex items-center justify-center bg-black/20 hover:bg-black/30 transition-colors group"
-              >
-                <div className="flex h-20 w-20 items-center justify-center rounded-full backdrop-blur-sm" style={{ background: "rgba(238,77,45,0.15)", animation: "play-pulse 2.5s ease-in-out infinite" }}>
-                  <Play className="h-9 w-9 text-white fill-white ml-1" />
-                </div>
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => { videoRef.current?.play().catch(() => {}); }}
+              className="absolute inset-0 flex items-center justify-center bg-black/20 hover:bg-black/30 transition-colors group"
+              style={{ display: !isPlaying ? "flex" : "none" }}
+            >
+              <div className="flex h-20 w-20 items-center justify-center rounded-full backdrop-blur-sm" style={{ background: "rgba(238,77,45,0.15)", animation: "play-pulse 2.5s ease-in-out infinite" }}>
+                <Play className="h-9 w-9 text-white fill-white ml-1" />
+              </div>
+            </button>
           </div>
         </div>
 
