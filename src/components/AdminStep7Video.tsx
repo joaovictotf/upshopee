@@ -298,9 +298,9 @@ function AdminStep7Video({
 
         {/* Video player with LED border */}
         <div style={{ padding: "3px", background: "linear-gradient(90deg, #EE4D2D, #FF8C5A, #F59E0B, #FF8C5A, #EE4D2D)", backgroundSize: "200% 100%", animation: "led-flow 3s linear infinite", borderRadius: "18px" }}>
-          <div className="relative overflow-hidden rounded-2xl bg-gray-100">
+          <div className="relative overflow-hidden rounded-2xl">
             <video ref={videoRef} src={currentVideo.videoPath} playsInline
-              className="w-full max-h-[70vh] object-contain rounded-2xl"
+              className="w-full max-h-[70vh] rounded-2xl"
               onError={() => toast.error("Erro ao carregar o vídeo.")}
             />
 
