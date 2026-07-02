@@ -27,6 +27,7 @@ const TODAY_RESET_KEY = (email: string) => `shopesync.todayreset.${email.toLower
 const READY_DELAY_MS = 5 * 60 * 60 * 1000; // 5h após pronto para 1ª venda automática
 const AUTO_SALE_INTERVAL_MS = 5 * 60 * 60 * 1000; // ~5h entre vendas automáticas
 const REGULAR_COMMISSION_POOL = [12.9, 15.4, 18.7, 22.3, 24.9, 27.5, 29.9];
+const ADMIN_COMMISSION_POOL = [30, 45, 60, 85, 110, 150, 200, 250, 300];
 
 // GDM / presentation dashboard targets. Today is computed from real orders
 // (so it resets at midnight São Paulo time automatically), while the 7d / 30d
@@ -1153,8 +1154,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
     runPromotion();
 
-    if (isAdmin) return; // admin não recebe vendas automáticas; usa o botão raio
-
     const tryAutoSale = async () => {
       const now = Date.now();
       const eligibleProducts = data.meusProdutos.filter(
@@ -1164,7 +1163,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (lastAutoSaleAt && (now - lastAutoSaleAt) < AUTO_SALE_INTERVAL_MS) return;
 
       const product = eligibleProducts[Math.floor(Math.random() * eligibleProducts.length)];
-      const capped = REGULAR_COMMISSION_POOL[Math.floor(Math.random() * REGULAR_COMMISSION_POOL.length)];
+      const pool = isAdmin ? ADMIN_COMMISSION_POOL : REGULAR_COMMISSION_POOL;
+      const capped = pool[Math.floor(Math.random() * pool.length)];
 
       // Generate sale server-side via RPC — all devices see the same order.
       if (product.remoteId) {
