@@ -984,22 +984,24 @@ function Top5Block({
             return (
             <li key={it.productId} className="flex items-center gap-3 py-2.5">
               <span className="w-4 shrink-0 text-center text-sm font-bold text-[#EE4D2D]">{idx + 1}</span>
-              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-white p-1 ring-1 ring-border/60 overflow-hidden">
+              <div className="relative grid h-10 w-10 shrink-0 place-items-center rounded-md bg-white p-1 ring-1 ring-border/60 overflow-hidden">
                 {it.image ? (
                   <img
                     src={it.image}
                     alt={it.name}
                     className="max-h-full max-w-full object-contain"
                     loading="lazy"
+                    referrerPolicy="no-referrer"
+                    crossOrigin="anonymous"
                     onError={(e) => {
                       const t = e.currentTarget;
                       t.onerror = null;
                       t.style.display = "none";
                       const parent = t.parentElement;
                       if (parent && !parent.querySelector(".img-fallback")) {
-                        const fb = document.createElement("span");
-                        fb.className = "img-fallback text-[18px]";
-                        fb.textContent = "📦";
+                        const fb = document.createElement("div");
+                        fb.className = "img-fallback flex items-center justify-center absolute inset-0 bg-gray-100 rounded-md";
+                        fb.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>';
                         parent.appendChild(fb);
                       }
                     }}
