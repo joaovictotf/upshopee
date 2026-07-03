@@ -96,6 +96,14 @@ function NewDashboard() {
   const [range, setRange] = useState<RangeKey>("today");
   const [stamp, setStamp] = useState(() => formatStamp());
   const [salesHistory, setSalesHistory] = useState<SaleRecord[]>(() => isAdmin ? getOrCreateSalesHistory() : []);
+
+  // Lock random offsets for the session — these stay fixed across re-renders
+  const [randomOffsets] = useState(() => ({
+    unitsFactor: Math.random(),
+    visitorsExtra: Math.floor(Math.random() * 100),
+    viewsExtra: Math.floor(Math.random() * 200),
+  }));
+
   const addSaleRef = useRef<((amount: number) => void) | null>(null);
 
   // Keep addSaleRef current — solves stale closure
@@ -146,9 +154,9 @@ function NewDashboard() {
     return {
       totalCommission: Math.round(totalCommission * 100) / 100,
       orders,
-      units: orders + Math.floor(Math.random() * Math.max(1, Math.floor(orders * 0.3))),
+      units: orders + Math.floor(randomOffsets.unitsFactor * Math.max(1, Math.floor(orders * 0.3))),
       buyers: Math.max(1, Math.floor(orders * 0.6)),
-      visitors: Math.max(orders, orders * 18 + Math.floor(Math.random() * 100)),
+      visitors: Math.max(orders, orders * 18 + randomOffsets.visitorsExtra),
       views: 0, // computed below
       inRange,
     };
@@ -156,8 +164,8 @@ function NewDashboard() {
 
   // views depends on visitors (computed inside metrics)
   const displayViews = useMemo(() =>
-    Math.max(metrics.visitors, metrics.visitors * 3 + Math.floor(Math.random() * 200)),
-  [metrics.visitors]);
+    Math.max(metrics.visitors, metrics.visitors * 3 + randomOffsets.viewsExtra),
+  [metrics.visitors, randomOffsets.viewsExtra]);
 
   const displayConversionRate = useMemo(() =>
     metrics.orders === 0 || metrics.visitors === 0 ? "0.00" : ((metrics.orders / metrics.visitors) * 100).toFixed(2),

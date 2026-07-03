@@ -8,7 +8,10 @@ export type SaleRecord = {
   productImage: string;
 };
 
-const SESSION_KEY = "upshopee_dashboard_data";
+function getTodayKey(): string {
+  const now = new Date();
+  return `upshopee_dashboard_${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
 
 function generateHistoricalSales(): SaleRecord[] {
   const sales: SaleRecord[] = [];
@@ -54,10 +57,18 @@ function generateHistoricalSales(): SaleRecord[] {
 
 export function getOrCreateSalesHistory(): SaleRecord[] {
   try {
-    const stored = sessionStorage.getItem(SESSION_KEY);
+    const key = getTodayKey();
+    const stored = localStorage.getItem(key);
     if (stored) return JSON.parse(stored);
   } catch {}
   const data = generateHistoricalSales();
-  try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(data)); } catch {}
+  try {
+    const key = getTodayKey();
+    // Clear old keys to avoid localStorage bloat
+    Object.keys(localStorage)
+      .filter((k) => k.startsWith("upshopee_dashboard_"))
+      .forEach((k) => localStorage.removeItem(k));
+    localStorage.setItem(key, JSON.stringify(data));
+  } catch {}
   return data;
 }
