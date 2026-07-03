@@ -1,6 +1,5 @@
-import { createFileRoute, useNavigate, Navigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useApp } from "../lib/state";
-import { useShopSyncData, type Period } from "../hooks/useShopSyncData";
 import { brl, num } from "../lib/format";
 import { DashboardShell } from "../components/layout/DashboardShell";
 import {
@@ -14,6 +13,7 @@ import {
 } from "recharts";
 import { ArrowLeft, HelpCircle, Package, ChevronDown } from "lucide-react";
 import { useMemo, useState } from "react";
+import { getOrCreateSalesHistory, type SaleRecord } from "../lib/mock/dashboard-data";
 
 export const Route = createFileRoute("/dashboard/metricas")({
   component: MetricasPage,
@@ -30,86 +30,159 @@ function pad2(n: number) {
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 function MetricasPage() {
-  const { isAdmin, getCommissionSum, isTodayReset } = useApp();
-  const navigate = useNavigate();
+  const { privacy, isAdmin } = useApp();
   const [range, setRange] = useState<RangeKey>("today");
+  const salesHistory = useMemo(() => isAdmin ? getOrCreateSalesHistory() : [], [isAdmin]);
 
-  const period: Period = range === "today" ? "today" : range === "7d" ? "7days" : "30days";
-  const { totalOrders: hookOrders, topProducts } = useShopSyncData(period);
+  // ── Compute ALL metrics from salesHistory (same formulas as dashboard.index.tsx) ──
+  const metrics = useMemo(() => {
+    const spNow = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+    const todayStart = new Date(spNow.getFullYear(), spNow.getMonth(), spNow.getDate()).getTime();
+    const rangeStart = range === "today" ? todayStart
+      : range === "7d" ? todayStart - 7 * 24 * 60 * 60 * 1000
+      : todayStart - 30 * 24 * 60 * 60 * 1000;
 
-  // Commission and orders via getCommissionSum + useShopSyncData
-  // (data.salesOrders, lightning clicks included).
-  const totalCommission = getCommissionSum("shopee", range);
-  const totalOrders = hookOrders;
-  const conversionRate = totalOrders > 0
-    ? parseFloat(((totalOrders / Math.max(totalOrders * 18, 1)) * 100).toFixed(2))
-    : 0;
+    const inRange = salesHistory.filter((o) => o.saleDate >= rangeStart);
+    const totalCommission = Math.round(inRange.reduce((sum, o) => sum + o.netProfit, 0) * 100) / 100;
+    const orders = inRange.length;
+    const visitors = Math.max(orders, orders * 18 + Math.floor(Math.random() * 100));
+    const pageViews = Math.max(visitors, visitors * 3 + Math.floor(Math.random() * 200));
+    const conversionPct = orders === 0 || visitors === 0 ? "0.00" : ((orders / visitors) * 100).toFixed(2);
+    const avgPerOrder = orders > 0 ? totalCommission / orders : 0;
 
-  const visitors = Math.max(0, totalOrders * 18);
-  const pageViews = Math.max(0, totalOrders * 55);
-  const conversionPct = conversionRate.toFixed(2);
-  const avgPerOrder = totalOrders > 0 ? totalCommission / totalOrders : 0;
+    // Yesterday commission — filter salesHistory for yesterday's SP date
+    const yesterday = new Date(spNow);
+    yesterday.setDate(spNow.getDate() - 1);
+    const yesterdayStart = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate()).getTime();
+    const yesterdayEnd = yesterdayStart + 24 * 60 * 60 * 1000;
+    const yesterdayCommission = salesHistory
+      .filter((o) => o.saleDate >= yesterdayStart && o.saleDate < yesterdayEnd)
+      .reduce((sum, o) => sum + o.netProfit, 0);
 
-  const todayCommission = getCommissionSum("shopee", "today");
-  const todayFlat = isTodayReset && todayCommission === 0;
+    return { totalCommission, orders, visitors, pageViews, conversionPct, avgPerOrder, yesterdayCommission, inRange };
+  }, [salesHistory, range]);
 
-  // Yesterday comparisons — derived from real data.
-  const yesterdayCommission = getCommissionSum("shopee", "today") > 0
-    ? (() => { const d7 = getCommissionSum("shopee", "7d"); const td = getCommissionSum("shopee", "today"); return (d7 - td) / 6; })()
-    : 0;
+  // ── Top 5 products (same grouping logic as dashboard.index.tsx) ──
+  const topProducts = useMemo(() => {
+    const map = new Map<string, { name: string; image: string; orders: number; revenue: number }>();
+    for (const o of metrics.inRange) {
+      const e = map.get(o.productId);
+      if (e) { e.orders++; e.revenue += o.netProfit; }
+      else { map.set(o.productId, { name: o.productName, image: o.productImage, orders: 1, revenue: o.netProfit }); }
+    }
+    return Array.from(map.entries())
+      .sort((a, b) => b[1].orders - a[1].orders)
+      .map(([id, d]) => ({ productId: id, ...d }));
+  }, [metrics.inRange]);
 
-  // Role guard
-  if (!isAdmin) return <Navigate to="/dashboard/" />;
+  // ── Chart data (same logic as NewSalesChart in dashboard.index.tsx) ──
+  const chartData = useMemo(() => {
+    if (range === "today") {
+      const now = new Date();
+      const spTs = now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" });
+      const sp = new Date(spTs);
+      const spH = sp.getHours();
+      const spToday = `${sp.getFullYear()}-${String(sp.getMonth() + 1).padStart(2, "0")}-${String(sp.getDate()).padStart(2, "0")}`;
+      const y = new Date(sp); y.setDate(sp.getDate() - 1);
+      const spYest = `${y.getFullYear()}-${String(y.getMonth() + 1).padStart(2, "0")}-${String(y.getDate()).padStart(2, "0")}`;
 
-  // Flat metrics — all derived from useShopSyncData (single source of truth)
-  const METRICS = [
+      const arr: { label: string; hoje: number | null; ontem: number }[] = [];
+      for (let i = 0; i < 24; i++) {
+        let hojeSum = 0;
+        let ontemSum = 0;
+        for (const o of salesHistory) {
+          const oSp = new Date(o.saleDate).toLocaleString("en-US", { timeZone: "America/Sao_Paulo" });
+          const oD = new Date(oSp);
+          const oKey = `${oD.getFullYear()}-${String(oD.getMonth() + 1).padStart(2, "0")}-${String(oD.getDate()).padStart(2, "0")}`;
+          if (oD.getHours() === i) {
+            if (oKey === spToday) hojeSum += o.netProfit;
+            else if (oKey === spYest) ontemSum += o.netProfit;
+          }
+        }
+        const hoje = i <= spH ? Math.round(hojeSum) : null;
+        arr.push({ label: pad2(i), hoje, ontem: Math.round(ontemSum) });
+      }
+      return arr;
+    }
+    // 7d / 30d — bucket by SP date key
+    const n = range === "7d" ? 7 : 30;
+    const spNow = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+    const keys: string[] = [];
+    const labels: string[] = [];
+    for (let i = n - 1; i >= 0; i--) {
+      const d = new Date(spNow);
+      d.setDate(spNow.getDate() - i);
+      keys.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`);
+      labels.push(`${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}`);
+    }
+    const daySums: Record<string, number> = {};
+    for (const o of salesHistory) {
+      const oSp = new Date(o.saleDate).toLocaleString("en-US", { timeZone: "America/Sao_Paulo" });
+      const oD = new Date(oSp);
+      const oKey = `${oD.getFullYear()}-${String(oD.getMonth() + 1).padStart(2, "0")}-${String(oD.getDate()).padStart(2, "0")}`;
+      daySums[oKey] = (daySums[oKey] || 0) + o.netProfit;
+    }
+    return keys.map((k, i) => ({
+      label: labels[i],
+      hoje: Math.round(daySums[k] || 0),
+      ontem: Math.round(daySums[keys[Math.min(i + 1, keys.length - 1)]] || 0),
+    }));
+  }, [range, salesHistory]);
+
+  // Yesterday's date label for chart legend
+  const spNow = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+  const yesterday = new Date(spNow);
+  yesterday.setDate(spNow.getDate() - 1);
+  const yesterdayLabel = `${pad2(yesterday.getDate())}/${pad2(yesterday.getMonth() + 1)}/${yesterday.getFullYear()}`;
+
+  function rangeLabel(r: RangeKey): string {
+    switch (r) { case "today": return "hoje"; case "7d": return "7 dias"; case "30d": return "30 dias"; default: return ""; }
+  }
+
+  const FLAT_METRICS = [
     {
       key: "vendas",
       label: "Vendas",
-      value: brl(totalCommission),
-      sub: `Ontem: ${brl(yesterdayCommission)}`,
+      value: brl(metrics.totalCommission),
+      sub: `Ontem: ${brl(metrics.yesterdayCommission)}`,
       orange: false,
     },
     {
       key: "pedidos",
       label: "Pedidos",
-      value: num(totalOrders),
-      sub: `Período: ${periodLabel(period)}`,
+      value: num(metrics.orders),
+      sub: `Período: ${rangeLabel(range)}`,
       orange: false,
     },
     {
       key: "conversao",
       label: "Taxa de Conversão",
-      value: `${conversionPct}%`,
-      sub: `Visitantes: ${num(visitors)}`,
+      value: `${metrics.conversionPct}%`,
+      sub: `Visitantes: ${num(metrics.visitors)}`,
       orange: false,
     },
     {
       key: "avg",
       label: "Vendas por Pedido",
-      value: brl(avgPerOrder),
-      sub: `Total: ${num(totalOrders)} pedidos`,
+      value: brl(metrics.avgPerOrder),
+      sub: `Total: ${num(metrics.orders)} pedidos`,
       orange: false,
     },
     {
       key: "visitantes",
       label: "Visitantes",
-      value: num(visitors),
-      sub: `Estimado: ${num(totalOrders)} pedidos × 18`,
+      value: num(metrics.visitors),
+      sub: `Estimado: ${num(metrics.orders)} pedidos × 18`,
       orange: true,
     },
     {
       key: "views",
       label: "Visualizações da Página",
-      value: num(pageViews),
-      sub: `Estimado: ${num(totalOrders)} pedidos × 55`,
+      value: num(metrics.pageViews),
+      sub: `Estimado: ${num(metrics.orders)} pedidos × 55`,
       orange: false,
     },
   ];
-
-  function periodLabel(p: Period): string {
-    switch (p) { case "today": return "hoje"; case "7days": return "7 dias"; case "30days": return "30 dias"; default: return "total"; }
-  }
 
   const SHOPEE_TABS = [
     "Painel",
@@ -130,13 +203,13 @@ function MetricasPage() {
     <DashboardShell title="" subtitle="">
       {/* ── Action row: back + live monitor link ─── */}
       <div className="mb-1 flex items-center justify-between">
-        <button
-          onClick={() => navigate({ to: "/dashboard/" })}
+        <Link
+          to="/dashboard/"
           className="flex items-center gap-1 text-[13px] text-gray-500 transition hover:text-[#EE4D2D]"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           Painel
-        </button>
+        </Link>
         <span
           className="cursor-default text-[12px]"
           style={{ color: SHOPEE_RED }}
@@ -222,12 +295,12 @@ function MetricasPage() {
           className="flex overflow-x-auto bg-white"
           style={{ border: `1px solid ${BORDER}`, borderTop: "none" }}
         >
-          {METRICS.map((m, idx) => (
+          {FLAT_METRICS.map((m, idx) => (
             <div
               key={m.key}
               className="min-w-[140px] flex-1 px-5 py-4"
               style={
-                idx < METRICS.length - 1
+                idx < FLAT_METRICS.length - 1
                   ? { borderRight: `1px solid ${BORDER}` }
                   : undefined
               }
@@ -287,19 +360,101 @@ function MetricasPage() {
                   className="inline-block h-2 w-2 rounded-full"
                   style={{ background: SHOPEE_RED }}
                 />
-                Vendas
+                Hoje
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="inline-block h-2 w-2 rounded-full bg-blue-400" />
-                Visitantes
+                <span
+                  className="inline-block h-2 w-2 rounded-full bg-teal-400"
+                  style={{ background: "#14B8A6" }}
+                />
+                {yesterdayLabel}
               </span>
             </div>
-            <span className="text-[11px]" style={{ color: "#bbb" }}>
-              Métricas Selecionadas: 2/4
-            </span>
           </div>
         </div>
-        <SalesAreaChart range={range} todayFlat={todayFlat} />
+        <div className="h-56">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart
+              data={chartData}
+              margin={{ top: 4, right: 8, bottom: 0, left: -10 }}
+            >
+              <defs>
+                <linearGradient id="gradHoje" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={SHOPEE_RED} stopOpacity={0.12} />
+                  <stop offset="95%" stopColor={SHOPEE_RED} stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="gradOntem" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#14B8A6" stopOpacity={0.10} />
+                  <stop offset="95%" stopColor="#14B8A6" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid
+                stroke="#F0F0F0"
+                vertical={false}
+                strokeDasharray="0"
+              />
+              <XAxis
+                dataKey="label"
+                stroke="#ccc"
+                fontSize={10}
+                tickLine={false}
+                axisLine={{ stroke: "#E8E8E8" }}
+                interval={
+                  range === "30d" ? 3 : range === "today" ? 1 : 0
+                }
+                tick={{ fill: "#999", fontSize: 10 }}
+              />
+              <YAxis
+                stroke="transparent"
+                fontSize={10}
+                tickLine={false}
+                axisLine={false}
+                width={32}
+                tick={{ fill: "#bbb", fontSize: 10 }}
+              />
+              <Tooltip
+                contentStyle={{
+                  background: "#fff",
+                  border: "1px solid #E8E8E8",
+                  borderRadius: 4,
+                  fontSize: 12,
+                  color: "#333",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                  padding: "6px 10px",
+                }}
+                labelStyle={{ color: "#666", fontWeight: 500, marginBottom: 4 }}
+                formatter={(v: number | string, name: string) => [
+                  Number(v ?? 0).toLocaleString("pt-BR"),
+                  name === "hoje" ? "Hoje" : "Ontem",
+                ]}
+              />
+              {/* Ontem — teal dashed, minimal fill */}
+              <Area
+                type="monotone"
+                dataKey="ontem"
+                stroke="#14B8A6"
+                strokeWidth={1.5}
+                strokeDasharray="5 3"
+                fill="url(#gradOntem)"
+                dot={false}
+                activeDot={{ r: 3, fill: "#14B8A6", strokeWidth: 0 }}
+                isAnimationActive={false}
+              />
+              {/* Hoje — orange solid */}
+              <Area
+                type="monotone"
+                dataKey="hoje"
+                stroke={SHOPEE_RED}
+                strokeWidth={1.8}
+                fill="url(#gradHoje)"
+                dot={false}
+                activeDot={{ r: 3, fill: SHOPEE_RED, strokeWidth: 0 }}
+                connectNulls
+                isAnimationActive={false}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
       </div>
 
       {/* ── Rankings section ─── */}
@@ -353,7 +508,7 @@ function MetricasPage() {
             </span>
           </div>
 
-          {/* Product rows */}
+          {/* Product rows — data from shared fake history */}
           <div>
             {topProducts.length === 0 ? (
               <div className="px-4 py-8 text-center">
@@ -386,6 +541,8 @@ function MetricasPage() {
                         alt={row.name}
                         className="max-h-full max-w-full object-contain"
                         loading="lazy"
+                        referrerPolicy="no-referrer"
+                        crossOrigin="anonymous"
                         onError={(e) => {
                           e.currentTarget.style.display = "none";
                         }}
@@ -410,7 +567,7 @@ function MetricasPage() {
                       fontFamily: "Arial, Helvetica, sans-serif",
                     }}
                   >
-                    {brl(row.commission)}
+                    {brl(row.revenue)}
                   </div>
                 </div>
               ))
@@ -418,7 +575,7 @@ function MetricasPage() {
           </div>
         </div>
 
-        {/* Ranking de Categorias */}
+        {/* Ranking de Categorias — decorative / unchanged */}
         <div className="bg-white" style={{ border: `1px solid ${BORDER}` }}>
           <div
             className="flex items-center justify-between px-4 py-3"
@@ -478,146 +635,5 @@ function MetricasPage() {
         </div>
       </div>
     </DashboardShell>
-  );
-}
-
-// ─── Area chart — exact same data logic, Shopee-style visuals ─────────────────
-function SalesAreaChart({ range, todayFlat }: { range: RangeKey; todayFlat?: boolean }) {
-  const { data } = useApp();
-  const chartData = useMemo(() => {
-    if (range === "today") {
-      const now = new Date();
-      const spTs = now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" });
-      const sp = new Date(spTs);
-      const spH = sp.getHours();
-      const spToday = `${sp.getFullYear()}-${String(sp.getMonth() + 1).padStart(2, "0")}-${String(sp.getDate()).padStart(2, "0")}`;
-      const y = new Date(sp); y.setDate(sp.getDate() - 1);
-      const spYest = `${y.getFullYear()}-${String(y.getMonth() + 1).padStart(2, "0")}-${String(y.getDate()).padStart(2, "0")}`;
-
-      return Array.from({ length: 24 }, (_, i) => {
-        let hojeSum = 0;
-        let ontemSum = 0;
-        for (const o of data.salesOrders) {
-          const oSp = new Date(o.saleDate).toLocaleString("en-US", { timeZone: "America/Sao_Paulo" });
-          const oD = new Date(oSp);
-          const oKey = `${oD.getFullYear()}-${String(oD.getMonth() + 1).padStart(2, "0")}-${String(oD.getDate()).padStart(2, "0")}`;
-          if (oD.getHours() === i) {
-            if (oKey === spToday) hojeSum += o.netProfit;
-            else if (oKey === spYest) ontemSum += o.netProfit;
-          }
-        }
-        return {
-          label: pad2(i) + ":00",
-          atual: i <= spH ? (todayFlat ? 0 : Math.round(hojeSum)) : null,
-          anterior: Math.round(ontemSum),
-        };
-      });
-    }
-    // 7d / 30d — bucket by SP date key
-    const n = range === "7d" ? 7 : 30;
-    const spNow = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
-    const keys: string[] = [];
-    const labels: string[] = [];
-    for (let i = n - 1; i >= 0; i--) {
-      const d = new Date(spNow);
-      d.setDate(spNow.getDate() - i);
-      keys.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`);
-      labels.push(`${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}`);
-    }
-    const daySums: Record<string, number> = {};
-    for (const o of data.salesOrders) {
-      const oSp = new Date(o.saleDate).toLocaleString("en-US", { timeZone: "America/Sao_Paulo" });
-      const oD = new Date(oSp);
-      const oKey = `${oD.getFullYear()}-${String(oD.getMonth() + 1).padStart(2, "0")}-${String(oD.getDate()).padStart(2, "0")}`;
-      daySums[oKey] = (daySums[oKey] || 0) + o.netProfit;
-    }
-    return keys.map((k, i) => ({
-      label: labels[i],
-      atual: Math.round(daySums[k] || 0),
-      anterior: Math.round(daySums[keys[Math.min(i + 1, keys.length - 1)]] || 0),
-    }));
-  }, [range, todayFlat, data.salesOrders]);
-
-  return (
-    <div className="h-56">
-      <ResponsiveContainer width="100%" height="100%">
-        <AreaChart
-          data={chartData}
-          margin={{ top: 4, right: 8, bottom: 0, left: -10 }}
-        >
-          <defs>
-            <linearGradient id="gradAtual" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor={SHOPEE_RED} stopOpacity={0.12} />
-              <stop offset="95%" stopColor={SHOPEE_RED} stopOpacity={0} />
-            </linearGradient>
-            <linearGradient id="gradAnterior" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#60A5FA" stopOpacity={0.10} />
-              <stop offset="95%" stopColor="#60A5FA" stopOpacity={0} />
-            </linearGradient>
-          </defs>
-          <CartesianGrid
-            stroke="#F0F0F0"
-            vertical={false}
-            strokeDasharray="0"
-          />
-          <XAxis
-            dataKey="label"
-            stroke="#ccc"
-            fontSize={10}
-            tickLine={false}
-            axisLine={{ stroke: "#E8E8E8" }}
-            interval={
-              range === "30d" ? 3 : range === "today" ? 5 : 0
-            }
-            tick={{ fill: "#999", fontSize: 10 }}
-          />
-          <YAxis
-            stroke="transparent"
-            fontSize={10}
-            tickLine={false}
-            axisLine={false}
-            width={32}
-            tick={{ fill: "#bbb", fontSize: 10 }}
-          />
-          <Tooltip
-            contentStyle={{
-              background: "#fff",
-              border: "1px solid #E8E8E8",
-              borderRadius: 4,
-              fontSize: 12,
-              color: "#333",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-              padding: "6px 10px",
-            }}
-            labelStyle={{ color: "#666", fontWeight: 500, marginBottom: 4 }}
-            formatter={(v: number | string, name: string) => [
-              Number(v ?? 0).toLocaleString("pt-BR"),
-              name === "atual" ? "Período atual" : "Período anterior",
-            ]}
-          />
-          <Area
-            type="monotone"
-            dataKey="anterior"
-            stroke="#60A5FA"
-            strokeWidth={1.5}
-            fill="url(#gradAnterior)"
-            dot={false}
-            activeDot={{ r: 3, fill: "#60A5FA", strokeWidth: 0 }}
-            isAnimationActive={false}
-          />
-          <Area
-            type="monotone"
-            dataKey="atual"
-            stroke={SHOPEE_RED}
-            strokeWidth={1.8}
-            fill="url(#gradAtual)"
-            dot={false}
-            activeDot={{ r: 3, fill: SHOPEE_RED, strokeWidth: 0 }}
-            connectNulls
-            isAnimationActive={false}
-          />
-        </AreaChart>
-      </ResponsiveContainer>
-    </div>
   );
 }
