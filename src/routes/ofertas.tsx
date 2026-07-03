@@ -229,7 +229,7 @@ section{padding:90px 0;position:relative}
 .plan{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:34px 30px;display:flex;flex-direction:column;position:relative}
 .plan .tag{font-size:.83rem;color:var(--muted);margin:6px 0 20px}
 .plan h3{font-size:1.35rem}
-.old{color:var(--muted-2);font-size:1rem;position:relative;display:inline-block}
+.old{color:var(--muted-2);font-size:1rem;position:relative;display:inline-block;width:fit-content}
 .old::after{content:'';position:absolute;left:-3%;top:52%;height:2px;width:0;background:var(--accent);transition:width .4s ease .3s}
 .old.cut::after{width:106%}
 .price{font-family:var(--font-d);font-weight:800;font-size:2.6rem;margin:4px 0 2px}
@@ -247,7 +247,7 @@ section{padding:90px 0;position:relative}
 .ribbon{position:absolute;top:-15px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:.72rem;font-weight:700;letter-spacing:.06em;color:#fff;background:var(--grad);padding:7px 18px;border-radius:99px;box-shadow:0 6px 20px rgba(244,84,30,.4)}
 .badge{display:inline-block;font-size:.68rem;font-weight:700;color:#fff;background:var(--grad);padding:4px 11px;border-radius:99px;margin-left:10px;vertical-align:middle}
 .sub-line{font-size:.82rem;color:var(--muted)}
-.pill-pay{display:inline-block;font-size:.82rem;color:#ffb597;border:1px solid rgba(244,84,30,.4);background:rgba(244,84,30,.08);border-radius:99px;padding:6px 14px;margin:10px 0 4px}
+.pill-pay{display:inline-block;width:fit-content;font-size:.82rem;color:#ffb597;border:1px solid rgba(244,84,30,.4);background:rgba(244,84,30,.08);border-radius:99px;padding:6px 14px;margin:10px 0 4px}
 .vagas{display:flex;align-items:center;gap:8px;justify-content:center;font-size:.85rem;font-weight:600;color:#ffb597;border:1px solid rgba(244,84,30,.45);border-radius:99px;padding:10px;margin:16px 0 4px;animation:heart 1.5s ease-in-out infinite}
 @keyframes heart{0%,100%{transform:scale(1)}50%{transform:scale(1.025)}}
 .under-cta{text-align:center;font-size:.78rem;color:var(--muted-2);margin-top:12px}
