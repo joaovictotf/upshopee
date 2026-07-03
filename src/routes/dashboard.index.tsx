@@ -145,10 +145,10 @@ function generateHistoricalSales(): SaleRecord[] {
 // ---------------------------------------------------------------------------
 
 function NewDashboard() {
-  const { privacy } = useApp();
+  const { privacy, isAdmin } = useApp();
   const [range, setRange] = useState<RangeKey>("today");
   const [stamp, setStamp] = useState(() => formatStamp());
-  const [salesHistory, setSalesHistory] = useState<SaleRecord[]>(() => generateHistoricalSales());
+  const [salesHistory, setSalesHistory] = useState<SaleRecord[]>(() => isAdmin ? generateHistoricalSales() : []);
   const addSaleRef = useRef<((amount: number) => void) | null>(null);
 
   // Keep addSaleRef current — solves stale closure
