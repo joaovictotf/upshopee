@@ -345,7 +345,6 @@ function OfertasPage() {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [exitOpen, setExitOpen] = useState(false);
   const [stickyShow, setStickyShow] = useState(false);
-  const [logoOk, setLogoOk] = useState(true);
 
   useEffect(() => {
     const root = rootRef.current;
@@ -694,23 +693,14 @@ function OfertasPage() {
       {/* ═══════════ VSL ═══════════ */}
       <section id="vsl">
         <div className="wrap">
-          <p className="vsl-title rv" data-dir="up">Assista e entenda por que isso <b>se paga sozinho</b></p>
+          <p className="vsl-title rv" data-dir="up">Conheça o funcionamento da UpShopee por este vídeo</p>
           <div className="vsl-panel" id="vslPanel">
-            {/* ════════════════════════════════════════════════════════
-              VSL_VIDEO — QUANDO O VÍDEO ESTIVER PRONTO:
-              1. Apague o bloco {logoOk ? ... : ...} logo abaixo
-              2. Descomente a tag <video> e coloque a URL do arquivo
-              O script já cuida de: autoplay mudo quando visível, pausa
-              fora da tela e botão "ativar som" (reinicia com áudio).
-            ═════════════════════════════════════════════════════════ */}
+            <video id="vsl-video" src="/vsl/vsl.mp4" playsInline muted preload="metadata"
+              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", zIndex: 2 }}
+            />
             <div className="vsl-ph">
-              {logoOk ? (
-                <img src={LOGO} alt="UpShopee" onError={() => setLogoOk(false)} />
-              ) : (
-                <div className="fallback grad-text">UpShopee</div>
-              )}
+              <img src={LOGO} alt="UpShopee" onError={(e: any) => { e.currentTarget.outerHTML = '<div class="fallback" style="background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;font-family:var(--font-d);font-weight:800;font-size:2rem;animation:breathe 3.2s ease-in-out infinite">UpShopee</div>'; }} />
             </div>
-            {/* <video id="vsl-video" src="{{VSL_VIDEO_URL}}" playsInline muted preload="metadata" /> */}
             <button id="unmute">🔊 Clique para ativar o som</button>
           </div>
           <p className="vsl-micro">🔒 Pagamento 100% seguro &nbsp;·&nbsp; Garantia de 7 dias</p>
