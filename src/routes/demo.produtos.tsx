@@ -84,7 +84,7 @@ function DemoProdutos() {
             </p>
             <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
               <Link
-                to="/planosup"
+                to="/ofertas"
                 className="inline-flex items-center justify-center rounded-lg px-6 py-3 text-sm font-bold text-white transition hover:brightness-90"
                 style={{ background: "#EE4D2D" }}
               >
