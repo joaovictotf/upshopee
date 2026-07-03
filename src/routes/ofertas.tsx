@@ -16,8 +16,7 @@ const CHECKOUT_MENSAL = "https://go.ironpayapp.com.br/zbu0e9tvo9";
 const CHECKOUT_VITALICIO = "https://go.ironpayapp.com.br/wqqa7uihfe";
 const LOGO = "/brand/logo.png";
 
-/* Espelha o <script> inline do <head> original: liga o gate ".js" das animações antes do primeiro paint */
-if (typeof document !== "undefined") document.documentElement.classList.add("js");
+/* A classe "js" é aplicada via useEffect no componente (evita crash SSR) */
 
 const CSS = `
 /* ═══════════ BASE ═══════════ */
@@ -347,6 +346,9 @@ function OfertasPage() {
   const [stickyShow, setStickyShow] = useState(false);
 
   useEffect(() => {
+    /* Liga o gate ".js" das animações (originalmente no <head> inline, movido para cá para evitar crash SSR) */
+    document.documentElement.classList.add("js");
+
     const root = rootRef.current;
     if (!root) return;
 
