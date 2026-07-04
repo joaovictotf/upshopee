@@ -283,7 +283,7 @@ function PolicyModal({ onAccept }: { onAccept: () => void }) {
           <p className="mb-2 text-xs text-[var(--muted)]">
             {done ? "Leitura concluída" : `Leia com atenção — ${secondsLeft}s restantes`}
           </p>
-          <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
+          <div className="h-2 w-full overflow-hidden rounded-full bg-[var(--muted-bg)]">
             <div
               className={`h-full rounded-full transition-none ${done ? "bg-emerald-500" : "bg-[var(--accent)]"}`}
               style={{ width: `${pct}%` }}
@@ -308,7 +308,7 @@ function PolicyModal({ onAccept }: { onAccept: () => void }) {
           className={`w-full rounded-lg py-3 text-sm font-semibold transition-all ${
             enabled
               ? "cursor-pointer bg-[var(--accent)] text-white hover:opacity-90"
-              : "cursor-not-allowed bg-gray-200 text-[var(--muted)]"
+              : "cursor-not-allowed bg-[var(--muted-bg)] text-[var(--muted)]"
           }`}
         >
           CONTINUAR
@@ -431,7 +431,7 @@ function NewView({
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                 roiPack.id === p.id
                   ? "bg-[var(--accent)] text-white"
-                  : "bg-[var(--muted-bg)] text-gray-600 hover:bg-gray-200"
+                  : "bg-[var(--muted-bg)] text-[var(--muted)] hover:bg-[var(--muted-bg)]"
               }`}
             >
               {p.name}
@@ -528,7 +528,7 @@ function NewView({
                 />
               </button>
               {openFaq === i && (
-                <div className="px-5 pb-4 text-[var(--muted)] text-sm leading-relaxed border-t border-gray-100">
+                <div className="px-5 pb-4 text-[var(--muted)] text-sm leading-relaxed border-t border-[var(--border)]">
                   {faq.a}
                 </div>
               )}
@@ -645,15 +645,15 @@ function ActivationDialog({ selectedPack, stage, setSelectedPack, setStage, goTo
             </DialogHeader>
             <div className="space-y-4">
               <div className="rounded-xl border border-[var(--border)] bg-[var(--muted-bg)] p-4">
-                <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-800">
+                <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-[var(--text)]">
                   <ShieldCheck className="h-4 w-4" /> Garantia condicional
                 </div>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-[var(--muted)]">
                   Caso a campanha não gere retorno mínimo equivalente ao dobro do valor investido em comissões registradas no painel, você poderá solicitar a devolução do valor investido, conforme as regras da garantia condicional.
                 </p>
               </div>
               <div className="rounded-xl border border-[var(--border)] bg-[var(--muted-bg)] p-4">
-                <div className="text-xs font-semibold text-gray-600">Exemplo prático</div>
+                <div className="text-xs font-semibold text-[var(--muted)]">Exemplo prático</div>
                 <p className="mt-1 text-sm text-[var(--text)]">
                   Investindo <strong>{brl(selectedPack.price)}</strong>, o retorno mínimo acompanhado será de <strong>{selectedPack.guaranteeMin}</strong> em comissões.
                 </p>
@@ -680,7 +680,7 @@ function ActivationDialog({ selectedPack, stage, setSelectedPack, setStage, goTo
               <DialogTitle className="text-center text-lg font-semibold">Como funciona?</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-[var(--muted)]">
                 A equipe da UpShopee organiza a divulgação dos produtos que você escolheu, aumentando a visibilidade, o alcance e as chances de venda dentro da sua operação.
               </p>
               <ol className="space-y-2">
@@ -693,7 +693,7 @@ function ActivationDialog({ selectedPack, stage, setSelectedPack, setStage, goTo
                     <div className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--muted-bg)] text-[var(--text)]">
                       {s.icon}
                     </div>
-                    <div className="text-sm font-medium text-gray-800">
+                    <div className="text-sm font-medium text-[var(--text)]">
                       <span className="mr-2 text-xs text-[var(--muted)]">{i + 1}.</span>
                       {s.t}
                     </div>
@@ -740,8 +740,8 @@ function ActivationDialog({ selectedPack, stage, setSelectedPack, setStage, goTo
                   </div>
                 </div>
               </div>
-              <div className="rounded-xl border border-[var(--border)] bg-[var(--muted-bg)] p-3 text-xs text-gray-600">
-                <div className="mb-1 flex items-center gap-1.5 font-semibold text-gray-800">
+              <div className="rounded-xl border border-[var(--border)] bg-[var(--muted-bg)] p-3 text-xs text-[var(--muted)]">
+                <div className="mb-1 flex items-center gap-1.5 font-semibold text-[var(--text)]">
                   <ShieldCheck className="h-3.5 w-3.5" /> Garantia condicional
                 </div>
                 Se não houver retorno mínimo equivalente ao dobro do valor investido em comissões registradas no painel, você poderá solicitar a devolução do valor investido, conforme as regras da garantia.
@@ -833,14 +833,14 @@ function LegacyView({
         <h3 className="text-base font-semibold text-[var(--text)] mb-5">Perguntas frequentes</h3>
         <div className="space-y-5">
           <div>
-            <div className="text-sm font-semibold text-gray-800">A campanha garante vendas?</div>
+            <div className="text-sm font-semibold text-[var(--text)]">A campanha garante vendas?</div>
             <p className="mt-1 text-sm text-[var(--muted)]">Sim, a campanha possui garantia condicional. Caso o pacote contratado não gere nenhuma venda dentro do período de acompanhamento definido, você poderá solicitar a devolução do valor investido nesse pack, conforme as regras da garantia.</p>
             <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--muted-bg)] px-2.5 py-0.5 text-[11px] font-semibold text-[var(--text)]">
               <ShieldCheck className="h-3 w-3" /> Garantia condicional
             </div>
           </div>
-          <div className="border-t border-gray-100 pt-5">
-            <div className="text-sm font-semibold text-gray-800">Qual o melhor pack para começar?</div>
+          <div className="border-t border-[var(--border)] pt-5">
+            <div className="text-sm font-semibold text-[var(--text)]">Qual o melhor pack para começar?</div>
             <p className="mt-1 text-sm text-[var(--muted)]">O melhor pack para começar é o Pack Aceleração de R$ 64,90. Ele oferece um bom equilíbrio entre investimento, alcance e potencial de vendas, sendo uma das melhores opções para quem quer começar a anunciar com mais força.</p>
           </div>
         </div>
@@ -925,7 +925,7 @@ function LegacyStep({ icon, label, sub }: { icon: React.ReactNode; label: string
   return (
     <div className="flex w-40 flex-col items-center text-center">
       <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-[var(--muted-bg)]">{icon}</div>
-      <p className="mt-3 text-sm font-semibold text-gray-800">{label}</p>
+      <p className="mt-3 text-sm font-semibold text-[var(--text)]">{label}</p>
       <p className="mt-1 text-xs text-[var(--muted)]">{sub}</p>
     </div>
   );
@@ -946,7 +946,7 @@ function BoostPerformanceSection({ boost }: { boost: BoostInfo | null }) {
       ? { text: "Meta mínima de retorno atingida.", tone: "text-emerald-700 bg-emerald-50 border-emerald-200" }
       : boost.completed
         ? { text: "Elegível para análise da garantia condicional.", tone: "text-amber-700 bg-amber-50 border-amber-200" }
-        : { text: "A campanha ainda está em acompanhamento.", tone: "text-gray-600 bg-[var(--muted-bg)] border-[var(--border)]" };
+        : { text: "A campanha ainda está em acompanhamento.", tone: "text-[var(--muted)] bg-[var(--muted-bg)] border-[var(--border)]" };
   const retornoLabel =
     boost.eventsReleased === 0
       ? "aguardando primeiras vendas"
@@ -1074,7 +1074,7 @@ function PixQrModal({
             <div className="mt-6 flex w-full gap-3">
               <button
                 onClick={onClose}
-                className="flex-1 rounded-lg border border-[var(--border)] py-2.5 text-sm font-semibold text-gray-600 hover:bg-[var(--muted-bg)]"
+                className="flex-1 rounded-lg border border-[var(--border)] py-2.5 text-sm font-semibold text-[var(--muted)] hover:bg-[var(--muted-bg)]"
               >
                 Fechar
               </button>
@@ -1155,7 +1155,7 @@ function PixQrModal({
 
             {/* Auto-activation message */}
             <div className="mb-4 rounded-lg border border-[var(--border)] bg-[var(--muted-bg)] px-4 py-3 text-center">
-              <p className="text-xs text-gray-600">
+              <p className="text-xs text-[var(--muted)]">
                 Após o pagamento, seu anúncio será{" "}
                 <strong>ativado automaticamente</strong>.
               </p>

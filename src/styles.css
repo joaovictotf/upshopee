@@ -310,8 +310,9 @@
   color-scheme: light;
 }
 .light-scope {
-  background-color: #FFFFFF;
+  background-color: #F7F7F5;
   color: #17171A;
+  min-height: 100dvh;
 }
 
 /* ── Keep existing animations ── */
