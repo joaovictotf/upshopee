@@ -129,7 +129,7 @@ function ShopeeView({ items, active, setActive, onFinish }: ViewProps) {
   const idleTextColor = validated ? "text-emerald-700"
     : rejected ? "text-red-600"
     : shopee?.status === "Conexão em análise" || shopee?.status === "Conexão solicitada" || shopee?.status === "Em análise" ? "text-amber-700"
-    : "text-gray-500";
+    : "text-[var(--muted)]";
 
   // ── Stats derived from real data ──
   const totalProducts = data?.salesOrders?.length ?? 127;
@@ -138,15 +138,15 @@ function ShopeeView({ items, active, setActive, onFinish }: ViewProps) {
 
   if (!shopee) return (
     <DashboardShell title="Conectar Contas" subtitle="Vincule suas contas de marketplace para sincronizar produtos e pedidos.">
-      <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-white px-6 py-16 text-center">
+      <div className="page-enter" className="flex flex-col items-center justify-center rounded-[16px] border border-dashed border-[var(--border)] bg-[var(--surface)] px-6 py-16 text-center">
         <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-orange-50">
-          <ShoppingBag className="h-5 w-5 text-[#EE4D2D]" />
+          <ShoppingBag className="h-5 w-5 text-[var(--accent)]" />
         </div>
-        <p className="text-sm font-medium text-gray-700">Nenhuma integração disponível no momento.</p>
-        <p className="mt-1 text-xs text-gray-400">Tente novamente mais tarde ou entre em contato com o suporte.</p>
+        <p className="text-sm font-medium text-[var(--text)]">Nenhuma integração disponível no momento.</p>
+        <p className="mt-1 text-xs text-[var(--muted)]">Tente novamente mais tarde ou entre em contato com o suporte.</p>
         <button
           onClick={() => window.location.reload()}
-          className="mt-5 rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-xs font-semibold text-gray-600 transition-all duration-200 hover:border-[#EE4D2D]/30 hover:text-[#EE4D2D] hover:shadow-sm"
+          className="mt-5 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-5 py-2.5 text-xs font-semibold text-gray-600 transition-all duration-200 hover:border-[var(--accent)]/30 hover:text-[var(--accent)] hover:shadow-sm"
         >
           Tentar novamente
         </button>
@@ -392,25 +392,25 @@ function ShopeeView({ items, active, setActive, onFinish }: ViewProps) {
       `}</style>
 
       <DashboardShell title="Conectar Contas" subtitle="Vincule suas contas de marketplace para sincronizar produtos e pedidos.">
-        <div className="mx-auto max-w-2xl">
+        <div className="page-enter" className="mx-auto max-w-2xl">
 
           {/* ═══════════════════════════════════════════════════════ */}
           {/* SECTION 1 — Hero banner with animated background       */}
           {/* ═══════════════════════════════════════════════════════ */}
-          <div className="relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-white via-[#FFF5F0] to-[#FFE8E0] px-5 sm:px-8 py-10">
+          <div className="relative mb-6 overflow-hidden rounded-[16px] bg-gradient-to-br from-[var(--surface)] via-[#FFF5F0] to-[#FFE8E0] px-5 sm:px-8 py-10">
             <div className="cc-float-1 pointer-events-none absolute -top-4 left-[8%] h-20 w-20 rounded-full bg-orange-100/40" />
             <div className="cc-float-2 pointer-events-none absolute right-[12%] top-[15%] h-14 w-14 rounded-full bg-amber-100/50" />
             <div className="cc-float-3 pointer-events-none absolute bottom-[-10%] left-[25%] h-16 w-16 rounded-full bg-orange-200/25" />
             <div className="cc-float-4 pointer-events-none absolute right-[20%] top-[50%] h-10 w-10 rounded-full bg-amber-200/35" />
 
             <div className="relative">
-              <div className="mx-auto mb-2 flex h-11 w-11 items-center justify-center rounded-xl bg-[#EE4D2D]/10">
-                <ShoppingBag className="h-5 w-5 text-[#EE4D2D]" />
+              <div className="mx-auto mb-2 flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--accent)]/10">
+                <ShoppingBag className="h-5 w-5 text-[var(--accent)]" />
               </div>
-              <h2 className="text-2xl font-semibold text-gray-900">
+              <h2 className="text-2xl font-semibold text-[var(--text)]">
                 Conectar Contas
               </h2>
-              <p className="mt-1.5 max-w-sm text-sm text-gray-500">
+              <p className="mt-1.5 max-w-sm text-sm text-[var(--muted)]">
                 Vincule sua conta Shopee e sincronize tudo automaticamente — produtos, pedidos e comissões em um só lugar.
               </p>
             </div>
@@ -420,7 +420,7 @@ function ShopeeView({ items, active, setActive, onFinish }: ViewProps) {
           {/* SECTION 2 — Connection card                           */}
           {/* ═══════════════════════════════════════════════════════ */}
           <div
-            className={`rounded-3xl border border-orange-100 bg-white p-6 shadow-lg shadow-orange-500/5 sm:p-8 ${
+            className={`rounded-3xl border border-orange-100 bg-[var(--surface)] p-6 shadow-lg shadow-orange-500/5 sm:p-8 ${
               state === "connecting" ? "cc-state-connecting" : ""
             }`}
             onAnimationEnd={handleAnimEnd}
@@ -429,7 +429,7 @@ function ShopeeView({ items, active, setActive, onFinish }: ViewProps) {
             {/* ── A. Logo row with connection line + nodes ── */}
             <div className="flex items-center justify-center gap-0 mb-7">
               {/* UpShopee logo */}
-              <div className={`cc-logo-up flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border-2 bg-white p-2 transition-all duration-500 ${
+              <div className={`cc-logo-up flex h-14 w-14 shrink-0 items-center justify-center rounded-[16px] border-2 bg-[var(--surface)] p-2 transition-all duration-500 ${
                 validated ? "border-emerald-200" : "border-gray-100"
               }`}>
                 <img
@@ -445,7 +445,7 @@ function ShopeeView({ items, active, setActive, onFinish }: ViewProps) {
                 {/* Base line underlay */}
                 <div className="absolute inset-y-0 top-1/2 -translate-y-1/2 h-px w-full bg-gray-200" />
                 {/* Animated fill line */}
-                <div className="cc-line-fill absolute inset-y-0 top-1/2 -translate-y-1/2 h-px bg-[#EE4D2D]/20" />
+                <div className="cc-line-fill absolute inset-y-0 top-1/2 -translate-y-1/2 h-px bg-[var(--accent)]/20" />
 
                 {/* Three nodes */}
                 <div className="relative flex items-center justify-between w-full z-10">
@@ -459,7 +459,7 @@ function ShopeeView({ items, active, setActive, onFinish }: ViewProps) {
                       <Check className="relative h-3 w-3 text-emerald-500" />
                     ) : (
                       <span
-                        className="cc-orbit-dot absolute h-1.5 w-1.5 rounded-full bg-[#EE4D2D]"
+                        className="cc-orbit-dot absolute h-1.5 w-1.5 rounded-full bg-[var(--accent)]"
                         style={{ top: "50%", left: "50%", marginTop: -3, marginLeft: -3 }}
                       />
                     )}
@@ -469,10 +469,10 @@ function ShopeeView({ items, active, setActive, onFinish }: ViewProps) {
               </div>
 
               {/* Direction arrow */}
-              <ArrowRight className="cc-arrow h-4 w-4 shrink-0 text-[#EE4D2D]/30 transition-colors duration-500" />
+              <ArrowRight className="cc-arrow h-4 w-4 shrink-0 text-[var(--accent)]/30 transition-colors duration-500" />
 
               {/* Shopee logo */}
-              <div className={`cc-logo-shopee flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border-2 bg-white p-2 transition-all duration-500 ${
+              <div className={`cc-logo-shopee flex h-14 w-14 shrink-0 items-center justify-center rounded-[16px] border-2 bg-[var(--surface)] p-2 transition-all duration-500 ${
                 validated ? "border-emerald-200 bg-emerald-50"
                 : rejected ? "border-red-200 bg-red-50"
                 : "border-gray-100"
@@ -488,9 +488,9 @@ function ShopeeView({ items, active, setActive, onFinish }: ViewProps) {
 
             {/* ── B. Status row ── */}
             <div className="flex justify-center mb-7">
-              <span className={`inline-flex items-center gap-2.5 text-sm font-medium ${state === "connecting" ? "text-[#EE4D2D]" : idleTextColor}`}>
+              <span className={`inline-flex items-center gap-2.5 text-sm font-medium ${state === "connecting" ? "text-[var(--accent)]" : idleTextColor}`}>
                 <span className={`cc-dot-status inline-block h-2.5 w-2.5 rounded-full ${
-                  state === "connecting" ? "bg-[#EE4D2D]"
+                  state === "connecting" ? "bg-[var(--accent)]"
                   : state === "idle" && !validated && !rejected ? `cc-dot-breathe ${idleDotColor}`
                   : idleDotColor
                 }`} />
@@ -515,48 +515,48 @@ function ShopeeView({ items, active, setActive, onFinish }: ViewProps) {
             {/* ── C. Benefits ── */}
             <div className="space-y-2.5 mb-8 border-t border-gray-100 pt-6">
               {/* Benefit 1 */}
-              <div className={`cc-benefit-1 flex items-start gap-3 rounded-xl px-4 py-3 border-l-[3px] border-l-gray-200 bg-gray-50/50`}>
+              <div className={`cc-benefit-1 flex items-start gap-3 rounded-xl px-4 py-3 border-l-[3px] border-l-gray-200 bg-[var(--muted-bg)]/50`}>
                 <span className="mt-0.5 shrink-0 relative h-5 w-5">
-                  <RefreshCw className="cc-benefit-icon-def absolute inset-0 h-5 w-5 text-gray-400" />
+                  <RefreshCw className="cc-benefit-icon-def absolute inset-0 h-5 w-5 text-[var(--muted)]" />
                   <Check className="cc-benefit-icon-ok absolute inset-0 h-5 w-5 text-emerald-500" />
                 </span>
                 <div>
-                  <p className="cc-benefit-title text-sm font-medium text-gray-700">
+                  <p className="cc-benefit-title text-sm font-medium text-[var(--text)]">
                     Sincronização automática de produtos
                   </p>
-                  <p className="text-xs text-gray-400 mt-0.5">
+                  <p className="text-xs text-[var(--muted)] mt-0.5">
                     Seus produtos são importados e organizados automaticamente
                   </p>
                 </div>
               </div>
 
               {/* Benefit 2 */}
-              <div className={`cc-benefit-2 flex items-start gap-3 rounded-xl px-4 py-3 border-l-[3px] border-l-gray-200 bg-gray-50/50`}>
+              <div className={`cc-benefit-2 flex items-start gap-3 rounded-xl px-4 py-3 border-l-[3px] border-l-gray-200 bg-[var(--muted-bg)]/50`}>
                 <span className="mt-0.5 shrink-0 relative h-5 w-5">
-                  <Package className="cc-benefit-icon-def absolute inset-0 h-5 w-5 text-gray-400" />
+                  <Package className="cc-benefit-icon-def absolute inset-0 h-5 w-5 text-[var(--muted)]" />
                   <Check className="cc-benefit-icon-ok absolute inset-0 h-5 w-5 text-emerald-500" />
                 </span>
                 <div>
-                  <p className="cc-benefit-title text-sm font-medium text-gray-700">
+                  <p className="cc-benefit-title text-sm font-medium text-[var(--text)]">
                     Pedidos atualizados em tempo real
                   </p>
-                  <p className="text-xs text-gray-400 mt-0.5">
+                  <p className="text-xs text-[var(--muted)] mt-0.5">
                     Acompanhe cada venda assim que ela acontece
                   </p>
                 </div>
               </div>
 
               {/* Benefit 3 */}
-              <div className={`cc-benefit-3 flex items-start gap-3 rounded-xl px-4 py-3 border-l-[3px] border-l-gray-200 bg-gray-50/50`}>
+              <div className={`cc-benefit-3 flex items-start gap-3 rounded-xl px-4 py-3 border-l-[3px] border-l-gray-200 bg-[var(--muted-bg)]/50`}>
                 <span className="mt-0.5 shrink-0 relative h-5 w-5">
-                  <TrendingUp className="cc-benefit-icon-def absolute inset-0 h-5 w-5 text-gray-400" />
+                  <TrendingUp className="cc-benefit-icon-def absolute inset-0 h-5 w-5 text-[var(--muted)]" />
                   <Check className="cc-benefit-icon-ok absolute inset-0 h-5 w-5 text-emerald-500" />
                 </span>
                 <div>
-                  <p className="cc-benefit-title text-sm font-medium text-gray-700">
+                  <p className="cc-benefit-title text-sm font-medium text-[var(--text)]">
                     Comissões organizadas automaticamente
                   </p>
-                  <p className="text-xs text-gray-400 mt-0.5">
+                  <p className="text-xs text-[var(--muted)] mt-0.5">
                     Veja exatamente quanto você ganhou em cada produto
                   </p>
                 </div>
@@ -584,10 +584,10 @@ function ShopeeView({ items, active, setActive, onFinish }: ViewProps) {
               <button
                 onClick={handleConnectClick}
                 disabled={state !== "idle"}
-                className={`cc-btn-ripple group relative w-full overflow-hidden rounded-2xl py-4 text-[15px] font-semibold text-white outline-none transition-all duration-300 ${
+                className={`cc-btn-ripple group relative w-full overflow-hidden rounded-[16px] py-4 text-[15px] font-semibold text-white outline-none transition-all duration-300 ${
                   state !== "idle"
                     ? "bg-gray-300 cursor-not-allowed scale-100"
-                    : "bg-[#EE4D2D] hover:bg-[#e04525] hover:shadow-lg hover:shadow-[#EE4D2D]/20 hover:scale-[1.01] active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-[#EE4D2D]/40 focus-visible:ring-offset-2"
+                    : "bg-[var(--accent)] hover:bg-[#e04525] hover:shadow-lg hover:shadow-[#EE4D2D]/20 hover:scale-[1.01] active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-[var(--accent)]/40 focus-visible:ring-offset-2"
                 }`}
               >
                 {state === "connecting" ? (
@@ -610,23 +610,23 @@ function ShopeeView({ items, active, setActive, onFinish }: ViewProps) {
           {/* ═══════════════════════════════════════════════════════ */}
           {validated && (
             <div className="mt-4 grid grid-cols-3 gap-3">
-              <div className="cc-stat-in-1 rounded-xl border border-gray-100 bg-white px-4 py-3 text-center">
-                <p className="text-lg font-semibold text-gray-900">{totalProducts}</p>
-                <p className="text-[11px] text-gray-400">Produtos</p>
+              <div className="cc-stat-in-1 rounded-xl border border-gray-100 bg-[var(--surface)] px-4 py-3 text-center">
+                <p className="text-lg font-semibold text-[var(--text)]">{totalProducts}</p>
+                <p className="text-[11px] text-[var(--muted)]">Produtos</p>
               </div>
-              <div className="cc-stat-in-2 rounded-xl border border-gray-100 bg-white px-4 py-3 text-center">
-                <p className="text-lg font-semibold text-gray-900">
+              <div className="cc-stat-in-2 rounded-xl border border-gray-100 bg-[var(--surface)] px-4 py-3 text-center">
+                <p className="text-lg font-semibold text-[var(--text)]">
                   {totalOrders >= 1000 ? `${(totalOrders / 1000).toFixed(1)}k` : totalOrders}
                 </p>
-                <p className="text-[11px] text-gray-400">Pedidos</p>
+                <p className="text-[11px] text-[var(--muted)]">Pedidos</p>
               </div>
-              <div className="cc-stat-in-3 rounded-xl border border-gray-100 bg-white px-4 py-3 text-center">
-                <p className="text-lg font-semibold text-gray-900">
+              <div className="cc-stat-in-3 rounded-xl border border-gray-100 bg-[var(--surface)] px-4 py-3 text-center">
+                <p className="text-lg font-semibold text-[var(--text)]">
                   {totalCommission >= 1000
                     ? `R$ ${(totalCommission / 1000).toFixed(1)}k`
                     : `R$ ${totalCommission.toFixed(0)}`}
                 </p>
-                <p className="text-[11px] text-gray-400">Comissão</p>
+                <p className="text-[11px] text-[var(--muted)]">Comissão</p>
               </div>
             </div>
           )}
@@ -732,12 +732,12 @@ function ShopeeConnectionDialog({
       `}</style>
 
       <Dialog open={!!integration} onOpenChange={(o) => { if (!o) onClose(); }}>
-        <DialogContent className="max-w-sm overflow-hidden rounded-3xl border-0 bg-white p-0 shadow-lg">
+        <DialogContent className="max-w-sm overflow-hidden rounded-3xl border-0 bg-[var(--surface)] p-0 shadow-lg">
           {/* Top colored strip */}
           <div className={`h-1.5 w-full transition-colors duration-500 ${
             phase === "done"
               ? validated ? "bg-emerald-500" : rejected ? "bg-red-500" : isPending ? "bg-amber-500" : "bg-emerald-500"
-              : "bg-[#EE4D2D]"
+              : "bg-[var(--accent)]"
           }`} />
 
           <div className="p-6">
@@ -749,7 +749,7 @@ function ShopeeConnectionDialog({
                   : "bg-orange-100 h-16 w-16 cd-icon-pulse"
               }`}>
                 {phase === "loading" ? (
-                  <div className="h-8 w-8 rounded-full border-2 border-[#EE4D2D] border-t-transparent animate-spin" />
+                  <div className="h-8 w-8 rounded-full border-2 border-[var(--accent)] border-t-transparent animate-spin" />
                 ) : validated ? (
                   <Check className="h-8 w-8 text-emerald-500 cd-icon-pop" />
                 ) : rejected ? (
@@ -765,7 +765,7 @@ function ShopeeConnectionDialog({
               <h2 className={`text-base font-semibold transition-colors duration-500 ${
                 phase === "done"
                   ? validated ? "text-emerald-700" : rejected ? "text-red-700" : "text-amber-700"
-                  : "text-gray-900"
+                  : "text-[var(--text)]"
               }`}>
                 {phase === "done"
                   ? validated
@@ -775,7 +775,7 @@ function ShopeeConnectionDialog({
                     : "Solicitação enviada"
                   : "Estabelecendo conexão segura"}
               </h2>
-              <p className="mt-1 text-sm text-gray-500">
+              <p className="mt-1 text-sm text-[var(--muted)]">
                 {phase === "done"
                   ? validated
                     ? "Sua conta está sincronizada e pronta para uso."
@@ -798,9 +798,9 @@ function ShopeeConnectionDialog({
             {/* ── Progress bar (loading only) ── */}
             {phase === "loading" && (
               <div className="mt-5">
-                <div className="h-1 w-full overflow-hidden rounded-full bg-gray-100">
+                <div className="h-1 w-full overflow-hidden rounded-full bg-[var(--muted-bg)]">
                   <div
-                    className="h-full rounded-full bg-[#EE4D2D] transition-all duration-300"
+                    className="h-full rounded-full bg-[var(--accent)] transition-all duration-300"
                     style={{ width: `${progress}%` }}
                   />
                 </div>
@@ -815,7 +815,7 @@ function ShopeeConnectionDialog({
                   className={`h-10 w-full rounded-xl text-sm font-semibold text-white transition-colors duration-200 ${
                     rejected
                       ? "bg-gray-600 hover:bg-gray-700"
-                      : "bg-[#EE4D2D] hover:bg-[#e04525]"
+                      : "bg-[var(--accent)] hover:bg-[#e04525]"
                   }`}
                 >
                   {rejected ? "Fechar" : "Concluir"}
@@ -835,7 +835,7 @@ function DialogStep({ label, done, active }: { label: string; done: boolean; act
       done ? "bg-emerald-50/30" : active ? "bg-orange-50/50" : "bg-transparent"
     }`}>
       <div className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full transition-all duration-500 ${
-        done ? "bg-emerald-500" : active ? "bg-[#EE4D2D]" : "bg-gray-200"
+        done ? "bg-emerald-500" : active ? "bg-[var(--accent)]" : "bg-gray-200"
       }`}>
         {done
           ? <Check className="h-2.5 w-2.5 text-white" />
@@ -844,7 +844,7 @@ function DialogStep({ label, done, active }: { label: string; done: boolean; act
             : <span className="h-1.5 w-1.5 rounded-full bg-gray-400" />}
       </div>
       <span className={`text-xs font-medium transition-colors duration-500 ${
-        done ? "text-emerald-700" : active ? "text-gray-700" : "text-gray-400"
+        done ? "text-emerald-700" : active ? "text-[var(--text)]" : "text-[var(--muted)]"
       }`}>
         {label}
       </span>

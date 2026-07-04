@@ -6,7 +6,7 @@ import { ProductCard } from "../components/products/ProductCard";
 import { GenerateListingFlow } from "../components/products/GenerateListingFlow";
 import { Input } from "../components/ui/input";
 import { RolePickerDialog } from "../components/products/RolePickerDialog";
-import { Search } from "lucide-react";
+import { Search, Package } from "lucide-react";
 
 export const Route = createFileRoute("/dashboard/produtos")({ component: Produtos });
 
@@ -32,7 +32,6 @@ function Produtos() {
       if (pa !== pb) return pb - pa;
       return 0;
     });
-    // Shuffle randomly so products change position on each filter/search change
     for (let i = l.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [l[i], l[j]] = [l[j], l[i]];
@@ -45,62 +44,74 @@ function Produtos() {
       title="Produtos"
       subtitle="Encontre produtos validados e envie para sua loja Shopee em poucos cliques."
     >
-      {/* ═══ SEARCH + FILTERS ═══ */}
-      <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        {/* Search */}
-        <div className="relative w-full lg:max-w-md">
-          <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-          <Input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Buscar produto..."
-            className="h-11 rounded-xl border-gray-200 bg-white pl-10 pr-4 text-sm shadow-sm shadow-black/[0.02] transition-shadow focus-visible:ring-[#EE4D2D]/30"
-          />
+      <div className="page-enter">
+        {/* ═══ SEARCH + FILTERS ═══ */}
+        <div className="sticky top-16 z-10 -mx-4 px-4 pb-4 bg-[var(--bg)] md:-mx-8 md:px-8">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            {/* Search */}
+            <div className="relative w-full lg:max-w-md">
+              <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted)]" />
+              <Input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Buscar produto..."
+                className="h-11 rounded-[12px] border-[var(--border)] bg-[var(--surface)] pl-10 pr-4 text-sm text-[var(--text)] shadow-[var(--shadow-card)] transition-all focus-visible:ring-[var(--accent)]/30 placeholder:text-[var(--muted)]"
+              />
+            </div>
+
+            {/* Category chips — horizontal scroll on mobile */}
+            <div className="flex flex-nowrap gap-1.5 overflow-x-auto pb-1 lg:flex-wrap scrollbar-none">
+              {categories.map((c) => {
+                const active = cat === c;
+                return (
+                  <button
+                    key={c}
+                    onClick={() => setCat(c)}
+                    className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-all duration-200 ${
+                      active
+                        ? "bg-[var(--accent-gradient)] text-white shadow-[var(--accent-glow)]"
+                        : "border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:border-[var(--accent)]/30 hover:text-[var(--accent)]"
+                    }`}
+                  >
+                    {c}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
-        {/* Category chips */}
-        <div className="flex flex-wrap gap-1.5">
-          {categories.map((c) => {
-            const active = cat === c;
-            return (
-              <button
-                key={c}
-                onClick={() => setCat(c)}
-                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition ${
-                  active
-                    ? "border-[#EE4D2D] bg-[#EE4D2D] text-white shadow-sm shadow-[#EE4D2D]/25"
-                    : "border border-gray-200 bg-white text-gray-500 hover:border-[#EE4D2D]/30 hover:text-[#EE4D2D]"
-                }`}
-              >
-                {c}
-              </button>
-            );
-          })}
+        {/* ═══ PRODUCT GRID ═══ */}
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+          {list.map((p) => (
+            <ProductCard
+              key={p.id}
+              product={p}
+              onSelect={(prod) => setRolePickProduct(prod)}
+            />
+          ))}
         </div>
+
+        {list.length === 0 && (
+          <div className="mt-16 flex flex-col items-center justify-center text-center">
+            <div className="mb-4 grid h-16 w-16 place-items-center rounded-full bg-[var(--muted-bg)]">
+              <Package className="h-8 w-8 text-[var(--muted)]" />
+            </div>
+            <p className="text-sm font-semibold text-[var(--text)]" style={{ fontFamily: "'Sora', sans-serif" }}>
+              Nenhum produto encontrado
+            </p>
+            <p className="mt-1 text-xs text-[var(--muted)]">
+              Tente ajustar sua busca ou limpar os filtros.
+            </p>
+            <button
+              onClick={() => { setQ(""); setCat("Todos"); }}
+              className="btn-ghost mt-4 text-xs"
+            >
+              Limpar filtros
+            </button>
+          </div>
+        )}
       </div>
-
-      {/* ═══ PRODUCT GRID ═══ */}
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
-        {list.map((p) => (
-          <ProductCard
-            key={p.id}
-            product={p}
-            onSelect={(prod) => setRolePickProduct(prod)}
-          />
-        ))}
-      </div>
-
-      {list.length === 0 && (
-        <div className="mt-12 flex flex-col items-center justify-center text-center">
-          <Search className="mb-3 h-12 w-12 text-gray-300" />
-          <p className="text-sm font-medium text-gray-500">
-            Nenhum produto encontrado
-          </p>
-          <p className="mt-1 text-xs text-gray-400">
-            Tente ajustar sua busca ou limpar os filtros.
-          </p>
-        </div>
-      )}
 
       <GenerateListingFlow
         product={selected}

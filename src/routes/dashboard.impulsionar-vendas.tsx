@@ -251,14 +251,14 @@ function PolicyModal({ onAccept }: { onAccept: () => void }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-      <div className="bg-white rounded-xl shadow-lg border border-gray-200 max-w-lg w-full p-6 md:p-8">
+      <div className="bg-[var(--surface)] rounded-xl shadow-lg border border-[var(--border)] max-w-lg w-full p-6 md:p-8">
         <div className="flex justify-center mb-5">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gray-100">
-            <ShieldCheck className="h-6 w-6 text-gray-700" />
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--muted-bg)]">
+            <ShieldCheck className="h-6 w-6 text-[var(--text)]" />
           </div>
         </div>
 
-        <h2 className="text-xl font-bold text-gray-900 text-center mb-5">
+        <h2 className="text-xl font-bold text-[var(--text)] text-center mb-5">
           Termos de Campanha
         </h2>
 
@@ -269,23 +269,23 @@ function PolicyModal({ onAccept }: { onAccept: () => void }) {
             "Garantia: se não gerar vendas equivalentes, devolvemos 100%",
           ].map((text) => (
             <div key={text} className="flex items-start gap-3">
-              <CheckCircle2 className="h-4 w-4 text-[#EE4D2D] mt-0.5 shrink-0" />
-              <span className="text-sm text-gray-700">{text}</span>
+              <CheckCircle2 className="h-4 w-4 text-[var(--accent)] mt-0.5 shrink-0" />
+              <span className="text-sm text-[var(--text)]">{text}</span>
             </div>
           ))}
         </div>
 
-        <p className="text-sm text-gray-500 leading-relaxed mb-5">
+        <p className="text-sm text-[var(--muted)] leading-relaxed mb-5">
           A garantia é condicional e válida quando a campanha não gerar retorno mínimo equivalente ao dobro do valor investido em comissões registradas no painel, dentro do período de acompanhamento. A devolução segue as regras do programa e pode ser solicitada conforme os critérios estabelecidos.
         </p>
 
         <div className="mb-5">
-          <p className="mb-2 text-xs text-gray-500">
+          <p className="mb-2 text-xs text-[var(--muted)]">
             {done ? "Leitura concluída" : `Leia com atenção — ${secondsLeft}s restantes`}
           </p>
           <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
             <div
-              className={`h-full rounded-full transition-none ${done ? "bg-emerald-500" : "bg-[#EE4D2D]"}`}
+              className={`h-full rounded-full transition-none ${done ? "bg-emerald-500" : "bg-[var(--accent)]"}`}
               style={{ width: `${pct}%` }}
             />
           </div>
@@ -299,7 +299,7 @@ function PolicyModal({ onAccept }: { onAccept: () => void }) {
             onChange={(e) => setAgreed(e.target.checked)}
             className="h-4 w-4 accent-[#EE4D2D]"
           />
-          <span className="text-sm text-gray-700">Li e concordo com os termos</span>
+          <span className="text-sm text-[var(--text)]">Li e concordo com os termos</span>
         </label>
 
         <button
@@ -307,8 +307,8 @@ function PolicyModal({ onAccept }: { onAccept: () => void }) {
           disabled={!enabled}
           className={`w-full rounded-lg py-3 text-sm font-semibold transition-all ${
             enabled
-              ? "cursor-pointer bg-[#EE4D2D] text-white hover:bg-[#d93e22]"
-              : "cursor-not-allowed bg-gray-200 text-gray-400"
+              ? "cursor-pointer bg-[var(--accent)] text-white hover:opacity-90"
+              : "cursor-not-allowed bg-gray-200 text-[var(--muted)]"
           }`}
         >
           CONTINUAR
@@ -340,10 +340,10 @@ function NewView({
 
       {/* ── HERO ─────────────────────────────────────────────────────────── */}
       <section className="mb-10">
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-gray-900 mb-2">
+        <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-[var(--text)] mb-2">
           Subir Anúncios
         </h1>
-        <p className="text-gray-500 text-sm md:text-base max-w-xl">
+        <p className="text-[var(--muted)] text-sm md:text-base max-w-xl">
           Aumente o alcance dos seus produtos e conquiste mais compradores
         </p>
       </section>
@@ -359,34 +359,34 @@ function NewView({
           return (
             <article
               key={pack.id}
-              className={`relative flex flex-col rounded-xl border bg-white p-5 transition-all duration-200 hover:shadow-sm ${
+              className={`relative flex flex-col rounded-xl border bg-[var(--surface)] p-5 transition-all duration-200 hover:shadow-sm ${
                 isEscala
                   ? "border-t-2 border-t-[#EE4D2D] border-x-gray-200 border-b-gray-200"
                   : isMaximo
-                  ? "border-gray-200"
-                  : "border-gray-200"
+                  ? "border-[var(--border)]"
+                  : "border-[var(--border)]"
               }`}
             >
               {/* Badge */}
               {pack.badge && (
                 <div className="mb-3">
                   <span className={`text-[11px] font-medium ${
-                    isEscala ? "text-[#EE4D2D]" : isMaximo ? "text-amber-600" : "text-gray-500"
+                    isEscala ? "text-[var(--accent)]" : isMaximo ? "text-amber-600" : "text-[var(--muted)]"
                   }`}>
                     {pack.badge}
                   </span>
                 </div>
               )}
 
-              <h3 className="font-semibold text-gray-900 text-sm mb-1">{pack.name}</h3>
+              <h3 className="font-semibold text-[var(--text)] text-sm mb-1">{pack.name}</h3>
 
               {pack.originalPrice && (
-                <div className="text-sm text-gray-400 line-through mb-0.5">
+                <div className="text-sm text-[var(--muted)] line-through mb-0.5">
                   {brl(pack.originalPrice)}
                 </div>
               )}
 
-              <div className="text-2xl font-bold text-gray-900 mb-4">
+              <div className="text-2xl font-bold text-[var(--text)] mb-4">
                 {brl(pack.price)}
               </div>
 
@@ -399,14 +399,14 @@ function NewView({
                 <MetricRow label="Retorno" value={pack.roiAmount} />
               </div>
 
-              <p className="text-xs text-gray-400 mb-5 leading-relaxed">{pack.ideal}</p>
+              <p className="text-xs text-[var(--muted)] mb-5 leading-relaxed">{pack.ideal}</p>
 
               <Button
                 onClick={() => startActivate(pack)}
                 className={`w-full rounded-lg py-2.5 text-sm font-semibold ${
                   isHighlighted
-                    ? "bg-[#EE4D2D] text-white hover:bg-[#d93e22]"
-                    : "border border-gray-200 text-gray-700 bg-white hover:border-[#EE4D2D]/30 hover:text-[#EE4D2D]"
+                    ? "bg-[var(--accent)] text-white hover:opacity-90"
+                    : "border border-[var(--border)] text-[var(--text)] bg-[var(--surface)] hover:border-[var(--accent)]/30 hover:text-[var(--accent)]"
                 }`}
               >
                 <Zap className="mr-2 h-4 w-4" /> Ativar
@@ -420,9 +420,9 @@ function NewView({
       <ResultadosReaisSection />
 
       {/* ── ROI CALCULATOR ───────────────────────────────────────────────── */}
-      <section className="mb-10 rounded-xl bg-white border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-1">Simule seu retorno</h3>
-        <p className="text-sm text-gray-500 mb-5">Selecione um pack para ver o potencial de ganhos</p>
+      <section className="mb-10 rounded-xl bg-[var(--surface)] border border-[var(--border)] p-6">
+        <h3 className="text-lg font-semibold text-[var(--text)] mb-1">Simule seu retorno</h3>
+        <p className="text-sm text-[var(--muted)] mb-5">Selecione um pack para ver o potencial de ganhos</p>
         <div className="flex flex-wrap gap-2 mb-6">
           {PACKS.map((p) => (
             <button
@@ -430,8 +430,8 @@ function NewView({
               onClick={() => setRoiPack(p)}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                 roiPack.id === p.id
-                  ? "bg-[#EE4D2D] text-white"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  ? "bg-[var(--accent)] text-white"
+                  : "bg-[var(--muted-bg)] text-gray-600 hover:bg-gray-200"
               }`}
             >
               {p.name}
@@ -439,65 +439,65 @@ function NewView({
           ))}
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="rounded-xl bg-gray-50 px-5 py-4">
-            <div className="text-xs text-gray-500 mb-1">Você investe</div>
-            <div className="text-2xl font-bold text-gray-900">{brl(roiPack.price)}</div>
+          <div className="rounded-xl bg-[var(--muted-bg)] px-5 py-4">
+            <div className="text-xs text-[var(--muted)] mb-1">Você investe</div>
+            <div className="text-2xl font-bold text-[var(--text)]">{brl(roiPack.price)}</div>
           </div>
-          <div className="rounded-xl bg-gray-50 px-5 py-4">
-            <div className="text-xs text-gray-500 mb-1">Potencial de retorno</div>
-            <div className="text-2xl font-bold text-[#EE4D2D]">{roiPack.roiAmount}</div>
+          <div className="rounded-xl bg-[var(--muted-bg)] px-5 py-4">
+            <div className="text-xs text-[var(--muted)] mb-1">Potencial de retorno</div>
+            <div className="text-2xl font-bold text-[var(--accent)]">{roiPack.roiAmount}</div>
           </div>
-          <div className="rounded-xl bg-gray-50 px-5 py-4">
-            <div className="text-xs text-gray-500 mb-1">Alcance estimado</div>
-            <div className="text-lg font-bold text-gray-900 leading-tight">{roiPack.reach}</div>
+          <div className="rounded-xl bg-[var(--muted-bg)] px-5 py-4">
+            <div className="text-xs text-[var(--muted)] mb-1">Alcance estimado</div>
+            <div className="text-lg font-bold text-[var(--text)] leading-tight">{roiPack.reach}</div>
           </div>
         </div>
-        <p className="text-gray-400 text-xs mt-4">
+        <p className="text-[var(--muted)] text-xs mt-4">
           Os resultados podem variar conforme produto, preço, oferta e demanda.
         </p>
       </section>
 
       {/* ── HOW IT WORKS ─────────────────────────────────────────────────── */}
-      <section className="mb-10 rounded-xl bg-white border border-gray-200 p-6 md:p-8">
+      <section className="mb-10 rounded-xl bg-[var(--surface)] border border-[var(--border)] p-6 md:p-8">
         <div className="mb-8 text-center">
-          <h3 className="text-xl font-semibold text-gray-900">Como funciona</h3>
-          <p className="mt-2 text-sm text-gray-500">3 passos para anunciar</p>
+          <h3 className="text-xl font-semibold text-[var(--text)]">Como funciona</h3>
+          <p className="mt-2 text-sm text-[var(--muted)]">3 passos para anunciar</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[
             {
               n: "1",
-              icon: <Layers className="h-5 w-5 text-[#EE4D2D]" />,
+              icon: <Layers className="h-5 w-5 text-[var(--accent)]" />,
               label: "Escolha o pack ideal",
               sub: "Selecione o nível de exposição para sua operação",
             },
             {
               n: "2",
-              icon: <Zap className="h-5 w-5 text-[#EE4D2D]" />,
+              icon: <Zap className="h-5 w-5 text-[var(--accent)]" />,
               label: "Ative o anúncio",
               sub: "Conclua o pagamento e a ativação é imediata",
             },
             {
               n: "3",
-              icon: <BarChart3 className="h-5 w-5 text-[#EE4D2D]" />,
+              icon: <BarChart3 className="h-5 w-5 text-[var(--accent)]" />,
               label: "Acompanhe os resultados",
               sub: "Veja vendas, comissões e retorno no painel em tempo real",
             },
           ].map((step) => (
             <div key={step.n} className="flex flex-col items-center text-center">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gray-100 mb-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--muted-bg)] mb-4">
                 {step.icon}
               </div>
-              <p className="font-semibold text-gray-900 text-sm">{step.label}</p>
-              <p className="text-gray-500 text-xs mt-1 max-w-[180px]">{step.sub}</p>
+              <p className="font-semibold text-[var(--text)] text-sm">{step.label}</p>
+              <p className="text-[var(--muted)] text-xs mt-1 max-w-[180px]">{step.sub}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* ── FAQ ──────────────────────────────────────────────────────────── */}
-      <section className="mb-10 rounded-xl bg-white border border-gray-200 p-6 md:p-8">
-        <h3 className="text-lg font-semibold text-gray-900 mb-5">Perguntas frequentes</h3>
+      <section className="mb-10 rounded-xl bg-[var(--surface)] border border-[var(--border)] p-6 md:p-8">
+        <h3 className="text-lg font-semibold text-[var(--text)] mb-5">Perguntas frequentes</h3>
         <div className="space-y-2">
           {[
             {
@@ -517,18 +517,18 @@ function NewView({
               a: "Sim. Você pode escalar progressivamente, contratando packs maiores conforme valida os resultados.",
             },
           ].map((faq, i) => (
-            <div key={i} className="rounded-lg border border-gray-200 overflow-hidden">
+            <div key={i} className="rounded-lg border border-[var(--border)] overflow-hidden">
               <button
                 onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                className="w-full flex items-center justify-between gap-4 px-5 py-3.5 text-left hover:bg-gray-50 transition-colors"
+                className="w-full flex items-center justify-between gap-4 px-5 py-3.5 text-left hover:bg-[var(--muted-bg)] transition-colors"
               >
-                <span className="text-gray-900 font-medium text-sm">{faq.q}</span>
+                <span className="text-[var(--text)] font-medium text-sm">{faq.q}</span>
                 <ChevronDown
-                  className={`h-4 w-4 text-gray-400 shrink-0 transition-transform duration-200 ${openFaq === i ? "rotate-180" : ""}`}
+                  className={`h-4 w-4 text-[var(--muted)] shrink-0 transition-transform duration-200 ${openFaq === i ? "rotate-180" : ""}`}
                 />
               </button>
               {openFaq === i && (
-                <div className="px-5 pb-4 text-gray-500 text-sm leading-relaxed border-t border-gray-100">
+                <div className="px-5 pb-4 text-[var(--muted)] text-sm leading-relaxed border-t border-gray-100">
                   {faq.a}
                 </div>
               )}
@@ -546,8 +546,8 @@ function NewView({
 function MetricRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between items-center text-xs">
-      <span className="text-gray-500">{label}</span>
-      <span className="text-gray-900 font-medium">{value}</span>
+      <span className="text-[var(--muted)]">{label}</span>
+      <span className="text-[var(--text)] font-medium">{value}</span>
     </div>
   );
 }
@@ -566,14 +566,14 @@ function MBar({
   return (
     <div>
       <div className="mb-1 flex items-center justify-between text-[11px]">
-        <span className="text-gray-400">{label}</span>
+        <span className="text-[var(--muted)]">{label}</span>
         {value && (
-          <span className="font-semibold text-gray-700">{value}</span>
+          <span className="font-semibold text-[var(--text)]">{value}</span>
         )}
       </div>
-      <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--muted-bg)]">
         <div
-          className="h-full rounded-full bg-[#EE4D2D]"
+          className="h-full rounded-full bg-[var(--accent)]"
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -594,9 +594,9 @@ const RESULTADO_IMAGES = [
 
 function ResultadosReaisSection() {
   return (
-    <section className="mb-10 rounded-xl border border-gray-200 bg-white p-6 md:p-8">
-      <h3 className="text-lg font-semibold text-gray-900 mb-1">Resultados</h3>
-      <p className="text-sm text-gray-500 mb-5">Resultados reais de quem anunciou</p>
+    <section className="mb-10 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-6 md:p-8">
+      <h3 className="text-lg font-semibold text-[var(--text)] mb-1">Resultados</h3>
+      <p className="text-sm text-[var(--muted)] mb-5">Resultados reais de quem anunciou</p>
       <div
         className="flex gap-3 overflow-x-auto pb-4 snap-x snap-mandatory scroll-smooth"
         style={{ scrollbarWidth: "none", msOverflowStyle: "none", paddingRight: "60px" }}
@@ -604,7 +604,7 @@ function ResultadosReaisSection() {
         {RESULTADO_IMAGES.map((src, i) => (
           <div
             key={i}
-            className="snap-start flex-shrink-0 w-[160px] sm:w-[200px] aspect-[9/16] rounded-lg overflow-hidden border border-gray-200 bg-white shadow-sm hover:shadow-md transition-all"
+            className="snap-start flex-shrink-0 w-[160px] sm:w-[200px] aspect-[9/16] rounded-lg overflow-hidden border border-[var(--border)] bg-[var(--surface)] shadow-sm hover:shadow-md transition-all"
           >
             <img
               src={src}
@@ -614,8 +614,8 @@ function ResultadosReaisSection() {
           </div>
         ))}
       </div>
-      <p className="mt-2 text-xs text-gray-400 md:hidden">deslize para ver mais</p>
-      <p className="mt-5 text-center text-sm font-medium text-[#EE4D2D]">
+      <p className="mt-2 text-xs text-[var(--muted)] md:hidden">deslize para ver mais</p>
+      <p className="mt-5 text-center text-sm font-medium text-[var(--accent)]">
         Quer ser o próximo? Escolha seu pack acima.
       </p>
     </section>
@@ -635,8 +635,8 @@ function ActivationDialog({ selectedPack, stage, setSelectedPack, setStage, goTo
         {selectedPack && stage === "guarantee" && (
           <>
             <DialogHeader>
-              <div className="mx-auto mb-2 grid h-12 w-12 place-items-center rounded-xl bg-gray-100">
-                <ShieldCheck className="h-6 w-6 text-gray-700" />
+              <div className="mx-auto mb-2 grid h-12 w-12 place-items-center rounded-xl bg-[var(--muted-bg)]">
+                <ShieldCheck className="h-6 w-6 text-[var(--text)]" />
               </div>
               <DialogTitle className="text-center text-lg font-semibold">Garantia condicional</DialogTitle>
               <DialogDescription className="text-center">
@@ -644,7 +644,7 @@ function ActivationDialog({ selectedPack, stage, setSelectedPack, setStage, goTo
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
-              <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+              <div className="rounded-xl border border-[var(--border)] bg-[var(--muted-bg)] p-4">
                 <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-800">
                   <ShieldCheck className="h-4 w-4" /> Garantia condicional
                 </div>
@@ -652,18 +652,18 @@ function ActivationDialog({ selectedPack, stage, setSelectedPack, setStage, goTo
                   Caso a campanha não gere retorno mínimo equivalente ao dobro do valor investido em comissões registradas no painel, você poderá solicitar a devolução do valor investido, conforme as regras da garantia condicional.
                 </p>
               </div>
-              <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+              <div className="rounded-xl border border-[var(--border)] bg-[var(--muted-bg)] p-4">
                 <div className="text-xs font-semibold text-gray-600">Exemplo prático</div>
-                <p className="mt-1 text-sm text-gray-700">
+                <p className="mt-1 text-sm text-[var(--text)]">
                   Investindo <strong>{brl(selectedPack.price)}</strong>, o retorno mínimo acompanhado será de <strong>{selectedPack.guaranteeMin}</strong> em comissões.
                 </p>
               </div>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-[var(--muted)]">
                 A garantia é condicional e segue as regras de acompanhamento da campanha.
               </p>
               <Button
                 onClick={() => setStage("how")}
-                className="w-full bg-[#EE4D2D] text-white hover:bg-[#d93e22]"
+                className="w-full bg-[var(--accent)] text-white hover:opacity-90"
               >
                 <CheckCircle2 className="mr-2 h-4 w-4" /> Li e entendi
               </Button>
@@ -674,8 +674,8 @@ function ActivationDialog({ selectedPack, stage, setSelectedPack, setStage, goTo
         {selectedPack && stage === "how" && (
           <>
             <DialogHeader>
-              <div className="mx-auto mb-2 grid h-12 w-12 place-items-center rounded-xl bg-gray-100">
-                <TrendingUp className="h-6 w-6 text-gray-700" />
+              <div className="mx-auto mb-2 grid h-12 w-12 place-items-center rounded-xl bg-[var(--muted-bg)]">
+                <TrendingUp className="h-6 w-6 text-[var(--text)]" />
               </div>
               <DialogTitle className="text-center text-lg font-semibold">Como funciona?</DialogTitle>
             </DialogHeader>
@@ -689,12 +689,12 @@ function ActivationDialog({ selectedPack, stage, setSelectedPack, setStage, goTo
                   { icon: <BarChart3 className="h-4 w-4" />, t: "A UpShopee anuncia seus produtos" },
                   { icon: <TrendingUp className="h-4 w-4" />, t: "Você acompanha os resultados pelo painel" },
                 ].map((s, i) => (
-                  <li key={i} className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3">
-                    <div className="grid h-8 w-8 place-items-center rounded-lg bg-gray-100 text-gray-700">
+                  <li key={i} className="flex items-center gap-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3">
+                    <div className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--muted-bg)] text-[var(--text)]">
                       {s.icon}
                     </div>
                     <div className="text-sm font-medium text-gray-800">
-                      <span className="mr-2 text-xs text-gray-400">{i + 1}.</span>
+                      <span className="mr-2 text-xs text-[var(--muted)]">{i + 1}.</span>
                       {s.t}
                     </div>
                   </li>
@@ -702,7 +702,7 @@ function ActivationDialog({ selectedPack, stage, setSelectedPack, setStage, goTo
               </ol>
               <Button
                 onClick={() => setStage("confirm")}
-                className="w-full bg-[#EE4D2D] text-white hover:bg-[#d93e22]"
+                className="w-full bg-[var(--accent)] text-white hover:opacity-90"
               >
                 <CheckCircle2 className="mr-2 h-4 w-4" /> Entendi
               </Button>
@@ -713,21 +713,21 @@ function ActivationDialog({ selectedPack, stage, setSelectedPack, setStage, goTo
         {selectedPack && stage === "confirm" && (
           <>
             <DialogHeader>
-              <div className="mx-auto mb-2 grid h-12 w-12 place-items-center rounded-xl bg-gray-100">
-                <Zap className="h-6 w-6 text-[#EE4D2D]" />
+              <div className="mx-auto mb-2 grid h-12 w-12 place-items-center rounded-xl bg-[var(--muted-bg)]">
+                <Zap className="h-6 w-6 text-[var(--accent)]" />
               </div>
               <DialogTitle className="text-center text-lg font-semibold">Confirmar anúncio</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
-              <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
-                <div className="text-xs font-semibold text-gray-500">Pacote</div>
-                <div className="mt-1 text-lg font-bold text-gray-900">{selectedPack.name}</div>
+              <div className="rounded-xl border border-[var(--border)] bg-[var(--muted-bg)] p-4">
+                <div className="text-xs font-semibold text-[var(--muted)]">Pacote</div>
+                <div className="mt-1 text-lg font-bold text-[var(--text)]">{selectedPack.name}</div>
                 <div className="mt-3 grid gap-2 text-sm">
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-500">Valor do investimento</span>
-                    <span className="font-semibold text-gray-900">
+                    <span className="text-[var(--muted)]">Valor do investimento</span>
+                    <span className="font-semibold text-[var(--text)]">
                       {selectedPack.originalPrice && (
-                        <span className="mr-2 text-xs text-gray-400 line-through">
+                        <span className="mr-2 text-xs text-[var(--muted)] line-through">
                           {brl(selectedPack.originalPrice)}
                         </span>
                       )}
@@ -735,23 +735,23 @@ function ActivationDialog({ selectedPack, stage, setSelectedPack, setStage, goTo
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-500">Ganhos estimados</span>
+                    <span className="text-[var(--muted)]">Ganhos estimados</span>
                     <span className="font-semibold text-emerald-700">{selectedPack.roiAmount}</span>
                   </div>
                 </div>
               </div>
-              <div className="rounded-xl border border-gray-200 bg-gray-50 p-3 text-xs text-gray-600">
+              <div className="rounded-xl border border-[var(--border)] bg-[var(--muted-bg)] p-3 text-xs text-gray-600">
                 <div className="mb-1 flex items-center gap-1.5 font-semibold text-gray-800">
                   <ShieldCheck className="h-3.5 w-3.5" /> Garantia condicional
                 </div>
                 Se não houver retorno mínimo equivalente ao dobro do valor investido em comissões registradas no painel, você poderá solicitar a devolução do valor investido, conforme as regras da garantia.
               </div>
-              <div className="flex items-center justify-center gap-1.5 text-xs text-gray-500">
+              <div className="flex items-center justify-center gap-1.5 text-xs text-[var(--muted)]">
                 <Lock className="h-3 w-3" /> Pagamento seguro via PIX
               </div>
               <Button
                 onClick={goToPayment}
-                className="w-full bg-[#EE4D2D] text-white hover:bg-[#d93e22]"
+                className="w-full bg-[var(--accent)] text-white hover:opacity-90"
               >
                 <Zap className="mr-2 h-4 w-4" /> Ir para pagamento
               </Button>
@@ -785,14 +785,14 @@ function LegacyView({
       <BoostPerformanceSection boost={boost} />
 
       {/* ── INFO BANNER ──────────────────────────────────────────────────── */}
-      <div className="mb-8 rounded-xl border border-gray-200 bg-gray-50 p-5">
+      <div className="mb-8 rounded-xl border border-[var(--border)] bg-[var(--muted-bg)] p-5">
         <div className="flex items-center gap-4">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#EE4D2D]/10">
-            <TrendingUp className="h-5 w-5 text-[#EE4D2D]" />
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--accent)]/10">
+            <TrendingUp className="h-5 w-5 text-[var(--accent)]" />
           </div>
           <div>
-            <h2 className="text-base font-semibold text-gray-900">Mais visibilidade para os seus produtos</h2>
-            <p className="mt-0.5 text-sm text-gray-500">
+            <h2 className="text-base font-semibold text-[var(--text)]">Mais visibilidade para os seus produtos</h2>
+            <p className="mt-0.5 text-sm text-[var(--muted)]">
               Os pacotes abaixo foram pensados para dar mais alcance aos seus produtos, gerar mais visualizações e aumentar a chance de vendas.
             </p>
           </div>
@@ -814,34 +814,34 @@ function LegacyView({
       <ResultadosReaisSection />
 
       {/* ── HOW IT WORKS ─────────────────────────────────────────────────── */}
-      <section className="rounded-xl border border-gray-200 bg-white p-6 md:p-8 mb-6">
+      <section className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-6 md:p-8 mb-6">
         <div className="mb-8 text-center">
-          <h3 className="text-lg font-semibold text-gray-900">Como funciona?</h3>
-          <p className="mt-2 text-sm text-gray-500">A UpShopee organiza uma estratégia de visibilidade para seus produtos de forma automática.</p>
+          <h3 className="text-lg font-semibold text-[var(--text)]">Como funciona?</h3>
+          <p className="mt-2 text-sm text-[var(--muted)]">A UpShopee organiza uma estratégia de visibilidade para seus produtos de forma automática.</p>
         </div>
         <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start sm:justify-center">
-          <LegacyStep icon={<Layers className="h-5 w-5 text-[#EE4D2D]" />} label="Escolha o pack" sub="Selecione o nível de visibilidade ideal para sua operação" />
-          <div className="hidden sm:flex flex-1 items-center pt-7"><div className="w-full border-t-2 border-dashed border-gray-200" /></div>
-          <LegacyStep icon={<Zap className="h-5 w-5 text-[#EE4D2D]" />} label="Ative o anúncio" sub="Conclua o pagamento e a ativação é imediata" />
-          <div className="hidden sm:flex flex-1 items-center pt-7"><div className="w-full border-t-2 border-dashed border-gray-200" /></div>
-          <LegacyStep icon={<BarChart3 className="h-5 w-5 text-[#EE4D2D]" />} label="Acompanhe os resultados" sub="Veja vendas, comissões e retorno no painel em tempo real" />
+          <LegacyStep icon={<Layers className="h-5 w-5 text-[var(--accent)]" />} label="Escolha o pack" sub="Selecione o nível de visibilidade ideal para sua operação" />
+          <div className="hidden sm:flex flex-1 items-center pt-7"><div className="w-full border-t-2 border-dashed border-[var(--border)]" /></div>
+          <LegacyStep icon={<Zap className="h-5 w-5 text-[var(--accent)]" />} label="Ative o anúncio" sub="Conclua o pagamento e a ativação é imediata" />
+          <div className="hidden sm:flex flex-1 items-center pt-7"><div className="w-full border-t-2 border-dashed border-[var(--border)]" /></div>
+          <LegacyStep icon={<BarChart3 className="h-5 w-5 text-[var(--accent)]" />} label="Acompanhe os resultados" sub="Veja vendas, comissões e retorno no painel em tempo real" />
         </div>
       </section>
 
       {/* ── FAQ ──────────────────────────────────────────────────────────── */}
-      <section className="rounded-xl border border-gray-200 bg-white p-6">
-        <h3 className="text-base font-semibold text-gray-900 mb-5">Perguntas frequentes</h3>
+      <section className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-6">
+        <h3 className="text-base font-semibold text-[var(--text)] mb-5">Perguntas frequentes</h3>
         <div className="space-y-5">
           <div>
             <div className="text-sm font-semibold text-gray-800">A campanha garante vendas?</div>
-            <p className="mt-1 text-sm text-gray-500">Sim, a campanha possui garantia condicional. Caso o pacote contratado não gere nenhuma venda dentro do período de acompanhamento definido, você poderá solicitar a devolução do valor investido nesse pack, conforme as regras da garantia.</p>
-            <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-2.5 py-0.5 text-[11px] font-semibold text-gray-700">
+            <p className="mt-1 text-sm text-[var(--muted)]">Sim, a campanha possui garantia condicional. Caso o pacote contratado não gere nenhuma venda dentro do período de acompanhamento definido, você poderá solicitar a devolução do valor investido nesse pack, conforme as regras da garantia.</p>
+            <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--muted-bg)] px-2.5 py-0.5 text-[11px] font-semibold text-[var(--text)]">
               <ShieldCheck className="h-3 w-3" /> Garantia condicional
             </div>
           </div>
           <div className="border-t border-gray-100 pt-5">
             <div className="text-sm font-semibold text-gray-800">Qual o melhor pack para começar?</div>
-            <p className="mt-1 text-sm text-gray-500">O melhor pack para começar é o Pack Aceleração de R$ 64,90. Ele oferece um bom equilíbrio entre investimento, alcance e potencial de vendas, sendo uma das melhores opções para quem quer começar a anunciar com mais força.</p>
+            <p className="mt-1 text-sm text-[var(--muted)]">O melhor pack para começar é o Pack Aceleração de R$ 64,90. Ele oferece um bom equilíbrio entre investimento, alcance e potencial de vendas, sendo uma das melhores opções para quem quer começar a anunciar com mais força.</p>
           </div>
         </div>
       </section>
@@ -869,36 +869,36 @@ function LegacyPackCard({
 
   return (
     <article
-      className={`relative flex flex-col rounded-xl border bg-white p-5 transition-all duration-200 hover:shadow-sm ${
+      className={`relative flex flex-col rounded-xl border bg-[var(--surface)] p-5 transition-all duration-200 hover:shadow-sm ${
         isEscala
           ? "border-t-2 border-t-[#EE4D2D] border-x-gray-200 border-b-gray-200"
-          : "border-gray-200"
+          : "border-[var(--border)]"
       }`}
     >
       {pack.badge && (
         <div className="mb-3">
           <span className={`text-[11px] font-medium ${
-            isEscala ? "text-[#EE4D2D]" : isAceleracao ? "text-gray-500" : "text-gray-500"
+            isEscala ? "text-[var(--accent)]" : isAceleracao ? "text-[var(--muted)]" : "text-[var(--muted)]"
           }`}>
             {pack.badge}
           </span>
         </div>
       )}
 
-      <h3 className={`font-semibold text-gray-900 mb-1 ${isEscala ? "text-base" : "text-sm"}`}>{pack.name}</h3>
+      <h3 className={`font-semibold text-[var(--text)] mb-1 ${isEscala ? "text-base" : "text-sm"}`}>{pack.name}</h3>
 
       {pack.originalPrice && (
-        <div className="text-xs text-gray-400 mb-0.5">De <span className="line-through">{brl(pack.originalPrice)}</span></div>
+        <div className="text-xs text-[var(--muted)] mb-0.5">De <span className="line-through">{brl(pack.originalPrice)}</span></div>
       )}
 
       <div className="mb-1 flex items-baseline gap-1.5">
-        {pack.originalPrice && <span className="text-xs text-gray-500">Por</span>}
-        <span className={`font-bold tabular-nums ${isEscala ? "text-2xl" : "text-xl"} text-gray-900`}>{brl(pack.price)}</span>
+        {pack.originalPrice && <span className="text-xs text-[var(--muted)]">Por</span>}
+        <span className={`font-bold tabular-nums ${isEscala ? "text-2xl" : "text-xl"} text-[var(--text)]`}>{brl(pack.price)}</span>
       </div>
 
-      <div className="text-xs text-gray-400 mb-4">pacote único</div>
+      <div className="text-xs text-[var(--muted)] mb-4">pacote único</div>
 
-      <p className="text-sm text-gray-500 mb-5 flex-1 leading-relaxed">{pack.ideal}</p>
+      <p className="text-sm text-[var(--muted)] mb-5 flex-1 leading-relaxed">{pack.ideal}</p>
 
       <div className="space-y-2.5 mb-5">
         <MBar label="Alcance" value={pack.reach} pct={pct} />
@@ -910,8 +910,8 @@ function LegacyPackCard({
         onClick={onActivate}
         className={`w-full rounded-lg py-2.5 text-sm font-semibold ${
           isEscala || isAceleracao
-            ? "bg-[#EE4D2D] text-white hover:bg-[#d93e22]"
-            : "border border-gray-200 text-gray-700 bg-white hover:border-[#EE4D2D]/30 hover:text-[#EE4D2D]"
+            ? "bg-[var(--accent)] text-white hover:opacity-90"
+            : "border border-[var(--border)] text-[var(--text)] bg-[var(--surface)] hover:border-[var(--accent)]/30 hover:text-[var(--accent)]"
         }`}
       >
         <Zap className="mr-2 h-4 w-4" /> Ativar anúncio
@@ -924,9 +924,9 @@ function LegacyPackCard({
 function LegacyStep({ icon, label, sub }: { icon: React.ReactNode; label: string; sub: string }) {
   return (
     <div className="flex w-40 flex-col items-center text-center">
-      <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gray-100">{icon}</div>
+      <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-[var(--muted-bg)]">{icon}</div>
       <p className="mt-3 text-sm font-semibold text-gray-800">{label}</p>
-      <p className="mt-1 text-xs text-gray-400">{sub}</p>
+      <p className="mt-1 text-xs text-[var(--muted)]">{sub}</p>
     </div>
   );
 }
@@ -935,7 +935,7 @@ function LegacyStep({ icon, label, sub }: { icon: React.ReactNode; label: string
 function BoostPerformanceSection({ boost }: { boost: BoostInfo | null }) {
   if (!boost) {
     return (
-      <div className="mb-6 rounded-xl border border-dashed border-gray-300 bg-white p-4 text-center text-sm text-gray-500">
+      <div className="mb-6 rounded-xl border border-dashed border-[var(--border)] bg-[var(--surface)] p-4 text-center text-sm text-[var(--muted)]">
         Nenhum anúncio ativo no momento.
       </div>
     );
@@ -946,7 +946,7 @@ function BoostPerformanceSection({ boost }: { boost: BoostInfo | null }) {
       ? { text: "Meta mínima de retorno atingida.", tone: "text-emerald-700 bg-emerald-50 border-emerald-200" }
       : boost.completed
         ? { text: "Elegível para análise da garantia condicional.", tone: "text-amber-700 bg-amber-50 border-amber-200" }
-        : { text: "A campanha ainda está em acompanhamento.", tone: "text-gray-600 bg-gray-50 border-gray-200" };
+        : { text: "A campanha ainda está em acompanhamento.", tone: "text-gray-600 bg-[var(--muted-bg)] border-[var(--border)]" };
   const retornoLabel =
     boost.eventsReleased === 0
       ? "aguardando primeiras vendas"
@@ -954,14 +954,14 @@ function BoostPerformanceSection({ boost }: { boost: BoostInfo | null }) {
   const fmtDate = (s: string) => new Date(s).toLocaleDateString("pt-BR");
 
   return (
-    <div className="mb-6 rounded-xl border border-gray-200 bg-white p-5">
+    <div className="mb-6 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-5">
       <div className="flex items-center gap-3">
-        <div className="grid h-9 w-9 place-items-center rounded-lg bg-[#EE4D2D]/10">
-          <Activity className="h-4 w-4 text-[#EE4D2D]" />
+        <div className="grid h-9 w-9 place-items-center rounded-lg bg-[var(--accent)]/10">
+          <Activity className="h-4 w-4 text-[var(--accent)]" />
         </div>
         <div>
-          <h3 className="text-base font-semibold text-gray-900">Desempenho do anúncio</h3>
-          <p className="text-xs text-gray-500">
+          <h3 className="text-base font-semibold text-[var(--text)]">Desempenho do anúncio</h3>
+          <p className="text-xs text-[var(--muted)]">
             {boost.completed ? "Último anúncio concluído" : "Anúncio em andamento"} • Pack ativo:{" "}
             <strong>{boost.packName}</strong>
           </p>
@@ -974,16 +974,16 @@ function BoostPerformanceSection({ boost }: { boost: BoostInfo | null }) {
         <BStat icon={<BarChart3 className="h-3.5 w-3.5" />} label="Retorno atual" value={retornoLabel} />
       </div>
       <div className="mt-4">
-        <div className="mb-1 flex items-center justify-between text-xs text-gray-500">
+        <div className="mb-1 flex items-center justify-between text-xs text-[var(--muted)]">
           <span>Progresso</span>
-          <span className="font-medium text-gray-900">
+          <span className="font-medium text-[var(--text)]">
             {boost.completed ? "Anúncio concluído" : `${pct}% concluído`}
           </span>
         </div>
-        <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
-          <div className="h-full bg-[#EE4D2D] transition-all" style={{ width: `${pct}%` }} />
+        <div className="h-2 w-full overflow-hidden rounded-full bg-[var(--muted-bg)]">
+          <div className="h-full bg-[var(--accent)] transition-all" style={{ width: `${pct}%` }} />
         </div>
-        <div className="mt-2 flex items-center gap-1.5 text-[11px] text-gray-500">
+        <div className="mt-2 flex items-center gap-1.5 text-[11px] text-[var(--muted)]">
           <CalendarDays className="h-3 w-3" />
           Acompanhamento: {fmtDate(boost.startsAt)} → {fmtDate(boost.endsAt)}
         </div>
@@ -1000,11 +1000,11 @@ function BoostPerformanceSection({ boost }: { boost: BoostInfo | null }) {
 
 function BStat({ icon, label, value, accent }: { icon: React.ReactNode; label: string; value: string; accent?: boolean }) {
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-3">
-      <div className="flex items-center gap-1.5 text-[10px] text-gray-500">
+    <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3">
+      <div className="flex items-center gap-1.5 text-[10px] text-[var(--muted)]">
         {icon}{label}
       </div>
-      <div className={`mt-1 truncate text-sm font-semibold ${accent ? "text-[#EE4D2D]" : "text-gray-900"}`}>{value}</div>
+      <div className={`mt-1 truncate text-sm font-semibold ${accent ? "text-[var(--accent)]" : "text-[var(--text)]"}`}>{value}</div>
     </div>
   );
 }
@@ -1050,12 +1050,12 @@ function PixQrModal({
         {/* ── Loading ─────────────────────────────────────────────────── */}
         {qrState.status === "loading" && (
           <div className="flex flex-col items-center py-8">
-            <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-[#EE4D2D]/20 border-t-[#EE4D2D]" />
-            <p className="text-sm font-medium text-gray-700">Gerando PIX...</p>
-            <p className="mt-1 text-xs text-gray-500">Conectando ao EvoPay</p>
+            <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-[var(--accent)]/20 border-t-[#EE4D2D]" />
+            <p className="text-sm font-medium text-[var(--text)]">Gerando PIX...</p>
+            <p className="mt-1 text-xs text-[var(--muted)]">Conectando ao EvoPay</p>
             {pack && (
-              <div className="mt-4 rounded-lg bg-gray-50 px-4 py-2 text-center">
-                <span className="text-xs text-gray-500">
+              <div className="mt-4 rounded-lg bg-[var(--muted-bg)] px-4 py-2 text-center">
+                <span className="text-xs text-[var(--muted)]">
                   {pack.name} • {brl(pack.price)}
                 </span>
               </div>
@@ -1069,18 +1069,18 @@ function PixQrModal({
             <div className="mb-4 grid h-12 w-12 place-items-center rounded-full bg-red-100 text-red-500">
               <span className="text-xl font-bold">!</span>
             </div>
-            <p className="text-sm font-semibold text-gray-900">Erro ao gerar PIX</p>
-            <p className="mt-1 text-center text-xs text-gray-500">{qrState.message}</p>
+            <p className="text-sm font-semibold text-[var(--text)]">Erro ao gerar PIX</p>
+            <p className="mt-1 text-center text-xs text-[var(--muted)]">{qrState.message}</p>
             <div className="mt-6 flex w-full gap-3">
               <button
                 onClick={onClose}
-                className="flex-1 rounded-lg border border-gray-200 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-50"
+                className="flex-1 rounded-lg border border-[var(--border)] py-2.5 text-sm font-semibold text-gray-600 hover:bg-[var(--muted-bg)]"
               >
                 Fechar
               </button>
               <button
                 onClick={onRetry}
-                className="flex-1 rounded-lg bg-[#EE4D2D] py-2.5 text-sm font-semibold text-white hover:bg-[#d93e22]"
+                className="flex-1 rounded-lg bg-[var(--accent)] py-2.5 text-sm font-semibold text-white hover:opacity-90"
               >
                 Tentar novamente
               </button>
@@ -1101,7 +1101,7 @@ function PixQrModal({
             </DialogHeader>
 
             {/* QR Code image */}
-            <div className="my-4 flex justify-center rounded-xl border border-gray-200 bg-white p-3">
+            <div className="my-4 flex justify-center rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3">
               <img
                 src={`data:image/png;base64,${qrState.qrCodeBase64}`}
                 alt="QR Code PIX"
@@ -1110,24 +1110,24 @@ function PixQrModal({
             </div>
 
             {/* Pack info */}
-            <div className="mb-4 w-full rounded-xl bg-gray-50 border border-gray-200 px-4 py-3">
+            <div className="mb-4 w-full rounded-xl bg-[var(--muted-bg)] border border-[var(--border)] px-4 py-3">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-500">Valor</span>
-                <span className="font-bold text-gray-900">{brl(pack.price)}</span>
+                <span className="text-[var(--muted)]">Valor</span>
+                <span className="font-bold text-[var(--text)]">{brl(pack.price)}</span>
               </div>
               <div className="mt-1 flex items-center justify-between text-sm">
-                <span className="text-gray-500">Pacote</span>
-                <span className="font-semibold text-[#EE4D2D]">{pack.name}</span>
+                <span className="text-[var(--muted)]">Pacote</span>
+                <span className="font-semibold text-[var(--accent)]">{pack.name}</span>
               </div>
             </div>
 
             {/* PIX code text */}
             <div className="mb-3 w-full">
-              <p className="mb-1 text-[10px] font-semibold text-gray-500 uppercase">
+              <p className="mb-1 text-[10px] font-semibold text-[var(--muted)] uppercase">
                 Código PIX (copia e cola)
               </p>
-              <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5">
-                <p className="break-all text-[11px] leading-relaxed text-gray-700 font-mono select-all">
+              <div className="rounded-lg border border-[var(--border)] bg-[var(--muted-bg)] px-3 py-2.5">
+                <p className="break-all text-[11px] leading-relaxed text-[var(--text)] font-mono select-all">
                   {qrState.qrCodeText}
                 </p>
               </div>
@@ -1139,7 +1139,7 @@ function PixQrModal({
               className={`mb-3 flex w-full items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-semibold transition-all ${
                 copied
                   ? "bg-emerald-500 text-white"
-                  : "bg-[#EE4D2D] text-white hover:bg-[#d93e22]"
+                  : "bg-[var(--accent)] text-white hover:opacity-90"
               }`}
             >
               {copied ? (
@@ -1154,7 +1154,7 @@ function PixQrModal({
             </button>
 
             {/* Auto-activation message */}
-            <div className="mb-4 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-center">
+            <div className="mb-4 rounded-lg border border-[var(--border)] bg-[var(--muted-bg)] px-4 py-3 text-center">
               <p className="text-xs text-gray-600">
                 Após o pagamento, seu anúncio será{" "}
                 <strong>ativado automaticamente</strong>.
@@ -1163,7 +1163,7 @@ function PixQrModal({
 
             <button
               onClick={onClose}
-              className="w-full rounded-lg border border-gray-200 py-2.5 text-sm font-semibold text-gray-500 hover:bg-gray-50"
+              className="w-full rounded-lg border border-[var(--border)] py-2.5 text-sm font-semibold text-[var(--muted)] hover:bg-[var(--muted-bg)]"
             >
               Fechar
             </button>

@@ -1,49 +1,16 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
-import { Grid3X3, ShoppingBag, TrendingUp, Users, Radio, Clapperboard, Link2, Settings2, LogOut, Bell, Loader2, Search, Zap, Eye, EyeOff, ShieldCheck, Info, Menu, Crown } from "lucide-react";
+import { Bell, Loader2, Search, Zap, Eye, EyeOff, Info, LogOut } from "lucide-react";
 import { useApp, MARKETPLACE_LABEL } from "../../lib/state";
 import { brl } from "../../lib/format";
 import { toast } from "sonner";
-import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "../ui/sheet";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
-
-type NavItem = { to: string; label: string; icon: typeof Grid3X3; exact?: boolean; special?: "fire" | "impulsionar"; adminOnly?: boolean };
-const baseNav: NavItem[] = [
-  { to: "/dashboard", label: "Dashboard", icon: Grid3X3, exact: true },
-  { to: "/dashboard/produtos", label: "Produtos", icon: ShoppingBag },
-
-
-
-  // { to: "/dashboard/impulsionar-vendas", label: "Subir Anúncios", icon: TrendingUp },
-  { to: "/dashboard/grupos", label: "Grupos de Divulgação", icon: Users },
-  { to: "/dashboard/robo-divulgador", label: "IA Divulgadora", icon: Radio },
-  { to: "/dashboard/video-ia", label: "Vídeo IA", icon: Clapperboard },
-  { to: "/dashboard/conectar-contas", label: "Conectar Contas", icon: Link2 },
-  { to: "/dashboard/configuracoes", label: "Configurações", icon: Settings2 },
-
-];
-const adminExtraNav: NavItem[] = [
-  { to: "/dashboard/validar-cadastros", label: "Validar Cadastros", icon: ShieldCheck },
-];
-
-function Logo() {
-  return (
-    <div className="flex flex-col items-start py-4">
-      <img
-        src="/brand/logo.png"
-        alt="UpShopee"
-        className="w-full max-w-[180px] object-contain"
-        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-      />
-    </div>
-  );
-}
+import { BottomDock } from "./BottomDock";
 
 export function DashboardShell({ children, title, subtitle, actions, onLightningClick, onResetMetrics }: { children: ReactNode; title: string; subtitle?: string; actions?: ReactNode; onLightningClick?: () => void; onResetMetrics?: () => void }) {
-  const { user, logout, isAdmin, selectedMarketplace, privacy, setPrivacy, adminPresentationMode, toggleAdminPresentationMode, hasLightningAccess, recordLightningClick, resetTodaySales, passwordResetRequired } = useApp();
+  const { user, logout, isAdmin, privacy, setPrivacy, selectedMarketplace, adminPresentationMode, toggleAdminPresentationMode, hasLightningAccess, recordLightningClick, resetTodaySales, passwordResetRequired } = useApp();
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const [mobileOpen, setMobileOpen] = useState(false);
   const [lightningLoading, setLightningLoading] = useState(false);
 
   useEffect(() => {
@@ -54,155 +21,110 @@ export function DashboardShell({ children, title, subtitle, actions, onLightning
     if (user && passwordResetRequired) navigate({ to: "/redefinir-senha", replace: true });
   }, [user, passwordResetRequired, navigate]);
 
-  useEffect(() => { setMobileOpen(false); }, [pathname]);
-
   const handleLogout = () => { logout(); navigate({ to: "/login" }); };
-  const showAdmin = isAdmin && !adminPresentationMode;
-  const nav: NavItem[] = (showAdmin ? [...baseNav, ...adminExtraNav] : [...baseNav]).filter(({ adminOnly }) => !adminOnly || isAdmin);
-
-  const NavList = (
-    <nav className="flex-1 space-y-0.5 px-3">
-      {nav.map(({ to, label, icon: Icon, exact }) => {
-        const active = exact ? pathname === to : pathname.startsWith(to);
-
-        return (
-          <Link
-            key={to}
-            to={to}
-            onClick={() => setMobileOpen(false)}
-            className={`group flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium tracking-[-0.01em] transition-colors ${
-              active
-                ? "text-[#EE4D2D]"
-                : "text-foreground/70 hover:text-foreground"
-            }`}
-          >
-            <span
-              className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
-                active
-                  ? "bg-[#EE4D2D]/10"
-                  : "bg-transparent group-hover:bg-muted"
-              }`}
-            >
-              <Icon className={`h-[18px] w-[18px] ${active ? "text-[#EE4D2D]" : ""}`} />
-            </span>
-            <span className={active ? "font-semibold" : ""}>{label}</span>
-          </Link>
-        );
-      })}
-    </nav>
-  );
 
   return (
-    <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
-      {/* Desktop sidebar — right-aligned, Shopee-style */}
-      <aside className="fixed inset-y-0 right-0 hidden w-60 flex-col border-l border-border/50 bg-sidebar md:flex">
-        <div className="border-b border-border/50 px-5 pb-4 pt-5 mb-2">
-          <Logo />
+    <div className="min-h-screen bg-[var(--bg)] text-[var(--text)] overflow-x-hidden">
+      {/* ── Header bar ── */}
+      <header className="sticky top-0 z-20 flex h-16 items-center justify-between gap-2 border-b border-[var(--border)] bg-[var(--bg)]/80 backdrop-blur px-3 md:px-8">
+        <div className="flex min-w-0 items-center gap-2">
+          {/* Logo — visible on mobile where it was previously in the sidebar */}
+          <Link to="/dashboard" className="flex shrink-0 items-center md:hidden">
+            <img
+              src="/brand/logo.png"
+              alt="UpShopee"
+              className="h-8 w-auto object-contain"
+              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+            />
+          </Link>
+          <div className="min-w-0">
+            <h1 className="truncate text-sm font-semibold tracking-tight md:text-lg" style={{ fontFamily: "'Sora', sans-serif" }}>{title}</h1>
+            {subtitle && <p className="hidden truncate text-xs text-[var(--muted)] sm:block">{subtitle}</p>}
+          </div>
         </div>
-        {NavList}
-        <div className="border-t border-border/50 pt-2 mt-2">
-          <button
-            onClick={handleLogout}
-            className="mx-3 mb-3 flex w-[calc(100%-24px)] items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium tracking-[-0.01em] text-foreground/50 hover:bg-muted hover:text-foreground/80 transition-colors"
+
+        <div className="flex items-center gap-2 md:gap-3">
+          {/* Search placeholder — desktop only */}
+          <div className="hidden items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-xs text-[var(--muted)] md:flex">
+            <Search className="h-3.5 w-3.5" /> Buscar...
+          </div>
+
+          {/* Planos link */}
+          <Link
+            to="/ofertas"
+            className="hidden items-center gap-1.5 rounded-full border border-[var(--accent)]/20 bg-[var(--accent-soft)] px-3 py-1.5 text-xs font-semibold text-[var(--accent)] transition-all hover:bg-[var(--accent-soft)] md:flex"
           >
-            <LogOut className="h-[18px] w-[18px]" /> Sair
+            <Zap className="h-3.5 w-3.5" /> Planos
+          </Link>
+
+          {/* Privacy toggle */}
+          <button
+            onClick={() => setPrivacy(!privacy)}
+            aria-label={privacy ? "Mostrar valores" : "Ocultar valores"}
+            title={privacy ? "Mostrar valores" : "Ocultar valores"}
+            className="grid h-9 w-9 place-items-center rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:text-[var(--text)] transition-colors"
+          >
+            {privacy ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>
-        </div>
-      </aside>
 
-      <div className="md:pr-60">
-        <header className="sticky top-0 z-20 flex h-16 items-center justify-between gap-2 border-b border-border bg-background/80 px-3 backdrop-blur md:px-8">
-          <div className="flex min-w-0 items-center gap-2">
-            <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-              <SheetTrigger asChild>
-                <button aria-label="Abrir menu" className="grid h-9 w-9 place-items-center rounded-lg border border-[#EE4D2D] bg-card text-[#EE4D2D] md:hidden">
-                  <Menu className="h-4 w-4" />
+          {/* Notifications */}
+          <button aria-label="Notificações" className="hidden h-9 w-9 place-items-center rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:text-[var(--text)] transition-colors md:grid">
+            <Bell className="h-4 w-4" />
+          </button>
+
+          {/* User avatar + info popover */}
+          <div className="flex min-w-0 items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2 py-1.5">
+            <div className="grid h-7 w-7 place-items-center rounded-md bg-[var(--accent-soft)] text-xs font-bold text-[var(--accent)]">
+              {(user?.name || "U").slice(0, 1).toUpperCase()}
+            </div>
+            <div className="hidden min-w-0 max-w-[180px] text-xs leading-tight md:block">
+              <div className="truncate font-medium">{user?.name}</div>
+              <div className="truncate text-[var(--muted)]">{user?.email}</div>
+            </div>
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  aria-label="Informações sobre o ambiente demonstrativo"
+                  onClick={() => {
+                    if (!isAdmin) return;
+                    const enabled = toggleAdminPresentationMode();
+                    toast.success(enabled ? "Modo apresentação ativado." : "Modo apresentação desativado.");
+                    if (enabled && pathname === "/dashboard/validar-cadastros") navigate({ to: "/dashboard" });
+                  }}
+                  className="grid h-6 w-6 place-items-center rounded-full border border-[var(--border)]/70 bg-[var(--bg)]/60 text-[var(--muted)] transition hover:text-[var(--text)]"
+                >
+                  <Info className="h-3.5 w-3.5" />
                 </button>
-              </SheetTrigger>
-              <SheetContent side="right" className="w-[85vw] sm:w-72 bg-sidebar p-0">
-                <SheetTitle className="sr-only">Menu</SheetTitle>
-                <div className="border-b border-border/50 px-5 pb-4 pt-5 mb-2">
-                  <Logo />
-                </div>
-                {NavList}
-                <div className="border-t border-border/50 pt-2 mt-2">
-                  <button
-                    onClick={handleLogout}
-                    className="mx-3 mb-4 flex w-[calc(100%-24px)] items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium tracking-[-0.01em] text-foreground/50 hover:bg-muted hover:text-foreground/80 transition-colors"
-                  >
-                    <LogOut className="h-[18px] w-[18px]" /> Sair
-                  </button>
-                </div>
-              </SheetContent>
-            </Sheet>
-            <div className="min-w-0">
-              <h1 className="truncate text-sm font-semibold tracking-tight md:text-lg">{title}</h1>
-              {subtitle && <p className="hidden truncate text-xs text-muted-foreground sm:block">{subtitle}</p>}
-            </div>
+              </PopoverTrigger>
+              <PopoverContent align="end" sideOffset={8} className="w-[280px] text-xs leading-relaxed">
+                <div className="mb-1 text-sm font-semibold text-[var(--text)]" style={{ fontFamily: "'Sora', sans-serif" }}>Ambiente demonstrativo</div>
+                <p className="text-[var(--muted)]">
+                  Este painel é uma simulação da UpShopee, demonstrando como será a integração prevista para agosto de 2026 com Shopee, Mercado Livre e Shein. Os resultados, métricas, pedidos e comissões exibidos aqui são demonstrativos e não representam resultados reais.
+                </p>
+                <button
+                  onClick={handleLogout}
+                  className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-[var(--border)] px-3 py-2 text-xs font-medium text-[var(--muted)] transition-colors hover:bg-[var(--accent-soft)] hover:text-[var(--accent)]"
+                >
+                  <LogOut className="h-3.5 w-3.5" /> Sair
+                </button>
+              </PopoverContent>
+            </Popover>
           </div>
-          <div className="flex items-center gap-2 md:gap-3">
-            <div className="hidden items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground md:flex">
-              <Search className="h-3.5 w-3.5" /> Buscar...
-            </div>
-            <Link
-              to="/ofertas"
-              className="hidden items-center gap-1.5 rounded-lg border border-[#EE4D2D]/20 bg-[#FFF8F5] px-3 py-1.5 text-xs font-semibold text-[#EE4D2D] transition-all hover:bg-[#EE4D2D]/10 hover:border-[#EE4D2D]/40 md:flex"
-            >
-              <Zap className="h-3.5 w-3.5" /> Planos
-            </Link>
-            <button
-              onClick={() => setPrivacy(!privacy)}
-              aria-label={privacy ? "Mostrar valores" : "Ocultar valores"}
-              title={privacy ? "Mostrar valores" : "Ocultar valores"}
-              className="grid h-9 w-9 place-items-center rounded-lg border border-border bg-card text-muted-foreground hover:text-foreground"
-            >
-              {privacy ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
-            <button aria-label="Notificações" className="hidden h-9 w-9 place-items-center rounded-lg border border-border bg-card text-muted-foreground hover:text-foreground md:grid">
-              <Bell className="h-4 w-4" />
-            </button>
-            <div className="flex min-w-0 items-center gap-2 rounded-lg border border-border bg-card px-2 py-1.5">
-              <div className="grid h-7 w-7 place-items-center rounded-md bg-primary/20 text-xs font-bold text-primary">
-                {(user?.name || "U").slice(0, 1).toUpperCase()}
-              </div>
-              <div className="hidden min-w-0 max-w-[180px] text-xs leading-tight md:block">
-                <div className="truncate font-medium">{user?.name}</div>
-                <div className="truncate text-muted-foreground">{user?.email}</div>
-              </div>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <button
-                    aria-label="Informações sobre o ambiente demonstrativo"
-                    onClick={() => {
-                      if (!isAdmin) return;
-                      const enabled = toggleAdminPresentationMode();
-                      toast.success(enabled ? "Modo apresentação ativado." : "Modo apresentação desativado.");
-                      if (enabled && pathname === "/dashboard/validar-cadastros") navigate({ to: "/dashboard" });
-                    }}
-                    className="grid h-6 w-6 place-items-center rounded-full border border-border/70 bg-background/60 text-muted-foreground transition hover:text-foreground"
-                  >
-                    <Info className="h-3.5 w-3.5" />
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent align="end" sideOffset={8} className="w-[280px] text-xs leading-relaxed">
-                  <div className="mb-1 text-sm font-semibold text-foreground">Ambiente demonstrativo</div>
-                  <p className="text-muted-foreground">
-                    Este painel é uma simulação da UpShopee, demonstrando como será a integração prevista para agosto de 2026 com Shopee, Mercado Livre e Shein. Os resultados, métricas, pedidos e comissões exibidos aqui são demonstrativos e não representam resultados reais.
-                  </p>
-                </PopoverContent>
-              </Popover>
-            </div>
-          </div>
-        </header>
+        </div>
+      </header>
 
-        <main key={privacy ? "p1" : "p0"} className="min-w-0 px-4 py-6 md:px-8 md:py-8">
-          {actions && <div className="mb-6 flex flex-wrap items-center justify-between gap-3">{actions}</div>}
-          {children}
-        </main>
-      </div>
+      {/* ── Main content ── */}
+      <main key={privacy ? "p1" : "p0"} className="min-w-0 px-4 py-6 md:px-8 md:py-8 pb-28 md:pb-24">
+        {actions && <div className="mb-6 flex flex-wrap items-center justify-between gap-3">{actions}</div>}
+        {children}
+      </main>
 
+      {/* ── Bottom Dock ── */}
+      <BottomDock />
+
+      {/* ── Lightning button (admin) ── */}
       {hasLightningAccess && (
-        <div className="flex gap-2 fixed bottom-6 left-6 z-50">
+        <div className="flex gap-2 fixed bottom-24 md:bottom-20 left-6 z-50">
           <button
             onClick={() => {
               if (window.confirm('Zerar as vendas de hoje?')) {
@@ -238,7 +160,7 @@ export function DashboardShell({ children, title, subtitle, actions, onLightning
             disabled={lightningLoading}
             aria-label={`Simular venda em ${MARKETPLACE_LABEL[selectedMarketplace]}`}
             title={`Simular venda em ${MARKETPLACE_LABEL[selectedMarketplace]}`}
-            className={`grid h-12 w-12 place-items-center rounded-full shadow-2xl shadow-primary/40 ring-1 ring-primary/40 transition hover:scale-105 ${lightningLoading ? "bg-gray-400 cursor-not-allowed" : "bg-primary text-primary-foreground"}`}
+            className={`grid h-12 w-12 place-items-center rounded-full shadow-2xl shadow-[var(--accent)]/40 ring-1 ring-[var(--accent)]/40 transition hover:scale-105 ${lightningLoading ? "bg-gray-400 cursor-not-allowed" : "bg-[var(--accent)] text-white"}`}
           >
             {lightningLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Zap className="h-5 w-5" />}
           </button>

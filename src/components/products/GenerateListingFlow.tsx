@@ -78,7 +78,6 @@ export function GenerateListingFlow({ product, open, onClose }: { product: Produ
       setSendProgress((p) => {
         if (p >= 100) {
           clearInterval(id);
-          // Save to "Meus Produtos"
           if (calc) {
             const now = Date.now();
             const saved: SavedProduct = {
@@ -118,7 +117,7 @@ export function GenerateListingFlow({ product, open, onClose }: { product: Produ
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto rounded-[20px] border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-elevated)]">
 
         {/* ── Step indicator dots ── */}
         {step !== "gerando" && step !== "enviando" && step !== "sucesso" && (
@@ -129,9 +128,9 @@ export function GenerateListingFlow({ product, open, onClose }: { product: Produ
               const isDone = i >= 0 && i < currentIdx;
               return (
                 <div key={s} className={`rounded-full transition-all duration-300 ${
-                  isActive ? "h-2.5 w-2.5 bg-[#EE4D2D]"
+                  isActive ? "h-2.5 w-2.5 bg-[var(--accent)] shadow-[var(--accent-glow)]"
                   : isDone ? "h-2 w-2 bg-emerald-400"
-                  : "h-2 w-2 bg-gray-200"
+                  : "h-2 w-2 bg-[var(--border)]"
                 }`} />
               );
             })}
@@ -142,14 +141,14 @@ export function GenerateListingFlow({ product, open, onClose }: { product: Produ
         {step === "gerando" && (
           <div className="flex flex-col items-center justify-center py-16">
             <div className="relative mb-6">
-              <img src={product.image} alt={product.name} className="h-28 w-28 rounded-2xl object-contain bg-gray-50 p-2 animate-pulse" />
+              <img src={product.image} alt={product.name} className="h-28 w-28 rounded-[16px] object-contain bg-[var(--muted-bg)] p-2 animate-pulse" />
               <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-[#EE4D2D] animate-bounce" style={{animationDelay:"0ms"}} />
-                <span className="h-2 w-2 rounded-full bg-[#EE4D2D] animate-bounce" style={{animationDelay:"150ms"}} />
-                <span className="h-2 w-2 rounded-full bg-[#EE4D2D] animate-bounce" style={{animationDelay:"300ms"}} />
+                <span className="h-2 w-2 rounded-full bg-[var(--accent)] animate-bounce" style={{animationDelay:"0ms"}} />
+                <span className="h-2 w-2 rounded-full bg-[var(--accent)] animate-bounce" style={{animationDelay:"150ms"}} />
+                <span className="h-2 w-2 rounded-full bg-[var(--accent)] animate-bounce" style={{animationDelay:"300ms"}} />
               </div>
             </div>
-            <p className="text-sm font-medium text-gray-700">Preparando seu anúncio...</p>
+            <p className="text-sm font-medium text-[var(--text)]">Preparando seu anúncio...</p>
             <AnimatedStatusText texts={["Analisando produto...","Otimizando título...","Calculando preços...","Pronto!"]} />
           </div>
         )}
@@ -157,27 +156,26 @@ export function GenerateListingFlow({ product, open, onClose }: { product: Produ
         {/* ═══ STEP: anuncio ═══ */}
         {step === "anuncio" && (
           <div className="space-y-4">
-            {/* Product preview card */}
-            <div className="flex items-center gap-4 rounded-2xl border border-gray-200 bg-white p-4">
-              <img src={product.image} alt={product.name} className="h-16 w-16 rounded-xl object-contain bg-gray-50 p-1" />
+            <h3 className="text-base font-semibold text-[var(--text)]" style={{ fontFamily: "'Sora', sans-serif" }}>Pré-visualização do anúncio</h3>
+            <div className="flex items-center gap-4 rounded-[16px] border border-[var(--border)] bg-[var(--surface)] p-4">
+              <img src={product.image} alt={product.name} className="h-16 w-16 rounded-xl object-contain bg-[var(--muted-bg)] p-1" />
               <div className="min-w-0">
-                <h3 className="text-sm font-semibold text-gray-900 line-clamp-2">{product.name} — Original, Envio Rápido</h3>
-                <div className="mt-1 flex flex-wrap gap-1">{product.keywords.slice(0,3).map(k => <span key={k} className="rounded-md bg-gray-100 px-2 py-0.5 text-[10px] text-gray-500">{k}</span>)}</div>
+                <h3 className="text-sm font-semibold text-[var(--text)] line-clamp-2">{product.name} — Original, Envio Rápido</h3>
+                <div className="mt-1 flex flex-wrap gap-1">{product.keywords.slice(0,3).map(k => <span key={k} className="rounded-md bg-[var(--muted-bg)] px-2 py-0.5 text-[10px] text-[var(--muted)]">{k}</span>)}</div>
               </div>
             </div>
-            {/* Generated listing */}
-            <div className="rounded-2xl border-2 border-dashed border-gray-200 bg-[#FAFAFA] p-5">
+            <div className="rounded-[16px] border-2 border-dashed border-[var(--border)] bg-[var(--bg)] p-5">
               <div className="flex items-center justify-between mb-3">
-                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Pré-visualização do anúncio</h4>
+                <h4 className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wide">Texto do anúncio</h4>
                 <button onClick={() => { navigator.clipboard.writeText(listingText); toast.success("Anúncio copiado!"); }}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 hover:border-[#EE4D2D]/30 hover:text-[#EE4D2D] transition-colors">
+                  className="btn-ghost text-xs px-3 py-1.5">
                   <Copy className="h-3 w-3" /> Copiar
                 </button>
               </div>
-              <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">{listingText}</p>
+              <p className="text-sm text-[var(--text)] whitespace-pre-line leading-relaxed">{listingText}</p>
             </div>
             <div className="flex justify-end">
-              <Button onClick={() => setStep("fornecedor")} className="rounded-xl bg-[#EE4D2D] text-white hover:bg-[#d93e22]">
+              <Button onClick={() => setStep("fornecedor")} className="btn-primary rounded-full">
                 Continuar <ArrowRight className="ml-1 h-3.5 w-3.5" />
               </Button>
             </div>
@@ -188,8 +186,8 @@ export function GenerateListingFlow({ product, open, onClose }: { product: Produ
         {step === "fornecedor" && (
           <div className="space-y-4">
             <div>
-              <h3 className="text-base font-semibold text-gray-900">Escolha seu fornecedor</h3>
-              <p className="text-sm text-gray-500">Selecione o centro de distribuição com melhor custo-benefício</p>
+              <h3 className="text-base font-semibold text-[var(--text)]" style={{ fontFamily: "'Sora', sans-serif" }}>Escolha seu fornecedor</h3>
+              <p className="text-sm text-[var(--muted)]">Selecione o centro de distribuição com melhor custo-benefício</p>
             </div>
             <div className="grid gap-3 md:grid-cols-2">
               {suppliers.map((s) => {
@@ -200,32 +198,32 @@ export function GenerateListingFlow({ product, open, onClose }: { product: Produ
                 const savings = otherCost - cost;
                 return (
                   <button key={s.id} onClick={() => setSupplierId(s.id)}
-                    className={`relative text-left rounded-2xl border-2 p-5 transition-all duration-200 ${
-                      selected ? "border-[#EE4D2D] bg-[#FFF8F5]" : "border-gray-200 bg-white hover:border-gray-300"
+                    className={`relative text-left rounded-[16px] border-2 p-5 transition-all duration-200 ${
+                      selected ? "border-[var(--accent)] bg-[var(--accent-soft)]" : "border-[var(--border)] bg-[var(--surface)] hover:border-[var(--border-warm)]"
                     }`}>
-                    {selected && <div className="absolute top-3 right-3 h-6 w-6 rounded-full bg-[#EE4D2D] flex items-center justify-center"><Check className="h-3.5 w-3.5 text-white" /></div>}
+                    {selected && <div className="absolute top-3 right-3 h-6 w-6 rounded-full bg-[var(--accent)] flex items-center justify-center shadow-[var(--accent-glow)]"><Check className="h-3.5 w-3.5 text-white" /></div>}
                     <div className="flex items-center gap-3 mb-3">
-                      <div className="h-10 w-10 rounded-xl bg-gray-100 flex items-center justify-center text-sm font-bold text-gray-600">{s.location.split(" ")[0].slice(0,2)}</div>
+                      <div className="h-10 w-10 rounded-xl bg-[var(--accent-soft)] flex items-center justify-center text-sm font-bold text-[var(--accent)]">{s.location.split(" ")[0].slice(0,2)}</div>
                       <div>
-                        <div className="font-semibold text-gray-900">{s.name}</div>
-                        <div className="text-xs text-gray-500">{s.location}</div>
+                        <div className="font-semibold text-[var(--text)]">{s.name}</div>
+                        <div className="text-xs text-[var(--muted)]">{s.location}</div>
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-xs mb-3">
-                      <div className="bg-gray-50 rounded-lg p-2"><div className="text-gray-400">Preço</div><div className="font-semibold text-gray-900">{brl(cost)}</div></div>
-                      <div className="bg-gray-50 rounded-lg p-2"><div className="text-gray-400">Prazo</div><div className="font-semibold text-gray-900">{s.dispatchTime}</div></div>
-                      <div className="bg-gray-50 rounded-lg p-2"><div className="text-gray-400">Estoque</div><div className="font-semibold text-gray-900">{s.baseStock} un.</div></div>
-                      <div className="bg-gray-50 rounded-lg p-2"><div className="text-gray-400">Nota</div><div className="font-semibold text-amber-500">{s.reputation.toFixed(1)} ★</div></div>
+                      <div className="bg-[var(--muted-bg)] rounded-lg p-2"><div className="text-[var(--muted)]">Preço</div><div className="font-semibold text-[var(--text)]">{brl(cost)}</div></div>
+                      <div className="bg-[var(--muted-bg)] rounded-lg p-2"><div className="text-[var(--muted)]">Prazo</div><div className="font-semibold text-[var(--text)]">{s.dispatchTime}</div></div>
+                      <div className="bg-[var(--muted-bg)] rounded-lg p-2"><div className="text-[var(--muted)]">Estoque</div><div className="font-semibold text-[var(--text)]">{s.baseStock} un.</div></div>
+                      <div className="bg-[var(--muted-bg)] rounded-lg p-2"><div className="text-[var(--muted)]">Nota</div><div className="font-semibold text-amber-500">{s.reputation.toFixed(1)} ★</div></div>
                     </div>
                     {savings > 0 && !selected && (
-                      <div className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-600">Economize {brl(savings)}</div>
+                      <div className="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">Economize {brl(savings)}</div>
                     )}
                   </button>
                 );
               })}
             </div>
             <div className="flex justify-end">
-              <Button onClick={() => setStep("marketplaces")} className="rounded-xl bg-[#EE4D2D] text-white hover:bg-[#d93e22]">
+              <Button onClick={() => setStep("marketplaces")} className="btn-primary rounded-full">
                 Selecionar fornecedor <ArrowRight className="ml-1 h-3.5 w-3.5" />
               </Button>
             </div>
@@ -236,15 +234,15 @@ export function GenerateListingFlow({ product, open, onClose }: { product: Produ
         {step === "marketplaces" && (
           <div className="space-y-4">
             <div>
-              <h3 className="text-base font-semibold text-gray-900">Escolha onde enviar</h3>
-              <p className="text-sm text-gray-500">Selecione uma ou mais contas conectadas para publicar o anúncio</p>
+              <h3 className="text-base font-semibold text-[var(--text)]" style={{ fontFamily: "'Sora', sans-serif" }}>Escolha onde enviar</h3>
+              <p className="text-sm text-[var(--muted)]">Selecione uma ou mais contas conectadas para publicar o anúncio</p>
             </div>
             {connected.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50/50 p-8 text-center">
-                <Plug className="mx-auto h-8 w-8 text-gray-300" />
-                <h4 className="mt-4 text-base font-semibold text-gray-700">Nenhuma conexão validada</h4>
-                <p className="mt-1 text-sm text-gray-500 max-w-xs mx-auto">Para enviar produtos para sua loja, conecte sua conta Shopee primeiro.</p>
-                <Link to="/dashboard/conectar-contas"><Button className="mt-4 rounded-xl">Conectar conta</Button></Link>
+              <div className="rounded-[16px] border border-dashed border-[var(--border)] bg-[var(--bg)] p-8 text-center">
+                <Plug className="mx-auto h-8 w-8 text-[var(--muted)]" />
+                <h4 className="mt-4 text-base font-semibold text-[var(--text)]" style={{ fontFamily: "'Sora', sans-serif" }}>Nenhuma conexão validada</h4>
+                <p className="mt-1 text-sm text-[var(--muted)] max-w-xs mx-auto">Para enviar produtos para sua loja, conecte sua conta Shopee primeiro.</p>
+                <Link to="/dashboard/conectar-contas"><Button className="mt-4 btn-primary rounded-full">Conectar conta</Button></Link>
               </div>
             ) : (
               <>
@@ -252,24 +250,24 @@ export function GenerateListingFlow({ product, open, onClose }: { product: Produ
                   {connected.map((mp) => {
                     const sel = selectedMPs.includes(mp);
                     return (
-                      <button key={mp} onClick={() => toggleMP(mp)} className={`text-left rounded-2xl border-2 p-4 transition-all duration-200 ${
-                        sel ? "border-[#EE4D2D] bg-[#FFF8F5]" : "border-gray-200 bg-white hover:border-gray-300"
+                      <button key={mp} onClick={() => toggleMP(mp)} className={`text-left rounded-[16px] border-2 p-4 transition-all duration-200 ${
+                        sel ? "border-[var(--accent)] bg-[var(--accent-soft)]" : "border-[var(--border)] bg-[var(--surface)] hover:border-[var(--border-warm)]"
                       }`}>
                         <div className="flex items-center justify-between">
-                          <div className="grid h-10 w-16 place-items-center rounded-lg bg-gray-50 p-1.5">
+                          <div className="grid h-10 w-16 place-items-center rounded-lg bg-[var(--muted-bg)] p-1.5">
                             <MPLogo mp={mp} className="max-h-7 max-w-full object-contain" />
                           </div>
-                          {sel && <Check className="h-4 w-4 text-[#EE4D2D]" />}
+                          {sel && <Check className="h-4 w-4 text-[var(--accent)]" />}
                         </div>
-                        <div className="mt-3 font-semibold text-gray-900">{MARKETPLACE_LABEL[mp]}</div>
-                        <div className="mt-1 inline-block rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-600">Conexão validada</div>
+                        <div className="mt-3 font-semibold text-[var(--text)]">{MARKETPLACE_LABEL[mp]}</div>
+                        <div className="mt-1 inline-block rounded-md bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">Conexão validada</div>
                       </button>
                     );
                   })}
                 </div>
                 <div className="flex flex-col gap-2 sm:flex-row sm:justify-between">
-                  <Link to="/dashboard/conectar-contas"><Button variant="outline" className="rounded-xl">Conectar mais contas</Button></Link>
-                  <Button onClick={() => { if (selectedMPs.length === 0) { toast.error("Selecione pelo menos um marketplace para continuar."); return; } setStep("preco"); }} className="rounded-xl bg-[#EE4D2D] text-white hover:bg-[#d93e22]">
+                  <Link to="/dashboard/conectar-contas"><Button variant="outline" className="btn-ghost rounded-full">Conectar mais contas</Button></Link>
+                  <Button onClick={() => { if (selectedMPs.length === 0) { toast.error("Selecione pelo menos um marketplace para continuar."); return; } setStep("preco"); }} className="btn-primary rounded-full">
                     Continuar para precificação <ArrowRight className="ml-1 h-3.5 w-3.5" />
                   </Button>
                 </div>
@@ -282,28 +280,25 @@ export function GenerateListingFlow({ product, open, onClose }: { product: Produ
         {step === "preco" && calc && (
           <div className="space-y-4">
             <div>
-              <h3 className="text-base font-semibold text-gray-900">Defina seu lucro</h3>
-              <p className="text-sm text-gray-500">Ajuste a margem para encontrar o preço ideal</p>
+              <h3 className="text-base font-semibold text-[var(--text)]" style={{ fontFamily: "'Sora', sans-serif" }}>Defina seu lucro</h3>
+              <p className="text-sm text-[var(--muted)]">Ajuste a margem para encontrar o preço ideal</p>
             </div>
-            {/* Margin display */}
-            <div className="rounded-2xl border border-[#EE4D2D]/20 bg-[#FFF8F5] p-5 text-center">
-              <div className="text-[11px] font-medium text-[#EE4D2D]/70 uppercase mb-1">Margem de lucro</div>
-              <div className="text-4xl font-bold text-[#EE4D2D] tabular-nums">{margin}%</div>
+            <div className="rounded-[16px] border border-[var(--accent)]/20 bg-[var(--accent-soft)] p-5 text-center">
+              <div className="text-[11px] font-medium text-[var(--accent)]/70 uppercase mb-1">Margem de lucro</div>
+              <div className="text-4xl font-bold text-[var(--accent)] tabular-nums" style={{ fontFamily: "'Sora', sans-serif" }}>{margin}%</div>
             </div>
-            {/* Slider */}
-            <div className="rounded-2xl border border-gray-200 bg-white p-5">
+            <div className="rounded-[16px] border border-[var(--border)] bg-[var(--surface)] p-5">
               <Slider min={10} max={100} step={1} value={[margin]} onValueChange={(v) => setMargin(v[0])}
-                className="[&_[role=slider]]:h-5 [&_[role=slider]]:w-5 [&_[role=slider]]:border-2 [&_[role=slider]]:border-[#EE4D2D] [&_[role=slider]]:bg-white [&_[role=slider]]:shadow-md [&_.bg-primary]:bg-[#EE4D2D]" />
-              <div className="flex justify-between mt-2 text-[10px] text-gray-400"><span>10%</span><span>100%</span></div>
+                className="[&_[role=slider]]:h-5 [&_[role=slider]]:w-5 [&_[role=slider]]:border-2 [&_[role=slider]]:border-[var(--accent)] [&_[role=slider]]:bg-white [&_[role=slider]]:shadow-md [&_.bg-primary]:bg-[var(--accent)]" />
+              <div className="flex justify-between mt-2 text-[10px] text-[var(--muted)]"><span>10%</span><span>100%</span></div>
             </div>
-            {/* Stats */}
             <div className="grid gap-3 sm:grid-cols-3">
               <StatCard label="Preço sugerido" value={brl(calc.recommended)} accent />
               <StatCard label="Lucro por venda" value={brl(calc.netProfit)} />
               <StatCard label="Custo operacional" value={brl(calc.operational)} />
             </div>
             <div className="flex justify-end">
-              <Button onClick={runSend} className="rounded-xl bg-[#EE4D2D] text-white hover:bg-[#d93e22] shadow-sm shadow-[#EE4D2D]/25">
+              <Button onClick={runSend} className="btn-primary rounded-full">
                 <Send className="mr-1.5 h-3.5 w-3.5" /> {sendButtonLabel()}
               </Button>
             </div>
@@ -314,14 +309,14 @@ export function GenerateListingFlow({ product, open, onClose }: { product: Produ
         {step === "enviando" && (
           <div className="flex flex-col items-center py-12">
             <div className="relative mb-6">
-              <div className="h-16 w-16 rounded-2xl bg-[#FFF8F5] flex items-center justify-center">
-                <Send className="h-7 w-7 text-[#EE4D2D]" />
+              <div className="h-16 w-16 rounded-[16px] bg-[var(--accent-soft)] flex items-center justify-center">
+                <Send className="h-7 w-7 text-[var(--accent)]" />
               </div>
-              <div className="absolute inset-0 rounded-2xl border-2 border-[#EE4D2D]/20 animate-ping" />
+              <div className="absolute inset-0 rounded-[16px] border-2 border-[var(--accent)]/20 animate-ping" />
             </div>
-            <p className="text-sm font-medium text-gray-700 mb-4">Enviando para os marketplaces selecionados...</p>
-            <div className="w-full max-w-xs h-2 rounded-full bg-gray-100 overflow-hidden">
-              <div className="h-full rounded-full bg-gradient-to-r from-[#EE4D2D] to-orange-400 transition-all duration-300" style={{width:`${sendProgress}%`}} />
+            <p className="text-sm font-medium text-[var(--text)] mb-4">Enviando para os marketplaces selecionados...</p>
+            <div className="w-full max-w-xs h-2 rounded-full bg-[var(--muted-bg)] overflow-hidden">
+              <div className="h-full rounded-full bg-[var(--accent-gradient)] transition-all duration-300" style={{width:`${sendProgress}%`}} />
             </div>
             <ul className="mt-5 space-y-2 w-full max-w-xs">
               <StepLine done={sendProgress > 20} label="Gerando anúncio" />
@@ -340,13 +335,13 @@ export function GenerateListingFlow({ product, open, onClose }: { product: Produ
               @keyframes particle-out{0%{opacity:1;transform:rotate(var(--r,0deg)) translateY(0)}100%{opacity:0;transform:rotate(var(--r,0deg)) translateY(-60px)}}
             `}</style>
             <div className="relative">
-              <div className="h-20 w-20 rounded-full bg-emerald-100 flex items-center justify-center" style={{animation:"bounce-in 0.5s ease-out both"}}>
+              <div className="h-20 w-20 rounded-full bg-emerald-100 dark:bg-emerald-500/10 flex items-center justify-center" style={{animation:"bounce-in 0.5s ease-out both"}}>
                 <Check className="h-10 w-10 text-emerald-500" />
               </div>
               {[...Array(8)].map((_, i) => (
                 <div key={i} className="absolute top-1/2 left-1/2 h-1.5 w-1.5 rounded-full"
                   style={{
-                    background: ["#EE4D2D","#10B981","#8B5CF6","#3B82F6","#F59E0B","#EC4899","#14B8A6","#F97316"][i],
+                    background: ["#F4541E","#10B981","#8B5CF6","#3B82F6","#F59E0B","#EC4899","#14B8A6","#F97316"][i],
                     animation: `particle-out 0.7s ease-out forwards`,
                     animationDelay: `${i*0.04}s`,
                     transform: `rotate(${i*45}deg) translateY(-40px)`,
@@ -354,10 +349,10 @@ export function GenerateListingFlow({ product, open, onClose }: { product: Produ
                   }} />
               ))}
             </div>
-            <h3 className="mt-5 text-lg font-bold text-gray-900">Anúncio enviado!</h3>
-            <p className="mt-1 text-sm text-gray-500 text-center max-w-xs">Seu produto está em configuração e estará disponível em até 3 dias úteis.</p>
+            <h3 className="mt-5 text-lg font-bold text-[var(--text)]" style={{ fontFamily: "'Sora', sans-serif" }}>Anúncio enviado!</h3>
+            <p className="mt-1 text-sm text-[var(--muted)] text-center max-w-xs">Seu produto está em configuração e estará disponível em até 3 dias úteis.</p>
             <div className="mt-6 flex justify-center">
-              <Link to="/dashboard/grupos"><Button className="rounded-xl bg-[#EE4D2D] text-white hover:bg-[#d93e22]">Divulgar nos Grupos <ArrowRight className="ml-1 h-3.5 w-3.5" /></Button></Link>
+              <Link to="/dashboard/grupos"><Button className="btn-primary rounded-full">Divulgar nos Grupos <ArrowRight className="ml-1 h-3.5 w-3.5" /></Button></Link>
             </div>
           </div>
         )}
@@ -377,14 +372,14 @@ function AnimatedStatusText({ texts }: { texts: string[] }) {
     const t = setTimeout(() => setI(i + 1), 450);
     return () => clearTimeout(t);
   }, [i, texts.length]);
-  return <p className="mt-2 text-xs text-gray-400 transition-opacity duration-300">{texts[i]}</p>;
+  return <p className="mt-2 text-xs text-[var(--muted)] transition-opacity duration-300">{texts[i]}</p>;
 }
 
 function StatCard({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
-    <div className={`rounded-xl p-4 ${accent ? "bg-[#FFF8F5] border border-[#EE4D2D]/20" : "bg-gray-50 border border-gray-100"}`}>
-      <div className="text-[10px] text-gray-500 mb-0.5">{label}</div>
-      <div className={`text-lg font-bold ${accent ? "text-[#EE4D2D]" : "text-gray-900"}`}>{value}</div>
+    <div className={`rounded-xl p-4 ${accent ? "bg-[var(--accent-soft)] border border-[var(--accent)]/20" : "bg-[var(--muted-bg)] border border-[var(--border)]"}`}>
+      <div className="text-[10px] text-[var(--muted)] mb-0.5">{label}</div>
+      <div className={`text-lg font-bold ${accent ? "text-[var(--accent)]" : "text-[var(--text)]"}`} style={{ fontFamily: "'Sora', sans-serif" }}>{value}</div>
     </div>
   );
 }
@@ -394,8 +389,8 @@ function StepLine({ done, label }: { done: boolean; label: string }) {
     <li className="flex items-center gap-2 text-sm">
       {done
         ? <Check className="h-3.5 w-3.5 text-emerald-400" />
-        : <Loader2 className="h-3.5 w-3.5 animate-spin text-gray-300" />}
-      <span className={done ? "text-gray-700" : "text-gray-400"}>{label}</span>
+        : <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--muted)]" />}
+      <span className={done ? "text-[var(--text)]" : "text-[var(--muted)]"}>{label}</span>
     </li>
   );
 }

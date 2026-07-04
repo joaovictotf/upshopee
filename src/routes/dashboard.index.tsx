@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { DashboardShell } from "../components/layout/DashboardShell";
+import { LightScope } from "../components/layout/LightScope";
 import { useApp } from "../lib/state";
 import { brl, num } from "../lib/format";
 import {
@@ -184,7 +185,8 @@ function NewDashboard() {
 
   return (
     <DashboardShell title="Dashboard" subtitle="Painel UpShopee para Shopee">
-      <NewShopeeHeroPanel valor={metrics.totalCommission} privacy={privacy} stamp={stamp} />
+      <LightScope>
+        <NewShopeeHeroPanel valor={metrics.totalCommission} privacy={privacy} stamp={stamp} />
       <div className="mt-4 flex flex-col gap-4 lg:grid lg:grid-cols-12 lg:items-stretch">
         <div className="lg:col-span-3 flex flex-col">
           <NewMetricsBlock
@@ -200,6 +202,7 @@ function NewDashboard() {
           <Top5Block items={top5} />
         </div>
       </div>
+      </LightScope>
     </DashboardShell>
   );
 }

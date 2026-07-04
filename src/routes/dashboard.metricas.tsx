@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useApp } from "../lib/state";
 import { brl, num } from "../lib/format";
 import { DashboardShell } from "../components/layout/DashboardShell";
+import { LightScope } from "../components/layout/LightScope";
 import {
   AreaChart,
   Area,
@@ -201,7 +202,8 @@ function MetricasPage() {
 
   return (
     <DashboardShell title="" subtitle="">
-      {/* ── Action row: back + live monitor link ─── */}
+      <LightScope>
+        {/* ── Action row: back + live monitor link ─── */}
       <div className="mb-1 flex items-center justify-between">
         <Link
           to="/dashboard/"
@@ -634,6 +636,7 @@ function MetricasPage() {
           </div>
         </div>
       </div>
+      </LightScope>
     </DashboardShell>
   );
 }

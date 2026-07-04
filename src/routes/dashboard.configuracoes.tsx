@@ -45,23 +45,23 @@ function Config() {
 
   return (
     <DashboardShell title="Configurações" subtitle="Ajuste as preferências da sua operação.">
-      <div className="grid gap-5 lg:grid-cols-2">
+      <div className="page-enter grid gap-5 lg:grid-cols-2">
         {/* ═══ LOJA ═══ */}
         <SettingsCard title="Loja">
           <FormField label="Nome da loja">
-            <Input value={storeName} onChange={(e) => setStoreName(e.target.value)} className="h-10 rounded-xl border-gray-200 bg-white shadow-sm shadow-black/[0.02] focus-visible:ring-[#EE4D2D]/30" />
+            <Input value={storeName} onChange={(e) => setStoreName(e.target.value)} className="h-10 rounded-[12px] border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-card)] focus-visible:ring-[var(--accent)]/30" />
           </FormField>
           <FormField label="E-mail da conta">
-            <Input value={user?.email || ""} disabled className="h-10 rounded-xl border-gray-200 bg-gray-50 text-gray-500" />
+            <Input value={user?.email || ""} disabled className="h-10 rounded-[12px] border-[var(--border)] bg-[var(--muted-bg)] text-[var(--muted)]" />
           </FormField>
           <FormField label="Meta diária de vendas">
-            <Input type="number" value={meta} onChange={(e) => setMeta(e.target.value)} className="h-10 rounded-xl border-gray-200 bg-white shadow-sm shadow-black/[0.02] focus-visible:ring-[#EE4D2D]/30" />
+            <Input type="number" value={meta} onChange={(e) => setMeta(e.target.value)} className="h-10 rounded-[12px] border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-card)] focus-visible:ring-[var(--accent)]/30" />
           </FormField>
         </SettingsCard>
 
         {/* ═══ DADOS BANCÁRIOS ═══ */}
         <SettingsCard title="Dados bancários para recebimento">
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-[var(--muted)]">
             Usados para o recebimento das suas comissões. Ficam salvos apenas neste navegador.
           </p>
           <BankField label="Nome completo" value={bank.nomeCompleto} onChange={setBankField("nomeCompleto")} error={bankErrors.nomeCompleto} />
@@ -75,7 +75,7 @@ function Config() {
           <div className="pt-1">
             <Button
               variant="outline"
-              className="h-10 rounded-xl border-gray-200 bg-white text-sm font-medium text-gray-700 shadow-sm shadow-black/[0.02] transition-all hover:border-[#EE4D2D]/30 hover:text-[#EE4D2D]"
+              className="btn-ghost h-10 text-sm"
               onClick={handleSaveBank}
             >
               Salvar dados bancários
@@ -86,14 +86,14 @@ function Config() {
         {/* ═══ PREFERÊNCIAS COMERCIAIS ═══ */}
         <SettingsCard title="Preferências comerciais">
           <FormField label="Margem padrão de lucro (%)">
-            <Input type="number" value={margem} onChange={(e) => setMargem(e.target.value)} className="h-10 rounded-xl border-gray-200 bg-white shadow-sm shadow-black/[0.02] focus-visible:ring-[#EE4D2D]/30" />
+            <Input type="number" value={margem} onChange={(e) => setMargem(e.target.value)} className="h-10 rounded-[12px] border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-card)] focus-visible:ring-[var(--accent)]/30" />
           </FormField>
           <FormField label="Taxa estimada da Shopee (%)">
-            <Input type="number" value={taxa} onChange={(e) => setTaxa(e.target.value)} className="h-10 rounded-xl border-gray-200 bg-white shadow-sm shadow-black/[0.02] focus-visible:ring-[#EE4D2D]/30" />
+            <Input type="number" value={taxa} onChange={(e) => setTaxa(e.target.value)} className="h-10 rounded-[12px] border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-card)] focus-visible:ring-[var(--accent)]/30" />
           </FormField>
           <FormField label="Preferência de fornecedores">
             <Select value={pref} onValueChange={setPref}>
-              <SelectTrigger className="h-10 rounded-xl border-gray-200 bg-white shadow-sm shadow-black/[0.02] focus-visible:ring-[#EE4D2D]/30">
+              <SelectTrigger className="h-10 rounded-[12px] border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-card)] focus-visible:ring-[var(--accent)]/30">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -109,7 +109,7 @@ function Config() {
         <SettingsCard title="Aparência e notificações">
           <FormField label="Cor de destaque">
             <Select value={cor} onValueChange={setCor}>
-              <SelectTrigger className="h-10 rounded-xl border-gray-200 bg-white shadow-sm shadow-black/[0.02] focus-visible:ring-[#EE4D2D]/30">
+              <SelectTrigger className="h-10 rounded-[12px] border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-card)] focus-visible:ring-[var(--accent)]/30">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -119,10 +119,10 @@ function Config() {
               </SelectContent>
             </Select>
           </FormField>
-          <div className="flex items-center justify-between rounded-xl border border-gray-200 bg-gray-50/50 p-4">
+          <div className="flex items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--muted-bg)] p-4">
             <div>
-              <div className="text-sm font-medium text-gray-900">Notificações</div>
-              <div className="text-xs text-gray-500">Receba alertas de vendas e comissões.</div>
+              <div className="text-sm font-medium text-[var(--text)]">Notificações</div>
+              <div className="text-xs text-[var(--muted)]">Receba alertas de vendas e comissões.</div>
             </div>
             <Switch checked={notif} onCheckedChange={setNotif} />
           </div>
@@ -130,19 +130,19 @@ function Config() {
 
         {/* ═══ FINANCEIRO ═══ */}
         <SettingsCard title="Financeiro">
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-[var(--muted)]">
             Solicite o saque das suas comissões. O pedido será enviado para análise da equipe UpShopee.
           </p>
-          <div className="rounded-xl bg-[#FFF8F5] p-4 ring-1 ring-[#EE4D2D]/10">
+          <div className="rounded-xl bg-[var(--accent-soft)] p-4 ring-1 ring-[var(--accent)]/10">
             <div className="flex items-start gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EE4D2D]/10">
-                <Shield className="h-5 w-5 text-[#EE4D2D]" />
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--accent)]/10">
+                <Shield className="h-5 w-5 text-[var(--accent)]" />
               </div>
               <div>
-                <p className="text-xs font-medium text-gray-700">
+                <p className="text-xs font-medium text-[var(--text)]">
                   O saque ficará disponível após 30 dias de conta ativa.
                 </p>
-                <p className="mt-1 text-[11px] text-gray-500">
+                <p className="mt-1 text-[11px] text-[var(--muted)]">
                   Os valores exibidos podem não representar saldo real disponível para saque.
                 </p>
               </div>
@@ -153,11 +153,11 @@ function Config() {
         {/* ═══ ADMINISTRAÇÃO ═══ */}
         {isAdmin && (
           <SettingsCard title="Administração">
-            <div className="rounded-xl bg-[#FFF8F5] p-4 ring-1 ring-[#EE4D2D]/20">
-              <div className="flex items-center gap-2 text-sm font-medium text-[#EE4D2D]">
+            <div className="rounded-xl bg-[var(--accent-soft)] p-4 ring-1 ring-[var(--accent)]/20">
+              <div className="flex items-center gap-2 text-sm font-medium text-[var(--accent)]" style={{ fontFamily: "'Sora', sans-serif" }}>
                 <Zap className="h-4 w-4" /> Modo demonstração
               </div>
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text-xs text-[var(--muted)]">
                 Botão de simulação ativo no canto inferior direito.
               </p>
             </div>
@@ -167,7 +167,7 @@ function Config() {
         {/* ═══ FOOTER BUTTON ═══ */}
         <div className="lg:col-span-2 flex justify-end pt-2">
           <Button
-            className="h-10 rounded-xl bg-[#EE4D2D] px-8 text-sm font-semibold text-white shadow-sm shadow-[#EE4D2D]/25 transition-all hover:bg-[#EE4D2D]/90 hover:shadow-md hover:shadow-[#EE4D2D]/30 active:scale-[0.98]"
+            className="btn-primary h-10 px-8 text-sm"
             onClick={() => toast.success("Configurações salvas.")}
           >
             Salvar alterações
@@ -184,8 +184,8 @@ function Config() {
 
 function SettingsCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl bg-white p-5 shadow-sm shadow-black/[0.04] ring-1 ring-black/[0.06] space-y-3">
-      <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
+    <div className="card-premium space-y-3 p-5">
+      <h3 className="text-sm font-semibold text-[var(--text)]" style={{ fontFamily: "'Sora', sans-serif" }}>{title}</h3>
       {children}
     </div>
   );
@@ -194,7 +194,7 @@ function SettingsCard({ title, children }: { title: string; children: React.Reac
 function FormField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <Label className="text-[11px] font-medium text-gray-400">{label}</Label>
+      <Label className="text-[11px] font-medium text-[var(--muted)]">{label}</Label>
       {children}
     </div>
   );
@@ -203,10 +203,10 @@ function FormField({ label, children }: { label: string; children: React.ReactNo
 function BankField({ label, error, ...props }: { label: string; error?: string } & React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <div className="space-y-1.5">
-      <Label className="text-[11px] font-medium text-gray-400">{label}</Label>
+      <Label className="text-[11px] font-medium text-[var(--muted)]">{label}</Label>
       <Input
         aria-invalid={!!error}
-        className={`h-10 rounded-xl border bg-white shadow-sm shadow-black/[0.02] ${error ? "border-red-400 focus-visible:ring-red-300" : "border-gray-200 focus-visible:ring-[#EE4D2D]/30"}`}
+        className={`h-10 rounded-[12px] border bg-[var(--surface)] shadow-[var(--shadow-card)] ${error ? "border-red-400 focus-visible:ring-red-300" : "border-[var(--border)] focus-visible:ring-[var(--accent)]/30"}`}
         {...props}
       />
       {error && <p className="text-[11px] font-medium text-red-500">{error}</p>}

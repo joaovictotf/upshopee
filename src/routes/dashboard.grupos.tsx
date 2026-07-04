@@ -176,17 +176,17 @@ function Grupos() {
         .grp-line:nth-child(3) { animation-delay: 0.3s; }
       `}</style>
 
-      <div className="relative mb-8 overflow-hidden rounded-3xl border border-gray-100 bg-white p-6 sm:p-8 shadow-sm">
+      <div className="relative mb-8 overflow-hidden rounded-3xl border border-gray-100 bg-[var(--surface)] p-6 sm:p-8 shadow-sm">
         {/* Decorative gradient blob */}
-        <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[#EE4D2D]/[0.03] blur-3xl" />
+        <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[var(--accent)]/[0.03] blur-3xl" />
         <div className="pointer-events-none absolute -bottom-10 left-1/4 h-32 w-32 rounded-full bg-amber-400/[0.04] blur-2xl" />
 
         {/* Section label */}
         <div className="relative mb-6 flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#FFF8F5]">
-            <Sparkles className="h-3.5 w-3.5 text-[#EE4D2D]" />
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--accent-soft)]">
+            <Sparkles className="h-3.5 w-3.5 text-[var(--accent)]" />
           </div>
-          <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#EE4D2D]">Como divulgar</span>
+          <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--accent)]">Como divulgar</span>
         </div>
 
         {/* Three steps in a row */}
@@ -213,17 +213,17 @@ function Grupos() {
             return (
               <div key={n} className="grp-step-card relative flex flex-col items-center text-center">
                 {/* Number + Icon circle */}
-                <div className={`relative mb-3 flex h-14 w-14 items-center justify-center rounded-2xl transition-all duration-500 ${
+                <div className={`relative mb-3 flex h-14 w-14 items-center justify-center rounded-[16px] transition-all duration-500 ${
                   isActive
-                    ? "grp-active-ring bg-[#EE4D2D] text-white scale-110 z-10"
+                    ? "grp-active-ring bg-[var(--accent)] text-white scale-110 z-10"
                     : isDone
                     ? "bg-emerald-500 text-white"
-                    : "bg-gray-100 text-gray-400"
+                    : "bg-[var(--muted-bg)] text-[var(--muted)]"
                 }`}>
                   {isDone ? <CheckCircle2 className="h-6 w-6" /> : <Icon className="h-6 w-6" />}
                   {/* Number badge */}
                   <span className={`absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold ${
-                    isActive ? "bg-white text-[#EE4D2D]" : isDone ? "bg-emerald-200 text-emerald-700" : "bg-gray-200 text-gray-500"
+                    isActive ? "bg-[var(--surface)] text-[var(--accent)]" : isDone ? "bg-emerald-200 text-emerald-700" : "bg-gray-200 text-[var(--muted)]"
                   }`}>
                     {n}
                   </span>
@@ -231,19 +231,19 @@ function Grupos() {
 
                 {/* Title */}
                 <h4 className={`text-sm font-bold transition-colors duration-500 ${
-                  isActive ? "text-[#EE4D2D]" : isDone ? "text-emerald-700" : "text-gray-500"
+                  isActive ? "text-[var(--accent)]" : isDone ? "text-emerald-700" : "text-[var(--muted)]"
                 }`}>
                   {title}
                 </h4>
 
                 {/* Description */}
-                <p className="mt-1.5 text-xs leading-relaxed text-gray-400 hidden sm:block max-w-[200px]">
+                <p className="mt-1.5 text-xs leading-relaxed text-[var(--muted)] hidden sm:block max-w-[200px]">
                   {desc}
                 </p>
 
                 {/* Active indicator bar */}
                 {isActive && (
-                  <div className="mt-3 h-1 w-12 rounded-full bg-[#EE4D2D]" />
+                  <div className="mt-3 h-1 w-12 rounded-full bg-[var(--accent)]" />
                 )}
               </div>
             );
@@ -257,7 +257,7 @@ function Grupos() {
                 return (
                   <div key={i} className="grp-line flex-1">
                     <div className={`h-0.5 rounded-full transition-colors duration-500 ${
-                      done ? "bg-emerald-400" : step === i + 1 ? "bg-[#EE4D2D]/30" : "bg-gray-200"
+                      done ? "bg-emerald-400" : step === i + 1 ? "bg-[var(--accent)]/30" : "bg-gray-200"
                     }`} />
                   </div>
                 );
@@ -268,35 +268,35 @@ function Grupos() {
 
         {/* Progress track at bottom */}
         <div className="relative mt-6 flex items-center gap-2">
-          <div className="h-1 flex-1 rounded-full bg-gray-100 overflow-hidden">
-            <div className="h-full rounded-full bg-[#EE4D2D] transition-all duration-700"
+          <div className="h-1 flex-1 rounded-full bg-[var(--muted-bg)] overflow-hidden">
+            <div className="h-full rounded-full bg-[var(--accent)] transition-all duration-700"
               style={{ width: `${(step / 3) * 100}%` }} />
           </div>
-          <span className="text-[10px] font-medium text-gray-400 tabular-nums">{step}/3</span>
+          <span className="text-[10px] font-medium text-[var(--muted)] tabular-nums">{step}/3</span>
         </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* ═══ LEFT: GENERATOR PANEL ═══ */}
-        <div className="rounded-2xl bg-white p-5 shadow-sm shadow-black/[0.04] ring-1 ring-black/[0.06] lg:col-span-1">
+        <div className="rounded-[16px] bg-[var(--surface)] p-5 shadow-sm shadow-black/[0.04] ring-1 ring-black/[0.06] lg:col-span-1">
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#FFF8F5]">
-              <Sparkles className="h-4 w-4 text-[#EE4D2D]" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--accent-soft)]">
+              <Sparkles className="h-4 w-4 text-[var(--accent)]" />
             </div>
-            <h3 className="text-sm font-semibold text-gray-900">Gerador de texto com IA</h3>
+            <h3 className="text-sm font-semibold text-[var(--text)]">Gerador de texto com IA</h3>
           </div>
-          <p className="mt-1 text-xs text-gray-500">
+          <p className="mt-1 text-xs text-[var(--muted)]">
             Escolha um dos seus produtos e o tom da oferta. A IA cria um texto pronto para divulgar.
           </p>
 
           {meus.length === 0 ? (
-            <div className="mt-4 rounded-xl border-2 border-dashed border-gray-200 p-6 text-center">
-              <div className="flex h-12 w-12 mx-auto items-center justify-center rounded-xl bg-[#FFF8F5]">
-                <Sparkles className="h-6 w-6 text-[#EE4D2D]/60" />
+            <div className="mt-4 rounded-xl border-2 border-dashed border-[var(--border)] p-6 text-center">
+              <div className="flex h-12 w-12 mx-auto items-center justify-center rounded-xl bg-[var(--accent-soft)]">
+                <Sparkles className="h-6 w-6 text-[var(--accent)]/60" />
               </div>
-              <p className="mt-3 text-sm text-gray-500">Você ainda não possui produtos para divulgar.</p>
+              <p className="mt-3 text-sm text-[var(--muted)]">Você ainda não possui produtos para divulgar.</p>
               <a href="https://affiliate.shopee.com.br/dashboard" target="_blank" rel="noopener noreferrer" className="mt-3 inline-block">
-                <Button size="sm" variant="outline" className="rounded-xl border-gray-200 bg-white text-sm font-medium text-gray-600 shadow-sm shadow-black/[0.02] transition-all hover:border-[#EE4D2D]/30 hover:text-[#EE4D2D]">
+                <Button size="sm" variant="outline" className="rounded-xl border-[var(--border)] bg-[var(--surface)] text-sm font-medium text-gray-600 shadow-sm shadow-black/[0.02] transition-all hover:border-[var(--accent)]/30 hover:text-[var(--accent)]">
                   <ExternalLink className="mr-1.5 h-3.5 w-3.5" /> Cadastrar na Shopee Afiliados
                 </Button>
               </a>
@@ -305,9 +305,9 @@ function Grupos() {
             <div className="mt-4 space-y-3">
               {/* Product selector */}
               <div>
-                <label className="text-[11px] font-medium uppercase tracking-wide text-gray-400">Escolha o produto</label>
+                <label className="text-[11px] font-medium uppercase tracking-wide text-[var(--muted)]">Escolha o produto</label>
                 <Select value={productId} onValueChange={setProductId}>
-                  <SelectTrigger className="mt-1 h-10 rounded-xl border-gray-200 bg-white text-sm shadow-sm shadow-black/[0.02] focus-visible:ring-[#EE4D2D]/30">
+                  <SelectTrigger className="mt-1 h-10 rounded-xl border-[var(--border)] bg-[var(--surface)] text-sm shadow-sm shadow-black/[0.02] focus-visible:ring-[var(--accent)]/30">
                     <SelectValue placeholder="Selecione um produto" />
                   </SelectTrigger>
                   <SelectContent>
@@ -316,7 +316,7 @@ function Grupos() {
                         <span className="flex items-center gap-2">
                           {p.image && <img src={p.image} alt="" className="h-5 w-5 rounded object-cover" />}
                           <span className="truncate">{p.name}</span>
-                          {p.recommendedPrice > 0 && <span className="ml-1 text-[10px] text-gray-400">{brl(p.recommendedPrice)}</span>}
+                          {p.recommendedPrice > 0 && <span className="ml-1 text-[10px] text-[var(--muted)]">{brl(p.recommendedPrice)}</span>}
                         </span>
                       </SelectItem>
                     ))}
@@ -326,9 +326,9 @@ function Grupos() {
 
               {/* Tone selector */}
               <div>
-                <label className="text-[11px] font-medium uppercase tracking-wide text-gray-400">Escolha o tom</label>
+                <label className="text-[11px] font-medium uppercase tracking-wide text-[var(--muted)]">Escolha o tom</label>
                 <Select value={tone} onValueChange={(v) => setTone(v as Tone)}>
-                  <SelectTrigger className="mt-1 h-10 rounded-xl border-gray-200 bg-white text-sm shadow-sm shadow-black/[0.02] focus-visible:ring-[#EE4D2D]/30">
+                  <SelectTrigger className="mt-1 h-10 rounded-xl border-[var(--border)] bg-[var(--surface)] text-sm shadow-sm shadow-black/[0.02] focus-visible:ring-[var(--accent)]/30">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -339,7 +339,7 @@ function Grupos() {
 
               {/* Generate button */}
               <Button
-                className="h-10 w-full rounded-xl bg-[#EE4D2D] text-sm font-semibold text-white shadow-sm shadow-[#EE4D2D]/25 transition-all hover:bg-[#EE4D2D]/90 hover:shadow-md hover:shadow-[#EE4D2D]/30 active:scale-[0.98] disabled:opacity-50"
+                className="h-10 w-full rounded-xl bg-[var(--accent)] text-sm font-semibold text-white shadow-sm shadow-[var(--accent)]/25 transition-all hover:bg-[var(--accent)]/90 hover:shadow-md hover:shadow-[var(--accent)]/30 active:scale-[0.98] disabled:opacity-50"
                 onClick={handleGenerate}
                 disabled={loading || !selectedProduct}
               >
@@ -348,12 +348,12 @@ function Grupos() {
 
               {/* Loading state */}
               {loading && (
-                <div className="rounded-xl bg-[#FFF8F5] p-4 text-center animate-in fade-in">
-                  <Loader2 className="mx-auto h-5 w-5 animate-spin text-[#EE4D2D]" />
-                  <p className="mt-2 text-xs font-medium text-gray-700">
+                <div className="rounded-xl bg-[var(--accent-soft)] p-4 text-center animate-in fade-in">
+                  <Loader2 className="mx-auto h-5 w-5 animate-spin text-[var(--accent)]" />
+                  <p className="mt-2 text-xs font-medium text-[var(--text)]">
                     Inteligência artificial gerando o melhor texto para você divulgar nos grupos...
                   </p>
-                  <p className="mt-1 text-[11px] text-gray-500">
+                  <p className="mt-1 text-[11px] text-[var(--muted)]">
                     Analisando produto, preço, tom da oferta e público ideal...
                   </p>
                 </div>
@@ -361,19 +361,19 @@ function Grupos() {
 
               {/* Generated text output */}
               {!loading && text && (
-                <div className="rounded-xl bg-[#FFF8F5] p-4 ring-1 ring-[#EE4D2D]/20">
-                  <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#EE4D2D]">
+                <div className="rounded-xl bg-[var(--accent-soft)] p-4 ring-1 ring-[var(--accent)]/20">
+                  <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[var(--accent)]">
                     <CheckCircle2 className="h-3.5 w-3.5" /> Texto pronto! Escolha um grupo abaixo.
                   </div>
                   <div className="whitespace-pre-line text-sm text-gray-800">{text}</div>
                   <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
-                    <Button size="sm" onClick={handleCopy} className="rounded-xl bg-[#EE4D2D] text-xs font-semibold text-white shadow-sm shadow-[#EE4D2D]/25 transition-all hover:bg-[#EE4D2D]/90 active:scale-[0.98]">
+                    <Button size="sm" onClick={handleCopy} className="rounded-xl bg-[var(--accent)] text-xs font-semibold text-white shadow-sm shadow-[var(--accent)]/25 transition-all hover:bg-[var(--accent)]/90 active:scale-[0.98]">
                       <Copy className="mr-1 h-3 w-3" /> Copiar texto
                     </Button>
-                    <Button size="sm" variant="outline" onClick={handleGenerate} className="rounded-xl border-gray-200 bg-white text-xs font-medium text-gray-600 shadow-sm shadow-black/[0.02] transition-all hover:border-[#EE4D2D]/30 hover:text-[#EE4D2D]">
+                    <Button size="sm" variant="outline" onClick={handleGenerate} className="rounded-xl border-[var(--border)] bg-[var(--surface)] text-xs font-medium text-gray-600 shadow-sm shadow-black/[0.02] transition-all hover:border-[var(--accent)]/30 hover:text-[var(--accent)]">
                       <RefreshCw className="mr-1 h-3 w-3" /> Gerar outro
                     </Button>
-                    <Button size="sm" onClick={handleUseInGroups} className="rounded-xl bg-[#EE4D2D] text-xs font-semibold text-white shadow-sm shadow-[#EE4D2D]/25 transition-all hover:bg-[#EE4D2D]/90 active:scale-[0.98]">
+                    <Button size="sm" onClick={handleUseInGroups} className="rounded-xl bg-[var(--accent)] text-xs font-semibold text-white shadow-sm shadow-[var(--accent)]/25 transition-all hover:bg-[var(--accent)]/90 active:scale-[0.98]">
                       <ArrowDown className="mr-1 h-3 w-3" /> Usar nos grupos
                     </Button>
                   </div>
@@ -384,31 +384,31 @@ function Grupos() {
         </div>
 
         {/* ═══ RIGHT: GROUPS PANEL ═══ */}
-        <div ref={groupsRef} className={`space-y-3 lg:col-span-2 rounded-2xl transition-shadow ${highlightGroups ? "ring-2 ring-[#EE4D2D] ring-offset-2" : ""}`}>
+        <div ref={groupsRef} className={`space-y-3 lg:col-span-2 rounded-[16px] transition-shadow ${highlightGroups ? "ring-2 ring-[var(--accent)] ring-offset-2" : ""}`}>
           {/* Disclaimer */}
-          <div className="rounded-xl bg-[#FFF8F5] px-4 py-3 text-[11px] text-gray-600">
+          <div className="rounded-xl bg-[var(--accent-soft)] px-4 py-3 text-[11px] text-gray-600">
             Os links abaixo são páginas públicas de grupos e comunidades. Alguns grupos podem exigir login, aprovação do administrador ou estar sujeitos à lotação.
           </div>
 
           {/* Non-admin updating banner */}
           {!isAdmin && (
-            <div className="flex items-center gap-3 rounded-xl bg-[#FFF8F5] px-4 py-3 ring-1 ring-[#EE4D2D]/20">
-              <RefreshCcw className="h-4 w-4 shrink-0 animate-spin text-[#EE4D2D]" style={{ animationDuration: "2s" }} />
+            <div className="flex items-center gap-3 rounded-xl bg-[var(--accent-soft)] px-4 py-3 ring-1 ring-[var(--accent)]/20">
+              <RefreshCcw className="h-4 w-4 shrink-0 animate-spin text-[var(--accent)]" style={{ animationDuration: "2s" }} />
               <div>
-                <div className="text-sm font-semibold text-[#EE4D2D]">Grupos atualizando</div>
-                <div className="text-xs text-gray-500">Nossa equipe está verificando e adicionando novos grupos de divulgação. Em breve estarão disponíveis.</div>
+                <div className="text-sm font-semibold text-[var(--accent)]">Grupos atualizando</div>
+                <div className="text-xs text-[var(--muted)]">Nossa equipe está verificando e adicionando novos grupos de divulgação. Em breve estarão disponíveis.</div>
               </div>
             </div>
           )}
 
           {/* Text ready banner above groups */}
           {text && !loading && (
-            <div className="rounded-xl bg-[#FFF8F5] p-4 ring-1 ring-[#EE4D2D]/20">
-              <div className="mb-1 text-xs font-bold uppercase tracking-wide text-[#EE4D2D]">
+            <div className="rounded-xl bg-[var(--accent-soft)] p-4 ring-1 ring-[var(--accent)]/20">
+              <div className="mb-1 text-xs font-bold uppercase tracking-wide text-[var(--accent)]">
                 📋 Texto pronto para publicar
               </div>
-              <p className="line-clamp-3 whitespace-pre-line text-sm text-gray-700">{text}</p>
-              <Button size="sm" onClick={handleCopy} className="mt-3 rounded-xl bg-[#EE4D2D] text-xs font-semibold text-white shadow-sm shadow-[#EE4D2D]/25 transition-all hover:bg-[#EE4D2D]/90 active:scale-[0.98]">
+              <p className="line-clamp-3 whitespace-pre-line text-sm text-[var(--text)]">{text}</p>
+              <Button size="sm" onClick={handleCopy} className="mt-3 rounded-xl bg-[var(--accent)] text-xs font-semibold text-white shadow-sm shadow-[var(--accent)]/25 transition-all hover:bg-[var(--accent)]/90 active:scale-[0.98]">
                 <Copy className="mr-1 h-3 w-3" /> Copiar texto
               </Button>
             </div>
@@ -423,8 +423,8 @@ function Grupos() {
                   onClick={() => setFilter(f)}
                   className={`flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-medium transition-all ${
                     filter === f
-                      ? "border-[#EE4D2D] bg-[#EE4D2D] text-white shadow-sm shadow-[#EE4D2D]/25"
-                      : "border-gray-200 bg-white text-gray-500 hover:border-[#EE4D2D]/30 hover:text-[#EE4D2D]"
+                      ? "border-[var(--accent)] bg-[var(--accent)] text-white shadow-sm shadow-[var(--accent)]/25"
+                      : "border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:border-[var(--accent)]/30 hover:text-[var(--accent)]"
                   }`}
                 >
                   <span>{filterIcons[f]}</span>
@@ -436,45 +436,45 @@ function Grupos() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Pesquisar grupo..."
-              className="h-9 rounded-xl border-gray-200 bg-white text-sm shadow-sm shadow-black/[0.02] focus-visible:ring-[#EE4D2D]/30 sm:max-w-[220px]"
+              className="h-9 rounded-xl border-[var(--border)] bg-[var(--surface)] text-sm shadow-sm shadow-black/[0.02] focus-visible:ring-[var(--accent)]/30 sm:max-w-[220px]"
             />
           </div>
 
           {/* Groups grid */}
           <div className="grid gap-3 sm:grid-cols-2">
             {filtered.map((g) => (
-              <div key={g.id} className="flex flex-col rounded-2xl bg-white p-4 shadow-sm shadow-black/[0.04] ring-1 ring-black/[0.06] transition-all hover:shadow-md hover:shadow-[#EE4D2D]/5">
+              <div key={g.id} className="flex flex-col rounded-[16px] bg-[var(--surface)] p-4 shadow-sm shadow-black/[0.04] ring-1 ring-black/[0.06] transition-all hover:shadow-md hover:shadow-[#EE4D2D]/5">
                 {/* Header */}
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <div className="text-sm font-semibold leading-tight text-gray-900">{g.name}</div>
+                      <div className="text-sm font-semibold leading-tight text-[var(--text)]">{g.name}</div>
                       {parseActiveNow(g.bestTime) && (
                         <span className="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
                           🟢 Ativo agora
                         </span>
                       )}
                     </div>
-                    <div className="mt-0.5 text-[11px] text-gray-400">{g.platform}</div>
+                    <div className="mt-0.5 text-[11px] text-[var(--muted)]">{g.platform}</div>
                   </div>
-                  <span className="shrink-0 rounded-md bg-[#FFF8F5] px-2 py-0.5 text-[10px] font-medium text-[#EE4D2D]/80">
+                  <span className="shrink-0 rounded-md bg-[var(--accent-soft)] px-2 py-0.5 text-[10px] font-medium text-[var(--accent)]/80">
                     {g.category}
                   </span>
                 </div>
 
                 {/* Info */}
-                <div className="mt-3 space-y-1.5 text-[11px] text-gray-500">
+                <div className="mt-3 space-y-1.5 text-[11px] text-[var(--muted)]">
                   <div className="flex items-center gap-1.5">
-                    <ShieldCheck className="h-3 w-3 text-gray-400" />
+                    <ShieldCheck className="h-3 w-3 text-[var(--muted)]" />
                     <span>{g.status}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <Clock className="h-3 w-3 text-gray-400" />
-                    <span>Melhor horário: <span className="font-medium text-gray-700">{g.bestTime}</span></span>
+                    <Clock className="h-3 w-3 text-[var(--muted)]" />
+                    <span>Melhor horário: <span className="font-medium text-[var(--text)]">{g.bestTime}</span></span>
                   </div>
                   {g.verificationNote && (
                     <div className="flex items-start gap-1.5">
-                      <Tag className="mt-0.5 h-3 w-3 text-gray-400" />
+                      <Tag className="mt-0.5 h-3 w-3 text-[var(--muted)]" />
                       <span>{g.verificationNote}</span>
                     </div>
                   )}
@@ -486,18 +486,18 @@ function Grupos() {
                 <div className="mt-auto flex gap-2 pt-3">
                   {isAdmin ? (
                     <a href={g.url} target="_blank" rel="noopener noreferrer" className="flex-1" onClick={() => setSelectedGroupId(g.id)}>
-                      <Button variant="outline" size="sm" className="w-full rounded-xl border-gray-200 bg-white text-xs font-medium text-gray-600 shadow-sm shadow-black/[0.02] transition-all hover:border-[#EE4D2D]/30 hover:text-[#EE4D2D]">
+                      <Button variant="outline" size="sm" className="w-full rounded-xl border-[var(--border)] bg-[var(--surface)] text-xs font-medium text-gray-600 shadow-sm shadow-black/[0.02] transition-all hover:border-[var(--accent)]/30 hover:text-[var(--accent)]">
                         <ExternalLink className="mr-1 h-3 w-3" /> Abrir grupo
                       </Button>
                     </a>
                   ) : (
-                    <Button variant="outline" size="sm" className="flex-1 rounded-xl border-gray-200 bg-white text-xs font-medium text-gray-400" disabled>
+                    <Button variant="outline" size="sm" className="flex-1 rounded-xl border-[var(--border)] bg-[var(--surface)] text-xs font-medium text-[var(--muted)]" disabled>
                       <RefreshCcw className="mr-1 h-3 w-3 animate-spin" style={{ animationDuration: "2s" }} /> Atualizando...
                     </Button>
                   )}
                   <Button
                     size="sm"
-                    className="flex-1 rounded-xl bg-[#EE4D2D] text-xs font-semibold text-white shadow-sm shadow-[#EE4D2D]/25 transition-all hover:bg-[#EE4D2D]/90 active:scale-[0.98] disabled:opacity-50"
+                    className="flex-1 rounded-xl bg-[var(--accent)] text-xs font-semibold text-white shadow-sm shadow-[var(--accent)]/25 transition-all hover:bg-[var(--accent)]/90 active:scale-[0.98] disabled:opacity-50"
                     onClick={() => { handleCopy(); setSelectedGroupId(g.id); }}
                     disabled={!text}
                   >
@@ -507,12 +507,12 @@ function Grupos() {
               </div>
             ))}
             {filtered.length === 0 && (
-              <div className="col-span-full flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 bg-white py-12 text-center">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#FFF8F5]">
-                  <ExternalLink className="h-6 w-6 text-[#EE4D2D]/60" />
+              <div className="col-span-full flex flex-col items-center justify-center rounded-[16px] border-2 border-dashed border-[var(--border)] bg-[var(--surface)] py-12 text-center">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--accent-soft)]">
+                  <ExternalLink className="h-6 w-6 text-[var(--accent)]/60" />
                 </div>
-                <p className="mt-3 text-sm font-medium text-gray-500">Nenhum grupo encontrado</p>
-                <p className="mt-1 text-xs text-gray-400">para os filtros selecionados.</p>
+                <p className="mt-3 text-sm font-medium text-[var(--muted)]">Nenhum grupo encontrado</p>
+                <p className="mt-1 text-xs text-[var(--muted)]">para os filtros selecionados.</p>
               </div>
             )}
           </div>
