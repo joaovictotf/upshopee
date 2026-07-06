@@ -971,8 +971,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setAuthReady(true);
     };
 
-    // Listener FIRST, then getSession (Supabase recommendation)
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+    // Listener FIRST, then getSession (Supabase recommendation).
+    // Skip TOKEN_REFRESHED — it fires periodically (~60 min) when Supabase
+    // rotates the JWT. Re-hydrating on token refresh resets the entire data
+    // state (new User ref → realtime effect re-fires → fetchAll wipes local
+    // orders), which zeroes the admin boost. The token is still refreshed
+    // internally; we just don't need a full state reset for it.
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "TOKEN_REFRESHED") return;
       // Defer Supabase calls to avoid deadlocks inside the callback.
       setTimeout(() => { hydrate(session?.user ?? null); }, 0);
     });
@@ -1066,6 +1072,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!user || !currentUserId) return;
     let cancelled = false;
 
+    // Predicate: orders that originate client-side (GDM presentation, seed
+    // baseline, lightning clicks) — these never come from Supabase and must
+    // be preserved across realtime fetchAll() refreshes.
+    const isLocalOrder = (o: SalesOrder) =>
+      o.source === "gdm_presentation_data" ||
+      o.source === "seed_fake_data" ||
+      o.source === "lightning_click" ||
+      o.id.startsWith("lightning-") ||
+      o.id.startsWith("gdm-") ||
+      o.id.startsWith("seed-");
+
     const applyOrders = (rows: Array<Record<string, unknown>>) => {
       if (cancelled) return;
       const orders: SalesOrder[] = rows.map((r) => ({
@@ -1089,20 +1106,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
         source: (r.source as string | null) ?? null,
       }));
 
-      // Hide today's orders that were cleared by the reset (✕) button. The
-      // server-side delete is best-effort; this keeps them out either way.
+      // Hide today's orders that were cleared by the reset (✕) button.
       const visibleOrders = orders.filter((o) => !isResetSuppressed(o.saleDate));
 
-      // All sales orders now come from the server (Supabase sales_orders).
-      // No local-only retention — every device sees the same data.
-      setData((s) => {
-        const merged = [...visibleOrders].sort((a, b) => b.saleDate - a.saleDate);
+      // Build the full merged list (server + local) outside setData so we can
+      // use it for both salesOrders and commissionHistory.
+      let mergedOrders: SalesOrder[] = [];
 
-        // Rebuild per-marketplace aggregates from these orders.
+      setData((s) => {
+        // Preserve local-only orders (GDM, seed, lightning) that live
+        // exclusively client-side. Supabase-sourced rows are authoritative
+        // and replace previous server rows, but local orders must survive
+        // every fetchAll() cycle.
+        const localOrders = s.salesOrders.filter(isLocalOrder);
+        mergedOrders = [...visibleOrders, ...localOrders].sort((a, b) => b.saleDate - a.saleDate);
+
+        // Rebuild per-marketplace aggregates from all orders.
         const mps: Record<Marketplace, MarketplaceData> = { shopee: { ...s.marketplaces.shopee } };
         for (const mp of MARKETPLACES) {
           const cur = s.marketplaces[mp];
-          const mine = merged.filter((o) => o.marketplace === mp);
+          const mine = mergedOrders.filter((o) => o.marketplace === mp);
           mps[mp] = {
             ...cur,
             sales: mine.length,
@@ -1110,13 +1133,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
             commission: Math.round(mine.reduce((a, o) => a + o.netProfit, 0) * 100) / 100,
           };
         }
-        return { ...s, salesOrders: merged, marketplaces: mps };
+        return { ...s, salesOrders: mergedOrders, marketplaces: mps };
       });
 
-      // Rebuild commissionHistory from these orders so getCommissionSum
-      // (today / 7d / 30d) reflects the new sales.
+      // Rebuild commissionHistory from the full merged list (server + local)
+      // so getCommissionSum (today / 7d / 30d) stays accurate.
       const hist: CommissionHistory = emptyHistory();
-      for (const o of visibleOrders) {
+      for (const o of mergedOrders) {
         const dk = dateKey(new Date(o.saleDate));
         const m = hist[o.marketplace] || {};
         m[dk] = Math.round(((m[dk] || 0) + o.netProfit) * 100) / 100;
