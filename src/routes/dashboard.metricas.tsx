@@ -12,14 +12,12 @@ import {
   YAxis,
 } from "recharts";
 import { ArrowLeft, HelpCircle, Package, ChevronDown } from "lucide-react";
-import { useMemo, useState } from "react";
-import { getOrCreateSalesHistory, type SaleRecord } from "../lib/mock/dashboard-data";
+import { useState } from "react";
+import { useMetrics, type RangeKey } from "../hooks/use-metrics";
 
 export const Route = createFileRoute("/dashboard/metricas")({
   component: MetricasPage,
 });
-
-type RangeKey = "today" | "7d" | "30d";
 
 const SHOPEE_RED = "#EE4D2D";
 const BORDER = "#E8E8E8";
@@ -30,104 +28,11 @@ function pad2(n: number) {
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 function MetricasPage() {
-  const { privacy, isAdmin } = useApp();
+  const { privacy } = useApp();
   const [range, setRange] = useState<RangeKey>("today");
-  const salesHistory = useMemo(() => isAdmin ? getOrCreateSalesHistory() : [], [isAdmin]);
 
-  // ── Compute ALL metrics from salesHistory (same formulas as dashboard.index.tsx) ──
-  const metrics = useMemo(() => {
-    const spNow = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
-    const todayStart = new Date(spNow.getFullYear(), spNow.getMonth(), spNow.getDate()).getTime();
-    const rangeStart = range === "today" ? todayStart
-      : range === "7d" ? todayStart - 7 * 24 * 60 * 60 * 1000
-      : todayStart - 30 * 24 * 60 * 60 * 1000;
-
-    const inRange = salesHistory.filter((o) => o.saleDate >= rangeStart);
-    const totalCommission = Math.round(inRange.reduce((sum, o) => sum + o.netProfit, 0) * 100) / 100;
-    const orders = inRange.length;
-    const visitors = Math.max(orders, orders * 18 + Math.floor(Math.random() * 100));
-    const pageViews = Math.max(visitors, visitors * 3 + Math.floor(Math.random() * 200));
-    const conversionPct = orders === 0 || visitors === 0 ? "0.00" : ((orders / visitors) * 100).toFixed(2);
-    const avgPerOrder = orders > 0 ? totalCommission / orders : 0;
-
-    // Yesterday commission — filter salesHistory for yesterday's SP date
-    const yesterday = new Date(spNow);
-    yesterday.setDate(spNow.getDate() - 1);
-    const yesterdayStart = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate()).getTime();
-    const yesterdayEnd = yesterdayStart + 24 * 60 * 60 * 1000;
-    const yesterdayCommission = salesHistory
-      .filter((o) => o.saleDate >= yesterdayStart && o.saleDate < yesterdayEnd)
-      .reduce((sum, o) => sum + o.netProfit, 0);
-
-    return { totalCommission, orders, visitors, pageViews, conversionPct, avgPerOrder, yesterdayCommission, inRange };
-  }, [salesHistory, range]);
-
-  // ── Top 5 products (same grouping logic as dashboard.index.tsx) ──
-  const topProducts = useMemo(() => {
-    const map = new Map<string, { name: string; image: string; orders: number; revenue: number }>();
-    for (const o of metrics.inRange) {
-      const e = map.get(o.productId);
-      if (e) { e.orders++; e.revenue += o.netProfit; }
-      else { map.set(o.productId, { name: o.productName, image: o.productImage, orders: 1, revenue: o.netProfit }); }
-    }
-    return Array.from(map.entries())
-      .sort((a, b) => b[1].orders - a[1].orders)
-      .map(([id, d]) => ({ productId: id, ...d }));
-  }, [metrics.inRange]);
-
-  // ── Chart data (same logic as NewSalesChart in dashboard.index.tsx) ──
-  const chartData = useMemo(() => {
-    if (range === "today") {
-      const now = new Date();
-      const spTs = now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" });
-      const sp = new Date(spTs);
-      const spH = sp.getHours();
-      const spToday = `${sp.getFullYear()}-${String(sp.getMonth() + 1).padStart(2, "0")}-${String(sp.getDate()).padStart(2, "0")}`;
-      const y = new Date(sp); y.setDate(sp.getDate() - 1);
-      const spYest = `${y.getFullYear()}-${String(y.getMonth() + 1).padStart(2, "0")}-${String(y.getDate()).padStart(2, "0")}`;
-
-      const arr: { label: string; hoje: number | null; ontem: number }[] = [];
-      for (let i = 0; i < 24; i++) {
-        let hojeSum = 0;
-        let ontemSum = 0;
-        for (const o of salesHistory) {
-          const oSp = new Date(o.saleDate).toLocaleString("en-US", { timeZone: "America/Sao_Paulo" });
-          const oD = new Date(oSp);
-          const oKey = `${oD.getFullYear()}-${String(oD.getMonth() + 1).padStart(2, "0")}-${String(oD.getDate()).padStart(2, "0")}`;
-          if (oD.getHours() === i) {
-            if (oKey === spToday) hojeSum += o.netProfit;
-            else if (oKey === spYest) ontemSum += o.netProfit;
-          }
-        }
-        const hoje = i <= spH ? Math.round(hojeSum) : null;
-        arr.push({ label: pad2(i), hoje, ontem: Math.round(ontemSum) });
-      }
-      return arr;
-    }
-    // 7d / 30d — bucket by SP date key
-    const n = range === "7d" ? 7 : 30;
-    const spNow = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
-    const keys: string[] = [];
-    const labels: string[] = [];
-    for (let i = n - 1; i >= 0; i--) {
-      const d = new Date(spNow);
-      d.setDate(spNow.getDate() - i);
-      keys.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`);
-      labels.push(`${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}`);
-    }
-    const daySums: Record<string, number> = {};
-    for (const o of salesHistory) {
-      const oSp = new Date(o.saleDate).toLocaleString("en-US", { timeZone: "America/Sao_Paulo" });
-      const oD = new Date(oSp);
-      const oKey = `${oD.getFullYear()}-${String(oD.getMonth() + 1).padStart(2, "0")}-${String(oD.getDate()).padStart(2, "0")}`;
-      daySums[oKey] = (daySums[oKey] || 0) + o.netProfit;
-    }
-    return keys.map((k, i) => ({
-      label: labels[i],
-      hoje: Math.round(daySums[k] || 0),
-      ontem: Math.round(daySums[keys[Math.min(i + 1, keys.length - 1)]] || 0),
-    }));
-  }, [range, salesHistory]);
+  // SINGLE SOURCE OF TRUTH — all metrics from the global data.salesOrders store
+  const m = useMetrics(range);
 
   // Yesterday's date label for chart legend
   const spNow = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
@@ -143,43 +48,43 @@ function MetricasPage() {
     {
       key: "vendas",
       label: "Vendas",
-      value: brl(metrics.totalCommission),
-      sub: `Ontem: ${brl(metrics.yesterdayCommission)}`,
+      value: brl(m.totalCommission),
+      sub: `Ontem: ${brl(m.yesterdayCommission)}`,
       orange: false,
     },
     {
       key: "pedidos",
       label: "Pedidos",
-      value: num(metrics.orders),
+      value: num(m.orders),
       sub: `Período: ${rangeLabel(range)}`,
       orange: false,
     },
     {
       key: "conversao",
       label: "Taxa de Conversão",
-      value: `${metrics.conversionPct}%`,
-      sub: `Visitantes: ${num(metrics.visitors)}`,
+      value: `${m.conversionPct}%`,
+      sub: `Visitantes: ${num(m.visitors)}`,
       orange: false,
     },
     {
       key: "avg",
       label: "Vendas por Pedido",
-      value: brl(metrics.avgPerOrder),
-      sub: `Total: ${num(metrics.orders)} pedidos`,
+      value: brl(m.avgPerOrder),
+      sub: `Total: ${num(m.orders)} pedidos`,
       orange: false,
     },
     {
       key: "visitantes",
       label: "Visitantes",
-      value: num(metrics.visitors),
-      sub: `Estimado: ${num(metrics.orders)} pedidos × 18`,
+      value: num(m.visitors),
+      sub: `Estimado: ${num(m.orders)} pedidos × 18`,
       orange: true,
     },
     {
       key: "views",
       label: "Visualizações da Página",
-      value: num(metrics.pageViews),
-      sub: `Estimado: ${num(metrics.orders)} pedidos × 55`,
+      value: num(m.pageViews),
+      sub: `Estimado: ${num(m.orders)} pedidos × 55`,
       orange: false,
     },
   ];
@@ -375,7 +280,7 @@ function MetricasPage() {
         <div className="h-56">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart
-              data={chartData}
+              data={m.chartData}
               margin={{ top: 4, right: 8, bottom: 0, left: -10 }}
             >
               <defs>
@@ -510,7 +415,7 @@ function MetricasPage() {
 
           {/* Product rows — data from shared fake history */}
           <div>
-            {topProducts.length === 0 ? (
+            {m.topProducts.length === 0 ? (
               <div className="px-4 py-8 text-center">
                 <Package className="mx-auto mb-2 h-5 w-5 text-gray-200" />
                 <p className="text-[12px]" style={{ color: "#bbb" }}>
@@ -518,12 +423,12 @@ function MetricasPage() {
                 </p>
               </div>
             ) : (
-              topProducts.map((row, idx) => (
+              m.topProducts.map((row, idx) => (
                 <div
                   key={row.productId}
                   className="flex items-center gap-3 px-4 py-2.5"
                   style={
-                    idx < topProducts.length - 1
+                    idx < m.topProducts.length - 1
                       ? { borderBottom: `1px solid #F5F5F5` }
                       : undefined
                   }

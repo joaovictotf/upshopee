@@ -23,6 +23,7 @@ const VENDAS_HOJE_KEY = (email: string) => `shopesync.vendashoje.${email.toLower
 const COMMISSION_HIST_KEY = (email: string) => `shopesync.commissionhist.${email.toLowerCase()}`;
 const LAST_AUTO_SALE_KEY = (email: string) => `shopesync.lastautosale.${email.toLowerCase()}`;
 const TODAY_RESET_KEY = (email: string) => `shopesync.todayreset.${email.toLowerCase()}`;
+const ADMIN_BOOST_KEY = "upshopee-admin-boost";
 
 const READY_DELAY_MS = 5 * 60 * 60 * 1000; // 5h após pronto para 1ª venda automática
 const AUTO_SALE_INTERVAL_MS = 5 * 60 * 60 * 1000; // ~5h entre vendas automáticas
@@ -627,6 +628,7 @@ type Ctx = {
   // Presentation-admin (limited admin) + lightning button persistence
   isPresentationAdmin: boolean;
   hasLightningAccess: boolean;
+  adminBoostActive: boolean;
   passwordResetRequired: boolean;
   clearPasswordResetRequired: () => Promise<void>;
   recordLightningClick: () => Promise<{ ok: boolean; error?: string; amount?: number }>;
@@ -823,6 +825,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Timestamp of the last "reset today" (✕ button) — only meaningful while it
   // is still the same local day. Persisted per user in localStorage.
   const [todayResetAt, setTodayResetAt] = useState<number | null>(null);
+
+  // Admin boost state — persisted globally (not per-user) so the lightning boost
+  // survives page reloads and is consistent across all pages.
+  const [adminBoostActive, setAdminBoostActive] = useState<boolean>(() => {
+    try { return localStorage.getItem(ADMIN_BOOST_KEY) === "true"; } catch { return false; }
+  });
 
   // Reset-window suppression: orders sold today before the last reset are
   // hidden (and deleted server-side where policies allow). Ref keeps the
@@ -2290,6 +2298,75 @@ export function AppProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUserId]);
 
+  // ── Seed today's baseline fake orders for admin (mirrors getOrCreateSalesHistory) ──
+  // Only runs once per day per session — generates a few random sales so the
+  // dashboard doesn't start at zero before any lightning clicks. Seed orders
+  // have source "seed_fake_data" and are never cleared by the reset button.
+  useEffect(() => {
+    if (!user || !isAdmin) return;
+    const todayKey = spTodayKey();
+    try {
+      if (localStorage.getItem(`upshopee-seed-${todayKey}`)) return;
+    } catch {}
+
+    // Check if seed orders already exist in the global store
+    const todayStart = spStartOfDay().getTime();
+    setData((s) => {
+      const hasSeed = s.salesOrders.some(
+        (o) => o.source === "seed_fake_data" && o.saleDate >= todayStart,
+      );
+      if (hasSeed) {
+        try { localStorage.setItem(`upshopee-seed-${todayKey}`, "1"); } catch {}
+        return s;
+      }
+
+      // Generate 3-8 fake sales for today
+      const now = Date.now();
+      const count = 3 + Math.floor(Math.random() * 6);
+      const seed: SalesOrder[] = [];
+      for (let i = 0; i < count; i++) {
+        const p = GDM_PRODUCTS[i % GDM_PRODUCTS.length];
+        const cust = GDM_CUSTOMERS[i % GDM_CUSTOMERS.length];
+        const profit = Math.round((20 + Math.random() * 180) * 100) / 100;
+        const minutesAgo = Math.floor(Math.random() * 12 * 60);
+        seed.push({
+          id: `seed-${todayKey}-${i}`,
+          productId: p.id,
+          productName: p.name,
+          productImage: p.image,
+          marketplace: "shopee",
+          supplierName: p.supplierName,
+          supplierLocation: p.supplierLocation,
+          customerName: cust.name,
+          customerEmailMasked: cust.email,
+          customerPhoneMasked: cust.phone,
+          customerLocation: cust.loc,
+          salePrice: p.salePrice,
+          supplierCost: p.supplierCost,
+          marketplaceFee: 0,
+          operationalCost: 0,
+          netProfit: profit,
+          saleDate: now - minutesAgo * 60 * 1000,
+          source: "seed_fake_data",
+        });
+      }
+
+      // Persist the seed flag + clean old seed keys
+      try {
+        Object.keys(localStorage)
+          .filter((k) => k.startsWith("upshopee-seed-"))
+          .forEach((k) => localStorage.removeItem(k));
+        localStorage.setItem(`upshopee-seed-${todayKey}`, "1");
+      } catch {}
+
+      return {
+        ...s,
+        salesOrders: [...seed, ...s.salesOrders].sort((a, b) => b.saleDate - a.saleDate),
+      };
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, isAdmin]);
+
   const recordLightningClick = async () => {
     if (!hasLightningAccess) return { ok: false, error: "Acesso restrito" };
     // Random increment R$ 40 – R$ 350 (server clamps if missing/invalid).
@@ -2303,6 +2380,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       salesOrders: [buildLightningOrder(`temp-${Date.now()}`, final, Date.now()), ...s.salesOrders],
     }));
     if (currentUserId) void refreshLightningOrders(currentUserId);
+    // Persist boost active state globally
+    setAdminBoostActive(true);
+    try { localStorage.setItem(ADMIN_BOOST_KEY, "true"); } catch {}
     return { ok: true, amount: final };
   };
 
@@ -2341,6 +2421,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setCommissionHistory((h) => ({ ...h, shopee: { ...h.shopee, [todayKey()]: 0 } }));
     setTodayResetAt(now);
     try { localStorage.setItem(TODAY_RESET_KEY(user.email), String(now)); } catch {}
+    // Deactivate boost globally
+    setAdminBoostActive(false);
+    try { localStorage.setItem(ADMIN_BOOST_KEY, "false"); } catch {}
     if (delErr) return { ok: false, error: delErr.message };
     return { ok: true };
   };
@@ -2422,7 +2505,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <C.Provider value={{ user, currentUserId, isAdmin, authReady, login, register, logout, selectedMarketplace, setSelectedMarketplace, data, triggerDemoSale, saveMeuProduto, addSalesOrderForProduct, vendasHoje: vendasHojeStore.values, privacy, setPrivacy, adminPresentationMode, toggleAdminPresentationMode, getCommissionSum, listAccounts, refreshAccounts, approveAccount, rejectAccount, blockAccountPayment, unblockAccountPayment, addManualCommissionToUser, bulkAdminDemoCommissionShopee, approveAllPendingAccounts, adminCreateBoostCampaign, adminCancelBoostCampaign, getActiveBoostByUserId, myActiveBoost, getUserConnectedMarketplaces, getUserProducts, myConnections: isAdmin ? adminDemoMap : myConnections, getApprovedMarketplaces, requestMarketplaceConnection, getUserConnectionsByEmail, getUserApprovedMarketplaces, validateMarketplaceConnection, rejectMarketplaceConnection, allUserProducts, refreshAllUserProducts, getUserCommissionTotal, validateUserProduct, validateAllPendingProducts, validateUserPendingProducts, validateAllPendingConnections, validateUserPendingConnections, bulkApproveAllProductsAndMakeReady, accountCreatedAt, accountApprovedAt, isDemo, demoExpiresAt, submitWithdrawalRequest, listMyWithdrawalRequests, accountStatus, isPresentationAdmin, hasLightningAccess, recordLightningClick, resetTodaySales, isTodayReset, listAllProfiles, grantPresentationAdmin, revokePresentationAdmin, passwordResetRequired, clearPasswordResetRequired }}>
+    <C.Provider value={{ user, currentUserId, isAdmin, authReady, login, register, logout, selectedMarketplace, setSelectedMarketplace, data, triggerDemoSale, saveMeuProduto, addSalesOrderForProduct, vendasHoje: vendasHojeStore.values, privacy, setPrivacy, adminPresentationMode, toggleAdminPresentationMode, getCommissionSum, listAccounts, refreshAccounts, approveAccount, rejectAccount, blockAccountPayment, unblockAccountPayment, addManualCommissionToUser, bulkAdminDemoCommissionShopee, approveAllPendingAccounts, adminCreateBoostCampaign, adminCancelBoostCampaign, getActiveBoostByUserId, myActiveBoost, getUserConnectedMarketplaces, getUserProducts, myConnections: isAdmin ? adminDemoMap : myConnections, getApprovedMarketplaces, requestMarketplaceConnection, getUserConnectionsByEmail, getUserApprovedMarketplaces, validateMarketplaceConnection, rejectMarketplaceConnection, allUserProducts, refreshAllUserProducts, getUserCommissionTotal, validateUserProduct, validateAllPendingProducts, validateUserPendingProducts, validateAllPendingConnections, validateUserPendingConnections, bulkApproveAllProductsAndMakeReady, accountCreatedAt, accountApprovedAt, isDemo, demoExpiresAt, submitWithdrawalRequest, listMyWithdrawalRequests, accountStatus, isPresentationAdmin, hasLightningAccess, adminBoostActive, recordLightningClick, resetTodaySales, isTodayReset, listAllProfiles, grantPresentationAdmin, revokePresentationAdmin, passwordResetRequired, clearPasswordResetRequired }}>
       {children}
     </C.Provider>
   );

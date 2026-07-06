@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { DashboardShell } from "../components/layout/DashboardShell";
-import { useApp } from "../lib/state";
+import { useApp, getProductImage } from "../lib/state";
 import { brl, num } from "../lib/format";
 import {
   CartesianGrid,
@@ -22,9 +22,8 @@ import {
   Boxes,
   Package,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { products as catalogProducts } from "../lib/mock/products";
-import { getOrCreateSalesHistory, type SaleRecord } from "../lib/mock/dashboard-data";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useMetrics, type RangeKey, type ChartPoint } from "../hooks/use-metrics";
 
 export const Route = createFileRoute("/dashboard/")({ component: DashboardHome });
 
@@ -77,8 +76,6 @@ function useAnimatedValue(target: number, duration = 600) {
   return val;
 }
 
-type RangeKey = "today" | "7d" | "30d";
-
 const CHART_TITLE: Record<RangeKey, string> = {
   today: "Visão Geral de Vendas (Hoje)",
   "7d": "Visão Geral de Vendas (Últimos 7 dias)",
@@ -92,46 +89,12 @@ function DashboardHome() {
 // ── Lightning sale helpers ──
 
 function NewDashboard() {
-  const { privacy, isAdmin } = useApp();
+  const { privacy } = useApp();
   const [range, setRange] = useState<RangeKey>("today");
   const [stamp, setStamp] = useState(() => formatStamp());
-  const [salesHistory, setSalesHistory] = useState<SaleRecord[]>(() => isAdmin ? getOrCreateSalesHistory() : []);
 
-  // Lock random offsets for the session — these stay fixed across re-renders
-  const [randomOffsets] = useState(() => ({
-    unitsFactor: Math.random(),
-    visitorsExtra: Math.floor(Math.random() * 100),
-    viewsExtra: Math.floor(Math.random() * 200),
-  }));
-
-  const addSaleRef = useRef<((amount: number) => void) | null>(null);
-
-  // Keep addSaleRef current — solves stale closure
-  const addSale = useCallback((amount: number) => {
-    const product = catalogProducts[Math.floor(Math.random() * catalogProducts.length)];
-    const newSale: SaleRecord = {
-      saleDate: Date.now(),
-      netProfit: amount,
-      productId: product.id,
-      productName: product.name,
-      productImage: product.image,
-    };
-    setSalesHistory((prev) => [newSale, ...prev]);
-  }, []);
-
-  useEffect(() => { addSaleRef.current = addSale; }, [addSale]);
-
-  // Listen for raio events from DashboardShell
-  useEffect(() => {
-    const handler = (e: Event) => {
-      const detail = (e as CustomEvent).detail;
-      if (addSaleRef.current && typeof detail === "number") {
-        addSaleRef.current(detail);
-      }
-    };
-    window.addEventListener("upshopee-lightning", handler);
-    return () => window.removeEventListener("upshopee-lightning", handler);
-  }, []);
+  // SINGLE SOURCE OF TRUTH — all metrics from the global data.salesOrders store
+  const m = useMetrics(range);
 
   // Clock
   useEffect(() => {
@@ -139,65 +102,22 @@ function NewDashboard() {
     return () => clearInterval(id);
   }, []);
 
-  // ── Compute metrics (stable — only salesHistory changes trigger recalculation) ──
-  const spNow = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
-  const todayStart = new Date(spNow.getFullYear(), spNow.getMonth(), spNow.getDate()).getTime();
-  const rangeStart = range === "today" ? todayStart
-    : range === "7d" ? todayStart - 7 * 24 * 60 * 60 * 1000
-    : todayStart - 30 * 24 * 60 * 60 * 1000;
-
-  // Use useMemo for derived metrics that use Math.random() — lock them to salesHistory changes
-  const metrics = useMemo(() => {
-    const inRange = salesHistory.filter((o) => o.saleDate >= rangeStart);
-    const totalCommission = inRange.reduce((sum, o) => sum + o.netProfit, 0);
-    const orders = inRange.length;
-    return {
-      totalCommission: Math.round(totalCommission * 100) / 100,
-      orders,
-      units: orders + Math.floor(randomOffsets.unitsFactor * Math.max(1, Math.floor(orders * 0.3))),
-      buyers: Math.max(1, Math.floor(orders * 0.6)),
-      visitors: Math.max(orders, orders * 18 + randomOffsets.visitorsExtra),
-      views: 0, // computed below
-      inRange,
-    };
-  }, [salesHistory, rangeStart]);
-
-  // views depends on visitors (computed inside metrics)
-  const displayViews = useMemo(() =>
-    Math.max(metrics.visitors, metrics.visitors * 3 + randomOffsets.viewsExtra),
-  [metrics.visitors, randomOffsets.viewsExtra]);
-
-  const displayConversionRate = useMemo(() =>
-    metrics.orders === 0 || metrics.visitors === 0 ? "0.00" : ((metrics.orders / metrics.visitors) * 100).toFixed(2),
-  [metrics.orders, metrics.visitors]);
-
-  // Top 5
-  const top5 = useMemo(() => {
-    const map = new Map<string, { name: string; image: string; orders: number; revenue: number }>();
-    for (const o of metrics.inRange) {
-      const e = map.get(o.productId);
-      if (e) { e.orders++; e.revenue += o.netProfit; }
-      else { map.set(o.productId, { name: o.productName, image: o.productImage, orders: 1, revenue: o.netProfit }); }
-    }
-    return Array.from(map.entries()).sort((a, b) => b[1].orders - a[1].orders).slice(0, 5).map(([id, d]) => ({ productId: id, ...d }));
-  }, [metrics.inRange]);
-
   return (
     <DashboardShell title="Dashboard" subtitle="Painel UpShopee para Shopee" forceLight>
-      <NewShopeeHeroPanel valor={metrics.totalCommission} privacy={privacy} stamp={stamp} />
+      <NewShopeeHeroPanel valor={m.totalCommission} privacy={privacy} stamp={stamp} />
       <div className="mt-4 flex flex-col gap-4 lg:grid lg:grid-cols-12 lg:items-stretch">
         <div className="lg:col-span-3 flex flex-col">
           <NewMetricsBlock
-            visitors={metrics.visitors} views={displayViews} orders={metrics.orders}
-            units={metrics.units} buyers={metrics.buyers} conversionRate={displayConversionRate}
+            visitors={m.visitors} views={m.pageViews} orders={m.orders}
+            units={m.units} buyers={m.buyers} conversionRate={m.conversionPct}
             privacy={privacy}
           />
         </div>
         <div className="lg:col-span-6 flex flex-col">
-          <NewSalesChart range={range} onRangeChange={setRange} salesData={salesHistory} />
+          <NewSalesChart range={range} onRangeChange={setRange} chartData={m.chartData} />
         </div>
         <div className="lg:col-span-3 flex flex-col">
-          <Top5Block items={top5} />
+          <Top5Block items={m.topProducts.map(p => ({ productId: p.productId, name: p.name, image: p.image, orders: p.orders, revenue: p.revenue }))} />
         </div>
       </div>
     </DashboardShell>
@@ -341,68 +261,12 @@ function NewMetricCell({ label, value }: { label: string; value: string }) {
 function NewSalesChart({
   range,
   onRangeChange,
-  salesData,
+  chartData,
 }: {
   range: RangeKey;
   onRangeChange: (r: RangeKey) => void;
-  salesData: SaleRecord[];
+  chartData: ChartPoint[];
 }) {
-  const chartData = useMemo(() => {
-    if (range === "today") {
-      const now = new Date();
-      const spTs = now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" });
-      const sp = new Date(spTs);
-      const spH = sp.getHours();
-      const spToday = `${sp.getFullYear()}-${String(sp.getMonth() + 1).padStart(2, "0")}-${String(sp.getDate()).padStart(2, "0")}`;
-      // Yesterday key
-      const y = new Date(sp); y.setDate(sp.getDate() - 1);
-      const spYest = `${y.getFullYear()}-${String(y.getMonth() + 1).padStart(2, "0")}-${String(y.getDate()).padStart(2, "0")}`;
-
-      const arr: { label: string; hoje: number | null; ontem: number }[] = [];
-      for (let i = 0; i < 24; i++) {
-        let hojeSum = 0;
-        let ontemSum = 0;
-        for (const o of salesData) {
-          const oTs = o.saleDate;
-          const oSp = new Date(oTs).toLocaleString("en-US", { timeZone: "America/Sao_Paulo" });
-          const oD = new Date(oSp);
-          const oKey = `${oD.getFullYear()}-${String(oD.getMonth() + 1).padStart(2, "0")}-${String(oD.getDate()).padStart(2, "0")}`;
-          if (oD.getHours() === i) {
-            if (oKey === spToday) hojeSum += o.netProfit;
-            else if (oKey === spYest) ontemSum += o.netProfit;
-          }
-        }
-        const hoje = i <= spH ? Math.round(hojeSum) : null;
-        arr.push({ label: pad2(i), hoje, ontem: Math.round(ontemSum) });
-      }
-      return arr;
-    }
-    // 7d / 30d — bucket by SP date key
-    const n = range === "7d" ? 7 : 30;
-    const spNow = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
-    const keys: string[] = [];
-    const labels: string[] = [];
-    for (let i = n - 1; i >= 0; i--) {
-      const d = new Date(spNow);
-      d.setDate(spNow.getDate() - i);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-      keys.push(key);
-      labels.push(`${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}`);
-    }
-    const daySums: Record<string, number> = {};
-    for (const o of salesData) {
-      const oSp = new Date(o.saleDate).toLocaleString("en-US", { timeZone: "America/Sao_Paulo" });
-      const oD = new Date(oSp);
-      const oKey = `${oD.getFullYear()}-${String(oD.getMonth() + 1).padStart(2, "0")}-${String(oD.getDate()).padStart(2, "0")}`;
-      daySums[oKey] = (daySums[oKey] || 0) + o.netProfit;
-    }
-    const todayKey = keys[keys.length - 1];
-    return keys.map((k, i) => ({
-      label: labels[i],
-      hoje: Math.round(daySums[k] || 0),
-      ontem: Math.round(daySums[keys[Math.min(i + 1, keys.length - 1)]] || 0), // shifted comparison
-    }));
-  }, [range, salesData]);
 
   // Yesterday's date label for legend
   const spNow = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));

@@ -20,7 +20,7 @@ type ShellProps = {
 };
 
 export function DashboardShell({ children, title, subtitle, actions, onLightningClick, onResetMetrics, forceLight }: ShellProps) {
-  const { user, logout, isAdmin, privacy, setPrivacy, selectedMarketplace, adminPresentationMode, toggleAdminPresentationMode, hasLightningAccess, recordLightningClick, resetTodaySales, passwordResetRequired } = useApp();
+  const { user, logout, isAdmin, privacy, setPrivacy, selectedMarketplace, adminPresentationMode, toggleAdminPresentationMode, hasLightningAccess, adminBoostActive, recordLightningClick, resetTodaySales, passwordResetRequired } = useApp();
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [lightningLoading, setLightningLoading] = useState(false);
@@ -170,8 +170,8 @@ export function DashboardShell({ children, title, subtitle, actions, onLightning
               }}
               disabled={lightningLoading}
               aria-label={`Simular venda em ${MARKETPLACE_LABEL[selectedMarketplace]}`}
-              title={`Simular venda em ${MARKETPLACE_LABEL[selectedMarketplace]}`}
-              className={`grid h-12 w-12 place-items-center rounded-full shadow-2xl shadow-[var(--accent)]/40 ring-1 ring-[var(--accent)]/40 transition hover:scale-105 ${lightningLoading ? "bg-gray-400 cursor-not-allowed" : "bg-[var(--accent)] text-white"}`}
+              title={`Simular venda em ${MARKETPLACE_LABEL[selectedMarketplace]}${adminBoostActive ? " (impulso ativo)" : ""}`}
+              className={`grid h-12 w-12 place-items-center rounded-full shadow-2xl transition hover:scale-105 ${lightningLoading ? "bg-gray-400 cursor-not-allowed" : "bg-[var(--accent)] text-white"} ${adminBoostActive ? "shadow-[var(--accent)]/60 ring-2 ring-[var(--accent)]/60" : "shadow-[var(--accent)]/40 ring-1 ring-[var(--accent)]/40"}`}
             >
               {lightningLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Zap className="h-5 w-5" />}
             </button>
