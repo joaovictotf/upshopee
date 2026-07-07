@@ -12,8 +12,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 
-const CHECKOUT_MENSAL = "https://go.ironpayapp.com.br/zbu0e9tvo9";
-const CHECKOUT_VITALICIO = "https://go.ironpayapp.com.br/wqqa7uihfe";
+const CHECKOUTS = {
+  mensal:    { pix: "https://go.ironpayapp.com.br/zbu0e9tvo9",  cartao: "https://checkout.wiven.com.br/checkout/cmrapl3v50x3h01of62ikqkqv?offer=A7AQ4U2" },
+  vitalicio: { pix: "https://go.ironpayapp.com.br/wqqa7uihfe", cartao: "https://checkout.wiven.com.br/checkout/cmrapl3v50x3h01of62ikqkqv?offer=0UKHU32" },
+};
 const LOGO = "/brand/logo.png";
 
 /* A classe "js" é aplicada via useEffect no componente (evita crash SSR) */
@@ -312,6 +314,49 @@ footer{border-top:1px solid var(--border);padding:44px 0 110px;background:var(--
 #exit .dismiss{display:block;margin-top:16px;font-size:.83rem;color:var(--muted-2)}
 #exit .dismiss:hover{color:var(--muted)}
 
+/* ═══════════ PAYMENT METHOD MODAL ═══════════ */
+#pay-modal{position:fixed;inset:0;z-index:1150;display:none;align-items:center;justify-content:center;padding:20px}
+#pay-modal.open{display:flex}
+#pay-modal .bg{position:absolute;inset:0;background:rgba(5,5,7,.72);backdrop-filter:blur(6px);opacity:0;transition:opacity .25s ease}
+#pay-modal.open .bg{opacity:1}
+#pay-modal .card{position:relative;width:min(480px,100%);background:var(--surface);border:1px solid rgba(244,84,30,.5);border-radius:20px;padding:38px 32px 32px;text-align:center;transform:scale(.9);opacity:0;transition:all .4s var(--snap);box-shadow:0 30px 90px rgba(0,0,0,.6),0 0 50px rgba(244,84,30,.15)}
+#pay-modal.open .card{transform:scale(1);opacity:1}
+#pay-modal .logo{width:48px;margin:0 auto 18px}
+#pay-modal h3{font-family:var(--font-d);font-size:1.35rem;margin-bottom:6px}
+#pay-modal .plan-sub{color:var(--accent-2);font-size:.88rem;font-weight:600;margin-bottom:28px}
+#pay-modal .close{position:absolute;top:14px;right:16px;color:var(--muted-2);font-size:1.3rem;line-height:1;padding:6px;transition:color .2s}
+#pay-modal .close:hover{color:var(--text)}
+.pay-options{display:flex;flex-direction:column;gap:14px}
+.pay-opt{display:flex;align-items:center;gap:14px;width:100%;text-align:left;background:var(--surface-2);border:1px solid var(--border);border-radius:14px;padding:18px;cursor:pointer;transition:all .35s var(--snap);position:relative;overflow:hidden;min-height:72px}
+.pay-opt:hover{transform:translateY(-3px);border-color:rgba(244,84,30,.45);box-shadow:0 8px 28px rgba(0,0,0,.4),0 0 20px rgba(244,84,30,.08)}
+.pay-opt:active{transform:scale(.98)}
+.pay-opt:disabled{pointer-events:none}
+.pay-opt.dim{opacity:.4;transform:scale(.97)}
+.pay-opt:not(.dim)::after{content:'';position:absolute;inset:-2px;border-radius:16px;border:2px solid rgba(244,84,30,.4);opacity:0;transition:opacity .35s ease}
+.pay-opt:not(.dim):focus-visible::after,.pay-opt:not(.dim):hover::after{opacity:1}
+.pay-icon{width:52px;height:52px;border-radius:12px;background:rgba(30,190,165,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:box-shadow .35s ease}
+.pay-icon.ccard{background:rgba(255,122,69,.12)}
+.pay-opt:not(.dim):hover .pay-icon{box-shadow:0 0 18px rgba(30,190,165,.25)}
+.pay-opt:not(.dim):hover .pay-icon.ccard{box-shadow:0 0 18px rgba(255,122,69,.25)}
+.pay-text{flex:1;min-width:0}
+.pay-title{display:block;font-weight:600;font-size:.96rem;color:var(--text)}
+.pay-sub{display:block;font-size:.8rem;color:var(--muted);margin-top:2px}
+.pay-pill{font-size:.7rem;font-weight:600;color:#1EBEA5;background:rgba(30,190,165,.14);padding:4px 10px;border-radius:99px;flex-shrink:0}
+.pay-spin{width:20px;height:20px;border:2px solid rgba(244,84,30,.3);border-top-color:var(--accent);border-radius:50%;animation:paySpin .6s linear infinite;flex-shrink:0;margin-left:4px}
+@keyframes paySpin{to{transform:rotate(360deg)}}
+.pay-reassure{margin-top:22px;font-size:.78rem;color:var(--muted-2)}
+
+/* ── bottom sheet on mobile ── */
+@media(max-width:560px){
+  #pay-modal{align-items:flex-end;padding:0}
+  #pay-modal .card{width:100%;max-width:100%;border-radius:24px 24px 0 0;transform:translateY(100%);transition:all .45s var(--snap);padding:30px 20px 34px}
+  #pay-modal.open .card{transform:translateY(0)}
+  #pay-modal .card::before{content:'';display:block;width:36px;height:4px;border-radius:2px;background:rgba(255,255,255,.18);margin:0 auto 16px}
+  .pay-opt{min-height:64px;padding:15px}
+  .pay-icon{width:46px;height:46px;border-radius:10px}
+  .pay-icon svg{width:24px;height:24px}
+}
+
 /* ═══════════ RESPONSIVE ═══════════ */
 @media(max-width:900px){
   .bento{grid-template-columns:repeat(2,1fr)}
@@ -344,6 +389,20 @@ function OfertasPage() {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [exitOpen, setExitOpen] = useState(false);
   const [stickyShow, setStickyShow] = useState(false);
+  const [paymentPlan, setPaymentPlan] = useState<null | 'mensal' | 'vitalicio'>(null);
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const paymentPlanRef = useRef<null | 'mensal' | 'vitalicio'>(null);
+  useEffect(() => { paymentPlanRef.current = paymentPlan; }, [paymentPlan]);
+
+  // Scroll lock while any overlay is open
+  useEffect(() => {
+    if (exitOpen || paymentPlan) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [exitOpen, paymentPlan]);
 
   useEffect(() => {
     /* Liga o gate ".js" das animações (originalmente no <head> inline, movido para cá para evitar crash SSR) */
@@ -576,7 +635,12 @@ function OfertasPage() {
       sessionStorage.setItem("exitShown", "1");
       setExitOpen(true);
     };
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setExitOpen(false); };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      // Payment modal takes priority — close it first, then exit popup
+      if (paymentPlanRef.current) { setPaymentPlan(null); return; }
+      setExitOpen(false);
+    };
     document.addEventListener("keydown", onKey);
     /* desktop: mouse leaves through top */
     const onMouseOut = (e: MouseEvent) => {
@@ -645,6 +709,17 @@ function OfertasPage() {
   const closeExit = (e: { preventDefault: () => void }) => {
     e.preventDefault();
     setExitOpen(false);
+  };
+  const closePayment = () => {
+    setPaymentPlan(null);
+    setPaymentLoading(false);
+  };
+  const payWith = (method: 'pix' | 'cartao') => {
+    if (!paymentPlan) return;
+    setPaymentLoading(true);
+    setTimeout(() => {
+      window.location.href = CHECKOUTS[paymentPlan][method];
+    }, 350);
   };
   const hideOnError = (e: { currentTarget: HTMLImageElement }) => {
     e.currentTarget.style.display = "none";
@@ -846,7 +921,7 @@ function OfertasPage() {
                 <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#F4541E" strokeWidth="3"><path className="ck" d="M4 12l5 5L20 6" /></svg>Comunidade VIP</li>
                 <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#F4541E" strokeWidth="3"><path className="ck" d="M4 12l5 5L20 6" /></svg>Suporte prioritário</li>
               </ul>
-              <a href={CHECKOUT_MENSAL} className="btn btn-ghost">Começar Agora</a>
+              <a href="#" onClick={(e) => { e.preventDefault(); setPaymentPlan('mensal'); }} className="btn btn-ghost">Começar Agora</a>
             </div>
 
             <div className="plan vip rv" data-dir="right">
@@ -871,7 +946,7 @@ function OfertasPage() {
                 <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#F4541E" strokeWidth="3"><path className="ck" d="M4 12l5 5L20 6" /></svg>Comunidade VIP</li>
                 <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#F4541E" strokeWidth="3"><path className="ck" d="M4 12l5 5L20 6" /></svg>Suporte prioritário</li>
               </ul>
-              <a href={CHECKOUT_VITALICIO} className="btn btn-primary">Quero escalar agora <span className="arr">→</span></a>
+              <a href="#" onClick={(e) => { e.preventDefault(); setPaymentPlan('vitalicio'); }} className="btn btn-primary">Quero escalar agora <span className="arr">→</span></a>
               <p className="under-cta">💳 Parcelamento disponível — consulte no checkout</p>
             </div>
           </div>
@@ -924,7 +999,7 @@ function OfertasPage() {
         <div className="wrap">
           <img src={LOGO} alt="UpShopee" className="rv" data-dir="zoom" onError={hideOnError} />
           <h2 className="rv" data-dir="up">Invista uma vez.<br /><span className="grad-text">Lucre sempre.</span></h2>
-          <a href={CHECKOUT_VITALICIO} className="btn btn-primary rv" data-dir="up">Quero meu acesso vitalício <span className="arr">→</span></a>
+          <a href="#" onClick={(e) => { e.preventDefault(); setPaymentPlan('vitalicio'); }} className="btn btn-primary rv" data-dir="up">Quero meu acesso vitalício <span className="arr">→</span></a>
           <p className="micro rv" data-dir="up">✓ Garantia incondicional de 7 dias&nbsp;&nbsp;·&nbsp;&nbsp;🔒 Pagamento 100% seguro</p>
         </div>
       </section>
@@ -943,7 +1018,7 @@ function OfertasPage() {
       {/* ═══════════ STICKY MOBILE CTA ═══════════ */}
       <div id="sticky" className={stickyShow ? "show" : undefined}>
         <span className="p">Vitalício por <b>R$ 267</b></span>
-        <a href={CHECKOUT_VITALICIO} className="btn btn-primary">Garantir <span className="arr">→</span></a>
+        <a href="#" onClick={(e) => { e.preventDefault(); setPaymentPlan('vitalicio'); }} className="btn btn-primary">Garantir <span className="arr">→</span></a>
       </div>
 
       {/* ═══════════ EXIT POPUP ═══════════ */}
@@ -954,8 +1029,69 @@ function OfertasPage() {
           <img src={LOGO} alt="" onError={hideOnError} />
           <h3 id="exitTitle">Espera — antes de sair…</h3>
           <p>Você tem <b style={{ color: "#fff" }}>7 dias de garantia incondicional</b>. O risco é zero: teste a UpShopee e, se não fizer sentido, devolvemos 100% do valor.</p>
-          <a href={CHECKOUT_VITALICIO} className="btn btn-primary" style={{ width: "100%" }}>Quero testar sem risco <span className="arr">→</span></a>
+          <a href="#" onClick={(e) => { e.preventDefault(); setExitOpen(false); setPaymentPlan('vitalicio'); }} className="btn btn-primary" style={{ width: "100%" }}>Quero testar sem risco <span className="arr">→</span></a>
           <a href="#" className="dismiss" data-close onClick={closeExit}>Não, prefiro sair</a>
+        </div>
+      </div>
+
+      {/* ═══════════ PAYMENT METHOD MODAL ═══════════ */}
+      <div id="pay-modal" className={paymentPlan ? "open" : undefined} role="dialog" aria-modal="true" aria-label="Escolher método de pagamento">
+        <div className="bg" onClick={closePayment}></div>
+        <div className="card">
+          <button className="close" aria-label="Fechar" onClick={closePayment}>✕</button>
+          <img src={LOGO} alt="UpShopee" className="logo" onError={hideOnError} />
+          <h3>Como você prefere pagar?</h3>
+          <p className="plan-sub">
+            {paymentPlan === 'vitalicio' ? 'Acesso Vitalício — R$ 267' : 'Plano Mensal — R$ 167/mês'}
+          </p>
+
+          <div className="pay-options">
+            {/* Pix */}
+            <button
+              className={`pay-opt${paymentLoading ? " dim" : ""}`}
+              onClick={() => payWith('pix')}
+              disabled={paymentLoading}
+            >
+              <div className="pay-icon">
+                <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
+                  <rect width="32" height="32" rx="10" fill="#1EBEA5" opacity=".18" />
+                  <path d="M15.34 24.72l-3.38-3.4a1.71 1.71 0 010-2.4 1.68 1.68 0 012.4 0l1.78 1.8 5.18-5.2a1.68 1.68 0 012.4 0c.66.67.66 1.75 0 2.42l-6.38 6.4a2.2 2.2 0 01-1.45.5 2.3 2.3 0 01-1.35-.42l-.2-.16.04.02-.04-.56z" fill="#1EBEA5" />
+                  <path d="M19.66 6.8l-4.22 4.24a.55.55 0 01-.77 0L13.1 9.48a2.2 2.2 0 01.08-3.08 2.16 2.16 0 013.06.06l.04.04-3.12 3.08 8.08-8.1-3.14-3.16h-.05a4.47 4.47 0 00-6.3 0 4.5 4.5 0 000 6.36l4.24 4.26a2.2 2.2 0 001.54.64 2.16 2.16 0 001.54-.64l4.22-4.24a4.47 4.47 0 000-6.36 4.5 4.5 0 00-6.35 0h-.04z" fill="#1EBEA5" />
+                  <path d="M12.72 12.72l-4.08 4.1a4.47 4.47 0 000 6.36 4.5 4.5 0 006.35 0l4.24-4.24c.41-.42.63-.97.64-1.54a2.16 2.16 0 00-.63-1.54l-1.08 1.08-3.17 3.17a2.2 2.2 0 01-3.08 0 2.16 2.16 0 01.06-3.06l.04-.04 3.12-3.12-3.12-3.14-.08-.08z" fill="#1EBEA5" />
+                </svg>
+              </div>
+              <div className="pay-text">
+                <span className="pay-title">Pagar com Pix</span>
+                <span className="pay-sub">Aprovação imediata</span>
+              </div>
+              <span className="pay-pill">Mais rápido</span>
+              {paymentLoading && <span className="pay-spin" />}
+            </button>
+
+            {/* Cartão */}
+            <button
+              className={`pay-opt${paymentLoading ? " dim" : ""}`}
+              onClick={() => payWith('cartao')}
+              disabled={paymentLoading}
+            >
+              <div className="pay-icon ccard">
+                <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
+                  <rect width="32" height="32" rx="10" fill="#FF7A45" opacity=".18" />
+                  <rect x="5" y="10" width="22" height="13" rx="2.5" stroke="#FF7A45" strokeWidth="1.6" />
+                  <rect x="5" y="14" width="22" height="2.5" fill="#FF7A45" opacity=".5" />
+                  <rect x="11" y="20" width="5" height="1.6" rx=".8" fill="#FF7A45" opacity=".5" />
+                  <rect x="18" y="20" width="4" height="1.6" rx=".8" fill="#FF7A45" opacity=".5" />
+                </svg>
+              </div>
+              <div className="pay-text">
+                <span className="pay-title">Pagar com Cartão</span>
+                <span className="pay-sub">{paymentPlan === 'vitalicio' ? 'até 12x de R$ 27,61' : 'parcelamento disponível'}</span>
+              </div>
+              {paymentLoading && <span className="pay-spin" />}
+            </button>
+          </div>
+
+          <p className="pay-reassure">🔒 Pagamento 100% seguro · Garantia de 7 dias</p>
         </div>
       </div>
     </div>
