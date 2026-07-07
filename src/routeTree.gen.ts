@@ -15,6 +15,8 @@ import { Route as PlanosupRouteImport } from './routes/planosup'
 import { Route as Planos3RouteImport } from './routes/planos3'
 import { Route as Planos2RouteImport } from './routes/planos2'
 import { Route as PagamentoBloqueadoRouteImport } from './routes/pagamento-bloqueado'
+import { Route as Ofertas3RouteImport } from './routes/ofertas3'
+import { Route as Ofertas2RouteImport } from './routes/ofertas2'
 import { Route as OfertasRouteImport } from './routes/ofertas'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DemoRouteImport } from './routes/demo'
@@ -67,6 +69,16 @@ const Planos2Route = Planos2RouteImport.update({
 const PagamentoBloqueadoRoute = PagamentoBloqueadoRouteImport.update({
   id: '/pagamento-bloqueado',
   path: '/pagamento-bloqueado',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const Ofertas3Route = Ofertas3RouteImport.update({
+  id: '/ofertas3',
+  path: '/ofertas3',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const Ofertas2Route = Ofertas2RouteImport.update({
+  id: '/ofertas2',
+  path: '/ofertas2',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OfertasRoute = OfertasRouteImport.update({
@@ -195,6 +207,8 @@ export interface FileRoutesByFullPath {
   '/demo': typeof DemoRouteWithChildren
   '/login': typeof LoginRoute
   '/ofertas': typeof OfertasRoute
+  '/ofertas2': typeof Ofertas2Route
+  '/ofertas3': typeof Ofertas3Route
   '/pagamento-bloqueado': typeof PagamentoBloqueadoRoute
   '/planos2': typeof Planos2Route
   '/planos3': typeof Planos3Route
@@ -224,6 +238,8 @@ export interface FileRoutesByTo {
   '/conta-em-analise': typeof ContaEmAnaliseRoute
   '/login': typeof LoginRoute
   '/ofertas': typeof OfertasRoute
+  '/ofertas2': typeof Ofertas2Route
+  '/ofertas3': typeof Ofertas3Route
   '/pagamento-bloqueado': typeof PagamentoBloqueadoRoute
   '/planos2': typeof Planos2Route
   '/planos3': typeof Planos3Route
@@ -256,6 +272,8 @@ export interface FileRoutesById {
   '/demo': typeof DemoRouteWithChildren
   '/login': typeof LoginRoute
   '/ofertas': typeof OfertasRoute
+  '/ofertas2': typeof Ofertas2Route
+  '/ofertas3': typeof Ofertas3Route
   '/pagamento-bloqueado': typeof PagamentoBloqueadoRoute
   '/planos2': typeof Planos2Route
   '/planos3': typeof Planos3Route
@@ -289,6 +307,8 @@ export interface FileRouteTypes {
     | '/demo'
     | '/login'
     | '/ofertas'
+    | '/ofertas2'
+    | '/ofertas3'
     | '/pagamento-bloqueado'
     | '/planos2'
     | '/planos3'
@@ -318,6 +338,8 @@ export interface FileRouteTypes {
     | '/conta-em-analise'
     | '/login'
     | '/ofertas'
+    | '/ofertas2'
+    | '/ofertas3'
     | '/pagamento-bloqueado'
     | '/planos2'
     | '/planos3'
@@ -349,6 +371,8 @@ export interface FileRouteTypes {
     | '/demo'
     | '/login'
     | '/ofertas'
+    | '/ofertas2'
+    | '/ofertas3'
     | '/pagamento-bloqueado'
     | '/planos2'
     | '/planos3'
@@ -381,6 +405,8 @@ export interface RootRouteChildren {
   DemoRoute: typeof DemoRouteWithChildren
   LoginRoute: typeof LoginRoute
   OfertasRoute: typeof OfertasRoute
+  Ofertas2Route: typeof Ofertas2Route
+  Ofertas3Route: typeof Ofertas3Route
   PagamentoBloqueadoRoute: typeof PagamentoBloqueadoRoute
   Planos2Route: typeof Planos2Route
   Planos3Route: typeof Planos3Route
@@ -431,6 +457,20 @@ declare module '@tanstack/react-router' {
       path: '/pagamento-bloqueado'
       fullPath: '/pagamento-bloqueado'
       preLoaderRoute: typeof PagamentoBloqueadoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ofertas3': {
+      id: '/ofertas3'
+      path: '/ofertas3'
+      fullPath: '/ofertas3'
+      preLoaderRoute: typeof Ofertas3RouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ofertas2': {
+      id: '/ofertas2'
+      path: '/ofertas2'
+      fullPath: '/ofertas2'
+      preLoaderRoute: typeof Ofertas2RouteImport
       parentRoute: typeof rootRouteImport
     }
     '/ofertas': {
@@ -669,6 +709,8 @@ const rootRouteChildren: RootRouteChildren = {
   DemoRoute: DemoRouteWithChildren,
   LoginRoute: LoginRoute,
   OfertasRoute: OfertasRoute,
+  Ofertas2Route: Ofertas2Route,
+  Ofertas3Route: Ofertas3Route,
   PagamentoBloqueadoRoute: PagamentoBloqueadoRoute,
   Planos2Route: Planos2Route,
   Planos3Route: Planos3Route,
