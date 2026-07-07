@@ -18,7 +18,7 @@ function pad2(n: number) {
 //    Seed baseline orders are injected by state.tsx on admin login, so the
 //    dashboard never starts empty.
 export function useMetrics(range: RangeKey) {
-  const { data } = useApp();
+  const { data, adminBoostActive } = useApp();
 
   // Stable per-mount random offsets (minor per-page variation acceptable for synthetic metrics)
   const offsets = useRef({
@@ -112,7 +112,7 @@ export function useMetrics(range: RangeKey) {
       topProducts,
       chartData,
     };
-  }, [data.salesOrders, range, offsets]);
+  }, [data.salesOrders, range, offsets, adminBoostActive]);
 }
 
 // ── Chart data builder (same logic as NewSalesChart in dashboard.index.tsx) ────
