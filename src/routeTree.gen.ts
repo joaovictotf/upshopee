@@ -18,6 +18,7 @@ import { Route as PagamentoBloqueadoRouteImport } from './routes/pagamento-bloqu
 import { Route as Ofertas3RouteImport } from './routes/ofertas3'
 import { Route as Ofertas2RouteImport } from './routes/ofertas2'
 import { Route as OfertasRouteImport } from './routes/ofertas'
+import { Route as MercadolivrecombrRouteImport } from './routes/mercadolivrecombr'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DemoRouteImport } from './routes/demo'
 import { Route as DashboardRouteImport } from './routes/dashboard'
@@ -84,6 +85,11 @@ const Ofertas2Route = Ofertas2RouteImport.update({
 const OfertasRoute = OfertasRouteImport.update({
   id: '/ofertas',
   path: '/ofertas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MercadolivrecombrRoute = MercadolivrecombrRouteImport.update({
+  id: '/mercadolivrecombr',
+  path: '/mercadolivrecombr',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -206,6 +212,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRouteWithChildren
   '/demo': typeof DemoRouteWithChildren
   '/login': typeof LoginRoute
+  '/mercadolivrecombr': typeof MercadolivrecombrRoute
   '/ofertas': typeof OfertasRoute
   '/ofertas2': typeof Ofertas2Route
   '/ofertas3': typeof Ofertas3Route
@@ -237,6 +244,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/conta-em-analise': typeof ContaEmAnaliseRoute
   '/login': typeof LoginRoute
+  '/mercadolivrecombr': typeof MercadolivrecombrRoute
   '/ofertas': typeof OfertasRoute
   '/ofertas2': typeof Ofertas2Route
   '/ofertas3': typeof Ofertas3Route
@@ -271,6 +279,7 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRouteWithChildren
   '/demo': typeof DemoRouteWithChildren
   '/login': typeof LoginRoute
+  '/mercadolivrecombr': typeof MercadolivrecombrRoute
   '/ofertas': typeof OfertasRoute
   '/ofertas2': typeof Ofertas2Route
   '/ofertas3': typeof Ofertas3Route
@@ -306,6 +315,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/demo'
     | '/login'
+    | '/mercadolivrecombr'
     | '/ofertas'
     | '/ofertas2'
     | '/ofertas3'
@@ -337,6 +347,7 @@ export interface FileRouteTypes {
     | '/'
     | '/conta-em-analise'
     | '/login'
+    | '/mercadolivrecombr'
     | '/ofertas'
     | '/ofertas2'
     | '/ofertas3'
@@ -370,6 +381,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/demo'
     | '/login'
+    | '/mercadolivrecombr'
     | '/ofertas'
     | '/ofertas2'
     | '/ofertas3'
@@ -404,6 +416,7 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRouteWithChildren
   DemoRoute: typeof DemoRouteWithChildren
   LoginRoute: typeof LoginRoute
+  MercadolivrecombrRoute: typeof MercadolivrecombrRoute
   OfertasRoute: typeof OfertasRoute
   Ofertas2Route: typeof Ofertas2Route
   Ofertas3Route: typeof Ofertas3Route
@@ -478,6 +491,13 @@ declare module '@tanstack/react-router' {
       path: '/ofertas'
       fullPath: '/ofertas'
       preLoaderRoute: typeof OfertasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mercadolivrecombr': {
+      id: '/mercadolivrecombr'
+      path: '/mercadolivrecombr'
+      fullPath: '/mercadolivrecombr'
+      preLoaderRoute: typeof MercadolivrecombrRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -708,6 +728,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRouteWithChildren,
   DemoRoute: DemoRouteWithChildren,
   LoginRoute: LoginRoute,
+  MercadolivrecombrRoute: MercadolivrecombrRoute,
   OfertasRoute: OfertasRoute,
   Ofertas2Route: Ofertas2Route,
   Ofertas3Route: Ofertas3Route,
