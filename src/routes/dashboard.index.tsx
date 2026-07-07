@@ -22,7 +22,7 @@ import {
   Boxes,
   Package,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMetrics, type RangeKey, type ChartPoint } from "../hooks/use-metrics";
 
 export const Route = createFileRoute("/dashboard/")({ component: DashboardHome });
@@ -57,10 +57,16 @@ function useAnimatedValue(target: number, duration = 600) {
   const fromRef = useRef(target);
   const startRef = useRef<number | null>(null);
   const rafRef = useRef<number | null>(null);
+  // Track latest val in a ref so the effect never reads a stale closure
+  const valRef = useRef(target);
+  valRef.current = val;
+
   useEffect(() => {
-    fromRef.current = val;
+    fromRef.current = valRef.current;
     startRef.current = null;
+    let cancelled = false;
     const step = (ts: number) => {
+      if (cancelled) return;
       if (startRef.current === null) startRef.current = ts;
       const t = Math.min(1, (ts - startRef.current) / duration);
       const eased = 1 - Math.pow(1 - t, 3);
@@ -69,10 +75,10 @@ function useAnimatedValue(target: number, duration = 600) {
     };
     rafRef.current = requestAnimationFrame(step);
     return () => {
+      cancelled = true;
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [target]);
+  }, [target, duration]);
   return val;
 }
 
@@ -81,6 +87,20 @@ const CHART_TITLE: Record<RangeKey, string> = {
   "7d": "Visão Geral de Vendas (Últimos 7 dias)",
   "30d": "Visão Geral de Vendas (Últimos 30 dias)",
 };
+
+// ── Self-contained clock — manages its own 1s interval so parent never re-renders on tick ──
+const ClockStamp = memo(function ClockStamp() {
+  const [stamp, setStamp] = useState(() => formatStamp());
+  useEffect(() => {
+    const id = setInterval(() => setStamp(formatStamp()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  return (
+    <div className="mt-2 inline-flex items-center bg-[#C84120] rounded-full px-3 py-1 text-white text-xs sm:text-sm font-medium">
+      {stamp}
+    </div>
+  );
+});
 
 function DashboardHome() {
   return <NewDashboard />;
@@ -91,20 +111,29 @@ function DashboardHome() {
 function NewDashboard() {
   const { privacy } = useApp();
   const [range, setRange] = useState<RangeKey>("today");
-  const [stamp, setStamp] = useState(() => formatStamp());
 
   // SINGLE SOURCE OF TRUTH — all metrics from the global data.salesOrders store
   const m = useMetrics(range);
 
-  // Clock
-  useEffect(() => {
-    const id = setInterval(() => setStamp(formatStamp()), 1000);
-    return () => clearInterval(id);
-  }, []);
+  // Stable callback so range-change never invalidates child memoization
+  const onRangeChange = useCallback((r: RangeKey) => setRange(r), []);
+
+  // Stable derived array so Top5Block memoization isn't broken by inline .map()
+  const top5Items = useMemo(
+    () =>
+      m.topProducts.map((p) => ({
+        productId: p.productId,
+        name: p.name,
+        image: p.image,
+        orders: p.orders,
+        revenue: p.revenue,
+      })),
+    [m.topProducts],
+  );
 
   return (
     <DashboardShell title="Dashboard" subtitle="Painel UpShopee para Shopee" forceLight>
-      <NewShopeeHeroPanel valor={m.totalCommission} privacy={privacy} stamp={stamp} />
+      <NewShopeeHeroPanel valor={m.totalCommission} privacy={privacy} />
       <div className="mt-4 flex flex-col gap-4 lg:grid lg:grid-cols-12 lg:items-stretch">
         <div className="lg:col-span-3 flex flex-col">
           <NewMetricsBlock
@@ -114,10 +143,10 @@ function NewDashboard() {
           />
         </div>
         <div className="lg:col-span-6 flex flex-col">
-          <NewSalesChart range={range} onRangeChange={setRange} chartData={m.chartData} />
+          <NewSalesChart range={range} onRangeChange={onRangeChange} chartData={m.chartData} />
         </div>
         <div className="lg:col-span-3 flex flex-col">
-          <Top5Block items={m.topProducts.map(p => ({ productId: p.productId, name: p.name, image: p.image, orders: p.orders, revenue: p.revenue }))} />
+          <Top5Block items={top5Items} />
         </div>
       </div>
     </DashboardShell>
@@ -125,17 +154,15 @@ function NewDashboard() {
 }
 
 // ---------------------------------------------------------------------------
-// NewShopeeHeroPanel
+// NewShopeeHeroPanel — memoized; clock is self-contained via ClockStamp
 // ---------------------------------------------------------------------------
 
-function NewShopeeHeroPanel({
+const NewShopeeHeroPanel = memo(function NewShopeeHeroPanel({
   valor,
   privacy,
-  stamp,
 }: {
   valor: number;
   privacy: boolean;
-  stamp: string;
 }) {
   const { isAdmin } = useApp();
   const animated = useAnimatedValue(valor);
@@ -154,10 +181,8 @@ function NewShopeeHeroPanel({
       />
 
       <h1 className="text-2xl sm:text-3xl font-bold text-white">Vendas Hoje</h1>
-      {/* Date/time pill */}
-      <div className="mt-2 inline-flex items-center bg-[#C84120] rounded-full px-3 py-1 text-white text-xs sm:text-sm font-medium">
-        {stamp}
-      </div>
+      {/* Self-contained clock — no parent re-render on tick */}
+      <ClockStamp />
 
       {/* Action buttons */}
       <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
@@ -196,13 +221,13 @@ function NewShopeeHeroPanel({
       </div>
     </div>
   );
-}
+});
 
 // ---------------------------------------------------------------------------
-// NewMetricsBlock — 3 rows × 2 columns, no icons
+// NewMetricsBlock — memoized pure display, no icons
 // ---------------------------------------------------------------------------
 
-function NewMetricsBlock({
+const NewMetricsBlock = memo(function NewMetricsBlock({
   visitors,
   views,
   orders,
@@ -234,9 +259,9 @@ function NewMetricsBlock({
       </div>
     </div>
   );
-}
+});
 
-function NewMetricCell({ label, value }: { label: string; value: string }) {
+const NewMetricCell = memo(function NewMetricCell({ label, value }: { label: string; value: string }) {
   return (
     <div className="bg-card p-2 sm:p-4 text-center">
       <div className="text-[11px] font-medium text-[#EE4D2D] leading-tight truncate">{label}</div>
@@ -252,13 +277,13 @@ function NewMetricCell({ label, value }: { label: string; value: string }) {
       </div>
     </div>
   );
-}
+});
 
 // ---------------------------------------------------------------------------
-// NewSalesChart — AreaChart, orange + teal
+// NewSalesChart — memoized AreaChart, orange + teal
 // ---------------------------------------------------------------------------
 
-function NewSalesChart({
+const NewSalesChart = memo(function NewSalesChart({
   range,
   onRangeChange,
   chartData,
@@ -267,12 +292,13 @@ function NewSalesChart({
   onRangeChange: (r: RangeKey) => void;
   chartData: ChartPoint[];
 }) {
-
-  // Yesterday's date label for legend
-  const spNow = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
-  const yesterday = new Date(spNow);
-  yesterday.setDate(spNow.getDate() - 1);
-  const yesterdayLabel = `${pad2(yesterday.getDate())}/${pad2(yesterday.getMonth() + 1)}/${yesterday.getFullYear()}`;
+  // Yesterday's date label for legend — stable between renders
+  const yesterdayLabel = useMemo(() => {
+    const spNow = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+    const yesterday = new Date(spNow);
+    yesterday.setDate(spNow.getDate() - 1);
+    return `${pad2(yesterday.getDate())}/${pad2(yesterday.getMonth() + 1)}/${yesterday.getFullYear()}`;
+  }, []);
 
   return (
     <div className="h-full rounded-xl border border-border bg-card p-5">
@@ -409,7 +435,7 @@ function NewSalesChart({
       </div>
     </div>
   );
-}
+});
 
 // ---------------------------------------------------------------------------
 // OLD DASHBOARD (non-admin users, unchanged)
@@ -515,7 +541,7 @@ function OldDashboard() {
   );
 }
 
-function ShopeeHeroPanel({
+const ShopeeHeroPanel = memo(function ShopeeHeroPanel({
   valor,
   privacy,
   onTogglePrivacy,
@@ -610,9 +636,9 @@ function ShopeeHeroPanel({
       </div>
     </div>
   );
-}
+});
 
-function MetricsBlock({
+const MetricsBlock = memo(function MetricsBlock({
   visitors,
   views,
   orders,
@@ -636,9 +662,9 @@ function MetricsBlock({
       </div>
     </div>
   );
-}
+});
 
-function MetricTile({ icon: Icon, label, value }: { icon: typeof Users; label: string; value: string }) {
+const MetricTile = memo(function MetricTile({ icon: Icon, label, value }: { icon: typeof Users; label: string; value: string }) {
   return (
     <div className="bg-card p-5 text-center">
       <div className="mx-auto grid h-7 w-7 place-items-center text-[#EE4D2D]">
@@ -648,9 +674,9 @@ function MetricTile({ icon: Icon, label, value }: { icon: typeof Users; label: s
       <div className="mt-2 text-2xl font-bold text-foreground tabular-nums" style={{ fontFamily: 'Arial, Helvetica, sans-serif', letterSpacing: '-0.5px', fontVariantNumeric: 'tabular-nums' }}>{value}</div>
     </div>
   );
-}
+});
 
-function SalesOverviewChart({ range, onRangeChange }: { range: RangeKey; onRangeChange: (r: RangeKey) => void }) {
+const SalesOverviewChart = memo(function SalesOverviewChart({ range, onRangeChange }: { range: RangeKey; onRangeChange: (r: RangeKey) => void }) {
   const data = useMemo(() => {
     if (range === "today") {
       const arr: { label: string; hoje: number | null; ontem: number }[] = [];
@@ -754,9 +780,9 @@ function SalesOverviewChart({ range, onRangeChange }: { range: RangeKey; onRange
       </div>
     </div>
   );
-}
+});
 
-function Top5Block({
+const Top5Block = memo(function Top5Block({
   items,
 }: {
   items: Array<{
@@ -826,4 +852,4 @@ function Top5Block({
       )}
     </div>
   );
-}
+});

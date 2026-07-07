@@ -132,28 +132,30 @@ export function buildChartData(range: RangeKey, salesOrders: SalesOrder[]): Char
     y.setDate(sp.getDate() - 1);
     const spYest = `${y.getFullYear()}-${String(y.getMonth() + 1).padStart(2, "0")}-${String(y.getDate()).padStart(2, "0")}`;
 
+    // Single-pass O(N) — bucket by hour for today + yesterday instead of 24×N loops
+    const hojeByHour = new Array<number>(24).fill(0);
+    const ontemByHour = new Array<number>(24).fill(0);
+    for (const o of salesOrders) {
+      const oD = new Date(o.saleDate);
+      const h = oD.getHours();
+      if (h < 0 || h > 23) continue;
+      const oKey = `${oD.getFullYear()}-${String(oD.getMonth() + 1).padStart(2, "0")}-${String(oD.getDate()).padStart(2, "0")}`;
+      if (oKey === spToday) {
+        hojeByHour[h] += o.netProfit;
+      } else if (oKey === spYest) {
+        ontemByHour[h] += o.netProfit;
+      }
+    }
+
     const arr: ChartPoint[] = [];
     for (let i = 0; i < 24; i++) {
-      let hojeSum = 0;
-      let ontemSum = 0;
-      for (const o of salesOrders) {
-        const oSp = new Date(o.saleDate).toLocaleString("en-US", {
-          timeZone: "America/Sao_Paulo",
-        });
-        const oD = new Date(oSp);
-        const oKey = `${oD.getFullYear()}-${String(oD.getMonth() + 1).padStart(2, "0")}-${String(oD.getDate()).padStart(2, "0")}`;
-        if (oD.getHours() === i) {
-          if (oKey === spToday) hojeSum += o.netProfit;
-          else if (oKey === spYest) ontemSum += o.netProfit;
-        }
-      }
-      const hoje = i <= spH ? Math.round(hojeSum) : null;
-      arr.push({ label: pad2(i), hoje, ontem: Math.round(ontemSum) });
+      const hoje = i <= spH ? Math.round(hojeByHour[i]) : null;
+      arr.push({ label: pad2(i), hoje, ontem: Math.round(ontemByHour[i]) });
     }
     return arr;
   }
 
-  // 7d / 30d — bucket by SP date key
+  // 7d / 30d — bucket by SP date key (single pass, already O(N))
   const n = range === "7d" ? 7 : 30;
   const keys: string[] = [];
   const labels: string[] = [];
@@ -168,10 +170,7 @@ export function buildChartData(range: RangeKey, salesOrders: SalesOrder[]): Char
 
   const daySums: Record<string, number> = {};
   for (const o of salesOrders) {
-    const oSp = new Date(o.saleDate).toLocaleString("en-US", {
-      timeZone: "America/Sao_Paulo",
-    });
-    const oD = new Date(oSp);
+    const oD = new Date(o.saleDate);
     const oKey = `${oD.getFullYear()}-${String(oD.getMonth() + 1).padStart(2, "0")}-${String(oD.getDate()).padStart(2, "0")}`;
     daySums[oKey] = (daySums[oKey] || 0) + o.netProfit;
   }

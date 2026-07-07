@@ -986,8 +986,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => { sub.subscription.unsubscribe(); };
   }, []);
 
+  const persistDataTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
-    if (user) persistUserData(user.email, data);
+    if (!user) return;
+    // Debounce heavy data persistence — serializing the full UserData blob
+    // (including 600+ sales orders) on every poll/sale is a performance sink.
+    if (persistDataTimeoutRef.current) clearTimeout(persistDataTimeoutRef.current);
+    persistDataTimeoutRef.current = setTimeout(() => {
+      persistUserData(user.email, data);
+    }, 800);
+    return () => {
+      if (persistDataTimeoutRef.current) clearTimeout(persistDataTimeoutRef.current);
+    };
   }, [data, user]);
 
   // persist vendas hoje
