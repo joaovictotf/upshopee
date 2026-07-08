@@ -390,6 +390,7 @@ export function OfertasLanding({ config }: { config: LandingConfig }) {
   const [stickyShow, setStickyShow] = useState(false);
   const [paymentPlan, setPaymentPlan] = useState<null | 'mensal' | 'vitalicio'>(null);
   const [paymentLoading, setPaymentLoading] = useState(false);
+  const [showMensalConfirm, setShowMensalConfirm] = useState(false);
   const paymentPlanRef = useRef<null | 'mensal' | 'vitalicio'>(null);
   useEffect(() => { paymentPlanRef.current = paymentPlan; }, [paymentPlan]);
 
@@ -724,16 +725,12 @@ export function OfertasLanding({ config }: { config: LandingConfig }) {
     e.currentTarget.style.display = "none";
   };
 
-  // CTA helpers — modal interception vs direct link
-  const mensalPixHref = config.checkouts.mensal.pix;
-  const vitalicioPixHref = config.checkouts.vitalicio.pix;
+  // CTA helpers — vitalício goes direct, mensal shows confirmation first
+  const vitalicioHref = config.checkouts.vitalicio.pix;
+  const mensalHref = config.checkouts.mensal.pix;
 
-  const ctaMensal = config.hasPaymentModal
-    ? { href: "#", onClick: (e: React.MouseEvent) => { e.preventDefault(); setPaymentPlan('mensal'); } }
-    : { href: mensalPixHref, onClick: undefined };
-  const ctaVitalicio = config.hasPaymentModal
-    ? { href: "#", onClick: (e: React.MouseEvent) => { e.preventDefault(); setPaymentPlan('vitalicio'); } }
-    : { href: vitalicioPixHref, onClick: undefined };
+  const ctaVitalicio = { href: vitalicioHref, onClick: undefined };
+  // Mensal uses inline onClick to show popup — no helper needed
 
   return (
     <div ref={rootRef}>
@@ -887,18 +884,18 @@ export function OfertasLanding({ config }: { config: LandingConfig }) {
             <span className="pill rv" data-dir="down"><span className="dot"></span>Faça as contas</span>
           </div>
           <div className="panel rv" data-dir="zoom" id="mathPanel">
-            <p className="math-line">2 meses do plano mensal custam <span className="strike" id="strike334">R$ <span data-count="334">0</span></span>.<br />O acesso vitalício custa <span className="glow-num">R$ <span data-count="267">0</span></span> — para sempre.</p>
+            <p className="math-line">2 meses do plano mensal custam <span className="strike" id="strike334">R$ <span data-count="290">0</span></span>.<br />O acesso vitalício custa <span className="glow-num">R$ <span data-count="259">0</span></span> — para sempre.</p>
             <div className="bars">
               <div className="bar-row">
-                <div className="lab"><span>Mensal por 1 ano</span><span>R$ 2.004</span></div>
+                <div className="lab"><span>Mensal por 1 ano</span><span>R$ 1.740</span></div>
                 <div className="bar"><i className="gray" data-w="100%"></i></div>
               </div>
               <div className="bar-row">
-                <div className="lab"><span>Acesso Vitalício</span><span>R$ 267</span></div>
-                <div className="bar"><i className="hot" data-w="13.3%"></i></div>
+                <div className="lab"><span>Acesso Vitalício</span><span>R$ 259</span></div>
+                <div className="bar"><i className="hot" data-w="14.9%"></i></div>
               </div>
             </div>
-            <span className="econ-tag" id="econTag">Economia de R$ 1.737 no primeiro ano</span>
+            <span className="econ-tag" id="econTag">Economia de R$ 1.481 no primeiro ano</span>
             <p className="math-close">Quantas comissões você precisa para pagar o investimento?<br /><b>O risco é continuar sem.</b></p>
           </div>
         </div>
@@ -916,7 +913,7 @@ export function OfertasLanding({ config }: { config: LandingConfig }) {
               <h3>Plano Mensal</h3>
               <p className="tag">Para quem quer começar com baixo investimento</p>
               <span className="old">R$ 247</span>
-              <div className="price">R$ <span data-count="167">0</span><small>/mês</small></div>
+              <div className="price">R$ <span data-count="145">0</span><small>/mês</small></div>
               <ul>
                 <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#F4541E" strokeWidth="3"><path className="ck" d="M4 12l5 5L20 6" /></svg>Minerador completo</li>
                 <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#F4541E" strokeWidth="3"><path className="ck" d="M4 12l5 5L20 6" /></svg>Buscas ilimitadas</li>
@@ -930,7 +927,7 @@ export function OfertasLanding({ config }: { config: LandingConfig }) {
                 <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#F4541E" strokeWidth="3"><path className="ck" d="M4 12l5 5L20 6" /></svg>Comunidade VIP</li>
                 <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#F4541E" strokeWidth="3"><path className="ck" d="M4 12l5 5L20 6" /></svg>Suporte prioritário</li>
               </ul>
-              <a {...ctaMensal} className="btn btn-ghost">Começar Agora</a>
+              <a href="#" className="btn btn-ghost" onClick={(e) => { e.preventDefault(); setShowMensalConfirm(true); }}>Começar Agora</a>
             </div>
 
             <div className="plan vip rv" data-dir="right">
@@ -938,7 +935,7 @@ export function OfertasLanding({ config }: { config: LandingConfig }) {
               <h3>Acesso Vitalício<span className="badge">MAIS POPULAR</span></h3>
               <p className="tag">Garanta agora antes do preço voltar para R$ 497</p>
               <span className="old">R$ 497</span>
-              <div className="price glow-num">R$ <span data-count="267">0</span></div>
+              <div className="price glow-num">R$ <span data-count="259">0</span></div>
               {config.showCartaoOption && (
                 <span className="pill-pay">ou <b>12x de R$ 27,61</b> no cartão</span>
               )}
@@ -1004,7 +1001,7 @@ export function OfertasLanding({ config }: { config: LandingConfig }) {
             <details className="faq-item rv" data-dir="up"><summary>Funciona no celular?<svg className="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 9l6 6 6-6" /></svg></summary><div className="faq-a">Sim. A plataforma funciona direto do navegador, tanto no celular quanto no computador — sem precisar instalar nada.</div></details>
             <details className="faq-item rv" data-dir="up"><summary>É seguro?<svg className="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 9l6 6 6-6" /></svg></summary><div className="faq-a">Sim. O pagamento é processado por plataforma segura com criptografia, e você ainda conta com 7 dias de garantia incondicional.</div></details>
             <details className="faq-item rv" data-dir="up"><summary>Como recebo o acesso?<svg className="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 9l6 6 6-6" /></svg></summary><div className="faq-a">Imediatamente após a confirmação do pagamento, você recebe o acesso por e-mail e já pode começar a usar todas as ferramentas.</div></details>
-            <details className="faq-item rv" data-dir="up"><summary>O vitalício tem mensalidade?<svg className="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 9l6 6 6-6" /></svg></summary><div className="faq-a">Não. O Acesso Vitalício é um pagamento único de R$ 267 — você paga uma vez e usa para sempre, incluindo atualizações.</div></details>
+            <details className="faq-item rv" data-dir="up"><summary>O vitalício tem mensalidade?<svg className="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 9l6 6 6-6" /></svg></summary><div className="faq-a">Não. O Acesso Vitalício é um pagamento único de R$ 259 — você paga uma vez e usa para sempre, incluindo atualizações.</div></details>
             {config.showCartaoOption && (
               <details className="faq-item rv" data-dir="up"><summary>Posso parcelar?<svg className="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M6 9l6 6 6-6" /></svg></summary><div className="faq-a">Sim! O Acesso Vitalício pode ser parcelado em até 12x de R$ 27,61 no cartão de crédito.</div></details>
             )}
@@ -1036,7 +1033,7 @@ export function OfertasLanding({ config }: { config: LandingConfig }) {
 
       {/* ═══════════ STICKY MOBILE CTA ═══════════ */}
       <div id="sticky" className={stickyShow ? "show" : undefined}>
-        <span className="p">Vitalício por <b>R$ 267</b></span>
+        <span className="p">Vitalício por <b>R$ 259</b></span>
         <a {...ctaVitalicio} className="btn btn-primary">Garantir <span className="arr">→</span></a>
       </div>
 
@@ -1051,7 +1048,7 @@ export function OfertasLanding({ config }: { config: LandingConfig }) {
           {config.hasPaymentModal ? (
             <a href="#" onClick={(e) => { e.preventDefault(); setExitOpen(false); setPaymentPlan('vitalicio'); }} className="btn btn-primary" style={{ width: "100%" }}>Quero testar sem risco <span className="arr">→</span></a>
           ) : (
-            <a href={vitalicioPixHref} className="btn btn-primary" style={{ width: "100%" }}>Quero testar sem risco <span className="arr">→</span></a>
+            <a href={vitalicioHref} className="btn btn-primary" style={{ width: "100%" }}>Quero testar sem risco <span className="arr">→</span></a>
           )}
           <a href="#" className="dismiss" data-close onClick={closeExit}>Não, prefiro sair</a>
         </div>
@@ -1066,7 +1063,7 @@ export function OfertasLanding({ config }: { config: LandingConfig }) {
             <img src={LOGO} alt="UpShopee" className="logo" onError={hideOnError} />
             <h3>Como você prefere pagar?</h3>
             <p className="plan-sub">
-              {paymentPlan === 'vitalicio' ? 'Acesso Vitalício — R$ 267' : 'Plano Mensal — R$ 167/mês'}
+              {paymentPlan === 'vitalicio' ? 'Acesso Vitalício — R$ 259' : 'Plano Mensal — R$ 145/mês'}
             </p>
 
             <div className="pay-options">
@@ -1116,6 +1113,36 @@ export function OfertasLanding({ config }: { config: LandingConfig }) {
             </div>
 
             <p className="pay-reassure">🔒 Pagamento 100% seguro · Garantia de 7 dias</p>
+          </div>
+        </div>
+      )}
+
+      {/* Mensal confirmation popup */}
+      {showMensalConfirm && (
+        <div className="fixed inset-0 z-[1160] flex items-center justify-center p-5" role="dialog" aria-modal="true" aria-label="Confirmar plano mensal">
+          <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" onClick={() => setShowMensalConfirm(false)}></div>
+          <div className="relative w-full max-w-sm rounded-2xl border border-[#26262B] bg-[#141417] p-7 text-center shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <button className="absolute right-4 top-4 text-[#6E6E76] hover:text-white text-lg" onClick={() => setShowMensalConfirm(false)}>✕</button>
+
+            <div className="text-4xl mb-4">💡</div>
+            <h3 className="text-white font-bold text-lg mb-3 font-[Sora]">Tem certeza?</h3>
+
+            <p className="text-[#A0A0A8] text-sm leading-relaxed mb-2">
+              O <b className="text-white">Acesso Vitalício</b> custa apenas <b className="text-[#F4541E]">R$ 259</b> — pagamento único, acesso para sempre.
+            </p>
+            <p className="text-[#A0A0A8] text-sm leading-relaxed mb-5">
+              No plano mensal você pagaria <b className="text-white">R$ 1.740 em 1 ano</b>. No vitalício, você economiza <b className="text-[#FF7A45]">R$ 1.481</b>.
+            </p>
+
+            <a href={config.checkouts.vitalicio.pix} target="_blank" rel="noopener noreferrer"
+              className="block w-full rounded-full bg-gradient-to-r from-[#F4541E] to-[#FF7A45] py-3.5 text-sm font-bold text-white mb-2.5 hover:shadow-lg hover:shadow-[#F4541E]/30 transition-all">
+              Quero o Vitalício por R$ 259 →
+            </a>
+
+            <button onClick={() => { setShowMensalConfirm(false); window.open(config.checkouts.mensal.pix, "_blank", "noopener,noreferrer"); }}
+              className="w-full text-[#6E6E76] text-xs hover:text-white transition-colors py-2">
+              Continuar com o Plano Mensal
+            </button>
           </div>
         </div>
       )}

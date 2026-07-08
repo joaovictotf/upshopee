@@ -8,11 +8,11 @@ import { OfertasLanding, type LandingConfig } from "../components/OfertasLanding
 
 const CONFIG: LandingConfig = {
   checkouts: {
-    mensal:    { pix: "https://go.ironpayapp.com.br/zbu0e9tvo9",  cartao: "https://checkout.wiven.com.br/checkout/cmrapl3v50x3h01of62ikqkqv?offer=A7AQ4U2" },
-    vitalicio: { pix: "https://go.ironpayapp.com.br/wqqa7uihfe", cartao: "https://checkout.wiven.com.br/checkout/cmrapl3v50x3h01of62ikqkqv?offer=0UKHU32" },
+    mensal:    { pix: "https://checkout.applyfy.com.br/checkout/cmrc5aowy0s7y01ol3jfeb4he?offer=Q7TO6PU", cartao: "" },
+    vitalicio: { pix: "https://checkout.applyfy.com.br/checkout/cmrc5aowy0s7y01ol3jfeb4he?offer=4XWIBWR", cartao: "" },
   },
-  hasPaymentModal: true,
-  showCartaoOption: true,
+  hasPaymentModal: false,
+  showCartaoOption: false,
 };
 
 export const Route = createFileRoute("/ofertas")({
