@@ -42,20 +42,19 @@ function Produtos() {
   return (
     <DashboardShell
       title="Produtos"
-      subtitle="Encontre produtos validados e envie para sua loja Shopee em poucos cliques."
     >
       <div className="page-enter">
         {/* ═══ SEARCH + FILTERS ═══ */}
-        <div className="sticky top-16 z-10 -mx-4 px-4 pb-4 bg-[var(--bg)] md:-mx-8 md:px-8">
+        <div className="sticky top-16 z-10 -mx-4 px-4 pb-4 md:-mx-8 md:px-8">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             {/* Search */}
             <div className="relative w-full lg:max-w-md">
-              <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted)]" />
+              <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted)]" />
               <Input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="Buscar produto..."
-                className="h-11 rounded-[12px] border-[var(--border)] bg-[var(--surface)] pl-10 pr-4 text-sm text-[var(--text)] shadow-[var(--shadow-card)] transition-all focus-visible:ring-[var(--accent)]/30 placeholder:text-[var(--muted)]"
+                className="h-11 rounded-full border-[var(--border)] bg-[var(--surface)] pl-10 pr-4 text-sm text-[var(--text)] transition-all focus-visible:ring-[var(--accent)]/30 placeholder:text-[var(--muted)]"
               />
             </div>
 
@@ -67,10 +66,10 @@ function Produtos() {
                   <button
                     key={c}
                     onClick={() => setCat(c)}
-                    className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-all duration-200 ${
+                    className={`inline-flex shrink-0 items-center rounded-full px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
                       active
-                        ? "bg-[var(--accent-gradient)] text-white shadow-[var(--accent-glow)]"
-                        : "border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:border-[var(--accent)]/30 hover:text-[var(--accent)]"
+                        ? "bg-[var(--accent)] text-white"
+                        : "border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:border-[var(--accent)]/40 hover:text-[var(--text)]"
                     }`}
                   >
                     {c}
@@ -82,7 +81,7 @@ function Produtos() {
         </div>
 
         {/* ═══ PRODUCT GRID ═══ */}
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 md:gap-3 md:grid-cols-3 xl:grid-cols-4">
           {list.map((p) => (
             <ProductCard
               key={p.id}
