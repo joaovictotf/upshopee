@@ -14,31 +14,29 @@ type DockItem = {
   exact?: boolean;
 };
 
-/* ── Custom Duotone Icons (1.8px rounded strokes + gradient fill layer) ── */
+/* ── Gradient definition shared by all icons ── */
+function DockGradient() {
+  return (
+    <defs>
+      <linearGradient id="dockGrad" x1="0" y1="0" x2="1" y2="1">
+        <stop stopColor="#F4541E" />
+        <stop offset="1" stopColor="#FF7A45" />
+      </linearGradient>
+    </defs>
+  );
+}
+
+/* ── Custom Duotone Icons (2.5px rounded strokes + gradient fill layer) ── */
 
 function DashboardIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg width="26" height="26" viewBox="0 0 26 26" fill="none" {...props}>
-      {/* Gauge arc */}
-      <path
-        d="M5 21A9 9 0 0 1 21 11"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        className="dock-icon-outline"
-      />
-      {/* Tick marks */}
-      <path d="M8 22v-2.5M13 23v-2.5M18 21v-2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="dock-icon-outline" />
-      {/* Needle */}
-      <line x1="13" y1="15" x2="18" y2="10" stroke="url(#dockGrad)" strokeWidth="2" strokeLinecap="round" className="dock-icon-fill" />
-      {/* Center dot */}
-      <circle cx="13" cy="15" r="2" fill="url(#dockGrad)" className="dock-icon-fill" />
-      <defs>
-        <linearGradient id="dockGrad" x1="0" y1="0" x2="1" y2="1">
-          <stop stopColor="#F4541E" />
-          <stop offset="1" stopColor="#FF7A45" />
-        </linearGradient>
-      </defs>
+      <DockGradient />
+      {/* 2×2 app grid — top-left, bottom-left, bottom-right: outline; top-right: filled */}
+      <rect x="3.5" y="3.5" width="8" height="8" rx="2.5" stroke="currentColor" strokeWidth="2.5" className="dock-icon-outline" />
+      <rect x="14.5" y="3.5" width="8" height="8" rx="2.5" fill="url(#dockGrad)" className="dock-icon-fill" />
+      <rect x="3.5" y="14.5" width="8" height="8" rx="2.5" stroke="currentColor" strokeWidth="2.5" className="dock-icon-outline" />
+      <rect x="14.5" y="14.5" width="8" height="8" rx="2.5" stroke="currentColor" strokeWidth="2.5" className="dock-icon-outline" />
     </svg>
   );
 }
@@ -46,25 +44,21 @@ function DashboardIcon(props: SVGProps<SVGSVGElement>) {
 function ProdutosIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg width="26" height="26" viewBox="0 0 26 26" fill="none" {...props}>
-      {/* Bag body */}
+      <DockGradient />
+      {/* Tag / label shape — pointing right */}
       <path
-        d="M7 9.5L9 21h8l2-11.5"
+        d="M2.5 7A2.5 2.5 0 0 1 5 4.5h8l10 10-10 10H5a2.5 2.5 0 0 1-2.5-2.5V7z"
         stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
+        strokeWidth="2.5"
         strokeLinejoin="round"
         className="dock-icon-outline"
       />
-      {/* Bag handle */}
-      <path d="M9.5 9.5V7a3.5 3.5 0 0 1 7 0v2.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="dock-icon-outline" />
-      {/* Upward arrow from top */}
-      <path d="M17 5l-4-3-4 3" stroke="url(#dockGrad)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="dock-icon-fill" />
-      <defs>
-        <linearGradient id="dockGrad" x1="0" y1="0" x2="1" y2="1">
-          <stop stopColor="#F4541E" />
-          <stop offset="1" stopColor="#FF7A45" />
-        </linearGradient>
-      </defs>
+      {/* 4-point star on the tag (duotone accent) */}
+      <path
+        d="M13.5 9.5 15 12.5l3 1.5-3 1.5-1.5 3-1.5-3-3-1.5 3-1.5z"
+        fill="url(#dockGrad)"
+        className="dock-icon-fill"
+      />
     </svg>
   );
 }
@@ -72,18 +66,13 @@ function ProdutosIcon(props: SVGProps<SVGSVGElement>) {
 function GruposIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg width="26" height="26" viewBox="0 0 26 26" fill="none" {...props}>
-      {/* Two user avatars overlapping */}
-      <circle cx="9" cy="9" r="3.5" stroke="currentColor" strokeWidth="1.8" className="dock-icon-outline" />
-      <circle cx="16" cy="9" r="3.5" stroke="currentColor" strokeWidth="1.8" className="dock-icon-outline" />
-      {/* Broadcast arcs */}
-      <path d="M20 14c1.5 1.5 2.5 3.5 2.5 6" stroke="url(#dockGrad)" strokeWidth="1.8" strokeLinecap="round" className="dock-icon-fill" />
-      <path d="M22.5 11c2.5 2.5 3.5 5.5 3.5 9" stroke="url(#dockGrad)" strokeWidth="1.5" strokeLinecap="round" className="dock-icon-fill" opacity="0.5" />
-      <defs>
-        <linearGradient id="dockGrad" x1="0" y1="0" x2="1" y2="1">
-          <stop stopColor="#F4541E" />
-          <stop offset="1" stopColor="#FF7A45" />
-        </linearGradient>
-      </defs>
+      <DockGradient />
+      {/* User 1 (left, outline only) */}
+      <circle cx="8.5" cy="8" r="3.5" stroke="currentColor" strokeWidth="2.5" className="dock-icon-outline" />
+      <path d="M2 22c0-4.5 3-7.5 6.5-7.5s6.5 3 6.5 7.5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="dock-icon-outline" />
+      {/* User 2 (right, body filled with gradient) */}
+      <circle cx="17.5" cy="8" r="3.5" stroke="currentColor" strokeWidth="2.5" className="dock-icon-outline" />
+      <path d="M11 22c0-4.5 3-7.5 6.5-7.5S24 17.5 24 22" fill="url(#dockGrad)" className="dock-icon-fill" />
     </svg>
   );
 }
@@ -91,29 +80,21 @@ function GruposIcon(props: SVGProps<SVGSVGElement>) {
 function IADivulgadoraIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg width="26" height="26" viewBox="0 0 26 26" fill="none" {...props}>
-      {/* Chat bubble */}
+      <DockGradient />
+      {/* Chat bubble — clean rounded rect with tail */}
       <path
-        d="M5 12a9 9 0 0 1 9-9h0a9 9 0 0 1 0 18h-4l-3 3v-4.5"
+        d="M4 7a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3h-3l-3.5 3.5v-3.5H7a3 3 0 0 1-3-3V7z"
         stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
+        strokeWidth="2.5"
         strokeLinejoin="round"
         className="dock-icon-outline"
       />
-      {/* AI sparkle (4-point star) */}
+      {/* AI sparkle inside (4-point star) */}
       <path
-        d="M10 14l1.5-1.5L13 14l-1.5 1.5L10 14z"
+        d="M13 10.5 14.2 13l2.8 1-2.8 1-1.2 2.5-1.2-2.5L9 14l2.8-1z"
         fill="url(#dockGrad)"
         className="dock-icon-fill"
       />
-      {/* Motion arcs */}
-      <path d="M8 18c1.5 1 3 1.5 5 1" stroke="url(#dockGrad)" strokeWidth="1.5" strokeLinecap="round" className="dock-icon-fill" opacity="0.6" />
-      <defs>
-        <linearGradient id="dockGrad" x1="0" y1="0" x2="1" y2="1">
-          <stop stopColor="#F4541E" />
-          <stop offset="1" stopColor="#FF7A45" />
-        </linearGradient>
-      </defs>
     </svg>
   );
 }
@@ -121,53 +102,28 @@ function IADivulgadoraIcon(props: SVGProps<SVGSVGElement>) {
 function VideoIAIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg width="26" height="26" viewBox="0 0 26 26" fill="none" {...props}>
-      {/* Clapper/play tile */}
-      <rect x="4" y="5" width="18" height="15" rx="3" stroke="currentColor" strokeWidth="1.8" className="dock-icon-outline" />
-      {/* Clapper top bar */}
-      <path d="M4 9h18" stroke="currentColor" strokeWidth="1.8" className="dock-icon-outline" />
-      <path d="M8 5v4M14 5v4" stroke="currentColor" strokeWidth="1.5" className="dock-icon-outline" />
+      <DockGradient />
+      {/* Rounded frame (phone/screen shape) */}
+      <rect x="2.5" y="4" width="21" height="18" rx="4" stroke="currentColor" strokeWidth="2.5" className="dock-icon-outline" />
       {/* Play triangle */}
-      <path d="M11 12.5l5 3.5-5 3.5v-7z" fill="url(#dockGrad)" className="dock-icon-fill" />
-      {/* Sparkle at top-right */}
-      <circle cx="20" cy="7" r="1.2" fill="url(#dockGrad)" className="dock-icon-fill" />
-      <defs>
-        <linearGradient id="dockGrad" x1="0" y1="0" x2="1" y2="1">
-          <stop stopColor="#F4541E" />
-          <stop offset="1" stopColor="#FF7A45" />
-        </linearGradient>
-      </defs>
+      <path d="M11.5 10v6l5-3z" fill="url(#dockGrad)" className="dock-icon-fill" />
     </svg>
   );
 }
 
-function ConectarIcon(props: SVGProps<SVGSVGElement>) {
+function IntegracoesIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg width="26" height="26" viewBox="0 0 26 26" fill="none" {...props}>
-      {/* Chain link left */}
+      <DockGradient />
+      {/* Puzzle piece — clean silhouette with top & bottom tabs */}
       <path
-        d="M10 9H7.5A4.5 4.5 0 1 0 7.5 18H10"
+        d="M7 5h6a2.5 2.5 0 0 1 5 0h1.5A2.5 2.5 0 0 1 22 7.5V10a2.5 2.5 0 0 0 0 5v3.5a2.5 2.5 0 0 1-2.5 2.5H18a2.5 2.5 0 0 0-5 0H7A2.5 2.5 0 0 1 4.5 18.5V15a2.5 2.5 0 0 0 0-5V7.5A2.5 2.5 0 0 1 7 5z"
         stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        className="dock-icon-outline"
+        strokeWidth="2.5"
+        strokeLinejoin="round"
+        fill="url(#dockGrad)"
+        className="dock-icon-outline dock-icon-fill"
       />
-      {/* Chain link right */}
-      <path
-        d="M16 9h2.5A4.5 4.5 0 1 1 18.5 18H16"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        className="dock-icon-outline"
-      />
-      {/* Energy pulse at junction */}
-      <circle cx="13" cy="13.5" r="2.5" fill="url(#dockGrad)" className="dock-icon-fill" />
-      <circle cx="13" cy="13.5" r="1" fill="white" />
-      <defs>
-        <linearGradient id="dockGrad" x1="0" y1="0" x2="1" y2="1">
-          <stop stopColor="#F4541E" />
-          <stop offset="1" stopColor="#FF7A45" />
-        </linearGradient>
-      </defs>
     </svg>
   );
 }
@@ -175,22 +131,14 @@ function ConectarIcon(props: SVGProps<SVGSVGElement>) {
 function ConfigIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg width="26" height="26" viewBox="0 0 26 26" fill="none" {...props}>
-      {/* Gear outer — 8 rounded teeth */}
-      <path
-        d="M13 2l1.5 3.5L18 4.5l1 1.5-2.5 2.5 1 1 2.5-2.5L21.5 8 20 11.5 23 13l-3 1.5L21.5 18l-1.5 1-2.5-2.5-1 1 2.5 2.5-1 1.5-3.5-1L13 23l-1.5-3L8 21.5l-1-1.5 2.5-2.5-1-1-2.5 2.5L4.5 18 6 14.5 3 13l3-1.5L4.5 8l1.5-1 2.5 2.5 1-1-2.5-2.5L8 4.5 11.5 6z"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinejoin="round"
-        className="dock-icon-outline"
-      />
-      {/* Core circle */}
-      <circle cx="13" cy="13" r="3.5" fill="url(#dockGrad)" className="dock-icon-fill" />
-      <defs>
-        <linearGradient id="dockGrad" x1="0" y1="0" x2="1" y2="1">
-          <stop stopColor="#F4541E" />
-          <stop offset="1" stopColor="#FF7A45" />
-        </linearGradient>
-      </defs>
+      <DockGradient />
+      {/* 3 horizontal adjustment sliders */}
+      <line x1="3" y1="7.5" x2="16" y2="7.5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="dock-icon-outline" />
+      <circle cx="19.5" cy="7.5" r="3" fill="url(#dockGrad)" className="dock-icon-fill" />
+      <line x1="3" y1="13" x2="10" y2="13" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="dock-icon-outline" />
+      <circle cx="13.5" cy="13" r="3" fill="url(#dockGrad)" className="dock-icon-fill" />
+      <line x1="3" y1="18.5" x2="20" y2="18.5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="dock-icon-outline" />
+      <circle cx="23" cy="18.5" r="3" fill="url(#dockGrad)" className="dock-icon-fill" />
     </svg>
   );
 }
@@ -228,7 +176,7 @@ const DOCK_ITEMS: DockItem[] = [
   { to: "/dashboard/grupos", tooltip: "Grupos de Divulgação", icon: GruposIcon },
   { to: "/dashboard/robo-divulgador", tooltip: "IA Divulgadora", icon: IADivulgadoraIcon },
   { to: "/dashboard/video-ia", tooltip: "Vídeo IA", icon: VideoIAIcon },
-  { to: "/dashboard/conectar-contas", tooltip: "Conectar Contas", icon: ConectarIcon },
+  { to: "/dashboard/conectar-contas", tooltip: "Integrações", icon: IntegracoesIcon },
   { to: "/dashboard/configuracoes", tooltip: "Configurações", icon: ConfigIcon },
 ];
 
