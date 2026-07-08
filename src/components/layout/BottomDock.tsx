@@ -9,6 +9,7 @@ import {
   Clapperboard,
   Link2,
   Settings,
+  GraduationCap,
   Sun,
   Moon,
 } from "lucide-react";
@@ -34,6 +35,7 @@ const DOCK_ITEMS: DockItem[] = [
   { to: "/dashboard/robo-divulgador", tooltip: "IA Divulgadora", icon: Bot },
   { to: "/dashboard/video-ia", tooltip: "Vídeo IA", icon: Clapperboard },
   { to: "/dashboard/conectar-contas", tooltip: "Integrações", icon: Link2 },
+  { to: "/dashboard/aulas", tooltip: "Aulas", icon: GraduationCap },
   { to: "/dashboard/configuracoes", tooltip: "Configurações", icon: Settings },
 ];
 

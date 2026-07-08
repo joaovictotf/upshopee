@@ -40,6 +40,7 @@ import { Route as DashboardImpulsionarVendasRouteImport } from './routes/dashboa
 import { Route as DashboardGruposRouteImport } from './routes/dashboard.grupos'
 import { Route as DashboardConfiguracoesRouteImport } from './routes/dashboard.configuracoes'
 import { Route as DashboardConectarContasRouteImport } from './routes/dashboard.conectar-contas'
+import { Route as DashboardAulasRouteImport } from './routes/dashboard.aulas'
 import { Route as DashboardImpulsionarVendasBackupRouteImport } from './routes/dashboard.impulsionar-vendas.backup'
 
 const RegisterRoute = RegisterRouteImport.update({
@@ -199,6 +200,11 @@ const DashboardConectarContasRoute = DashboardConectarContasRouteImport.update({
   path: '/conectar-contas',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardAulasRoute = DashboardAulasRouteImport.update({
+  id: '/aulas',
+  path: '/aulas',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardImpulsionarVendasBackupRoute =
   DashboardImpulsionarVendasBackupRouteImport.update({
     id: '/backup',
@@ -222,6 +228,7 @@ export interface FileRoutesByFullPath {
   '/planosup': typeof PlanosupRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/register': typeof RegisterRoute
+  '/dashboard/aulas': typeof DashboardAulasRoute
   '/dashboard/conectar-contas': typeof DashboardConectarContasRoute
   '/dashboard/configuracoes': typeof DashboardConfiguracoesRoute
   '/dashboard/grupos': typeof DashboardGruposRoute
@@ -254,6 +261,7 @@ export interface FileRoutesByTo {
   '/planosup': typeof PlanosupRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/register': typeof RegisterRoute
+  '/dashboard/aulas': typeof DashboardAulasRoute
   '/dashboard/conectar-contas': typeof DashboardConectarContasRoute
   '/dashboard/configuracoes': typeof DashboardConfiguracoesRoute
   '/dashboard/grupos': typeof DashboardGruposRoute
@@ -289,6 +297,7 @@ export interface FileRoutesById {
   '/planosup': typeof PlanosupRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/register': typeof RegisterRoute
+  '/dashboard/aulas': typeof DashboardAulasRoute
   '/dashboard/conectar-contas': typeof DashboardConectarContasRoute
   '/dashboard/configuracoes': typeof DashboardConfiguracoesRoute
   '/dashboard/grupos': typeof DashboardGruposRoute
@@ -325,6 +334,7 @@ export interface FileRouteTypes {
     | '/planosup'
     | '/redefinir-senha'
     | '/register'
+    | '/dashboard/aulas'
     | '/dashboard/conectar-contas'
     | '/dashboard/configuracoes'
     | '/dashboard/grupos'
@@ -357,6 +367,7 @@ export interface FileRouteTypes {
     | '/planosup'
     | '/redefinir-senha'
     | '/register'
+    | '/dashboard/aulas'
     | '/dashboard/conectar-contas'
     | '/dashboard/configuracoes'
     | '/dashboard/grupos'
@@ -391,6 +402,7 @@ export interface FileRouteTypes {
     | '/planosup'
     | '/redefinir-senha'
     | '/register'
+    | '/dashboard/aulas'
     | '/dashboard/conectar-contas'
     | '/dashboard/configuracoes'
     | '/dashboard/grupos'
@@ -647,6 +659,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardConectarContasRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/aulas': {
+      id: '/dashboard/aulas'
+      path: '/aulas'
+      fullPath: '/dashboard/aulas'
+      preLoaderRoute: typeof DashboardAulasRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/impulsionar-vendas/backup': {
       id: '/dashboard/impulsionar-vendas/backup'
       path: '/backup'
@@ -673,6 +692,7 @@ const DashboardImpulsionarVendasRouteWithChildren =
   )
 
 interface DashboardRouteChildren {
+  DashboardAulasRoute: typeof DashboardAulasRoute
   DashboardConectarContasRoute: typeof DashboardConectarContasRoute
   DashboardConfiguracoesRoute: typeof DashboardConfiguracoesRoute
   DashboardGruposRoute: typeof DashboardGruposRoute
@@ -686,6 +706,7 @@ interface DashboardRouteChildren {
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
+  DashboardAulasRoute: DashboardAulasRoute,
   DashboardConectarContasRoute: DashboardConectarContasRoute,
   DashboardConfiguracoesRoute: DashboardConfiguracoesRoute,
   DashboardGruposRoute: DashboardGruposRoute,
