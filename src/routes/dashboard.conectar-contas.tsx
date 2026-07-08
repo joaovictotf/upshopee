@@ -17,45 +17,41 @@ const shopee = integrations.find((i) => i.id === "shopee")!;
 interface TeaserPlatform {
   name: string;
   logo: string;
-  fallback: string;   // initials shown if logo fails
+  logoFilter?: string;    // optional CSS filter class for dark/light compatibility
   description: string;
 }
 
 const TEASER_PLATFORMS: TeaserPlatform[] = [
   {
     name: "Mercado Livre",
-    logo: "https://http2.mlstatic.com/frontend-assets/ui-navigation/5.19.5/mercadolibre/logo__small.png",
-    fallback: "ML",
+    logo: "https://upload.wikimedia.org/wikipedia/commons/1/16/Mercado_Livre_wordmark_%28Portuguese_version%29.svg",
+    logoFilter: "dark:brightness-0 dark:invert",
     description: "Venda também no Mercado Livre com a mesma praticidade",
   },
   {
     name: "Amazon",
     logo: "https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg",
-    fallback: "AM",
     description: "Alcance milhões de clientes na maior marketplace do mundo",
   },
   {
     name: "Bling",
-    logo: "https://www.bling.com.br/assets/images/logo-bling.svg",
-    fallback: "BL",
+    logo: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgNTYiPjx0ZXh0IHg9IjEwMCIgeT0iMzkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJzeXN0ZW0tdWksLWFwcGxlLXN5c3RlbSxzYW5zLXNlcmlmIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjI0IiBmaWxsPSIjMTExIj5CbGluZzwvdGV4dD48L3N2Zz4=",
     description: "Integre seu ERP Bling e automatize seus processos de venda",
   },
   {
     name: "Magalu",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/7/7d/Magazine_Luiza_logo.svg",
-    fallback: "MG",
+    logo: "https://wx.mlcdn.com.br/shared/magalu/logo-white.svg",
+    logoFilter: "brightness-0 dark:brightness-100",
     description: "Venda no marketplace da Magazine Luiza com todo suporte",
   },
   {
     name: "Shein",
     logo: "https://upload.wikimedia.org/wikipedia/commons/c/c5/Shein_Logo_2017.svg",
-    fallback: "SH",
     description: "Entre no marketplace de moda que mais cresce no Brasil",
   },
   {
     name: "TikTok Shop",
-    logo: "https://upload.wikimedia.org/wikipedia/en/7/7a/TikTok_Shop_logo.svg",
-    fallback: "TT",
+    logo: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNjAgNTYiPjx0ZXh0IHg9IjEzMCIgeT0iMzkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtZmFtaWx5PSJzeXN0ZW0tdWksLWFwcGxlLXN5c3RlbSxzYW5zLXNlcmlmIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjIyIiBmaWxsPSIjMTExIj5UaWtUb2sgU2hvcDwvdGV4dD48L3N2Zz4=",
     description: "Venda diretamente no TikTok Shop e alcance a nova geração",
   },
 ];
@@ -169,21 +165,7 @@ function Conectar() {
                     <img
                       src={p.logo}
                       alt={p.name}
-                      className="h-11 w-11 object-contain dark:brightness-0 dark:invert"
-                      onError={(e) => {
-                        const t = e.currentTarget as HTMLImageElement;
-                        if (t.dataset.fb === "1") return;
-                        t.dataset.fb = "1";
-                        // Show initials as fallback
-                        const parent = t.parentElement;
-                        if (parent) {
-                          t.style.display = "none";
-                          const span = document.createElement("span");
-                          span.className = "text-lg font-bold text-[var(--muted)]";
-                          span.textContent = p.fallback;
-                          parent.appendChild(span);
-                        }
-                      }}
+                      className={`h-11 w-11 object-contain ${p.logoFilter ?? "dark:brightness-0 dark:invert"}`}
                     />
                   </div>
                 </div>
