@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { DashboardShell } from "../components/layout/DashboardShell";
 import { integrations } from "../lib/mock/integrations";
 import { Check, ExternalLink, Loader2, Info } from "lucide-react";
 import { toast } from "sonner";
+import { useApp } from "../lib/state";
 
 export const Route = createFileRoute("/dashboard/conectar-contas")({ component: Conectar });
 
@@ -13,20 +14,31 @@ const shopee = integrations.find((i) => i.id === "shopee")!;
 const ml = integrations.find((i) => i.id === "mercadolivre")!;
 
 function Conectar() {
+  const { requestMarketplaceConnection } = useApp();
   const [connected, setConnected] = useState(() => localStorage.getItem(LS_KEY) === "true");
   const [waiting, setWaiting] = useState(false);
 
+  // Sync localStorage → global state on mount (survives page refreshes)
+  useEffect(() => {
+    if (connected) {
+      requestMarketplaceConnection("shopee");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Detect when user returns to the tab after visiting Shopee
   useEffect(() => {
     const onFocus = () => {
       if (waiting) {
         setWaiting(false);
         setConnected(true);
         localStorage.setItem(LS_KEY, "true");
+        requestMarketplaceConnection("shopee");
       }
     };
     window.addEventListener("focus", onFocus);
     return () => window.removeEventListener("focus", onFocus);
-  }, [waiting]);
+  }, [waiting, requestMarketplaceConnection]);
 
   const handleConnect = useCallback(() => {
     setWaiting(true);
