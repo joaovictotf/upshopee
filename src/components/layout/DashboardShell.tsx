@@ -1,10 +1,9 @@
-import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState, type ReactNode } from "react";
-import { Bell, Loader2, Search, Zap, Eye, EyeOff, Info, LogOut } from "lucide-react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Bell, Loader2, Search, Zap, Eye, EyeOff, LogOut } from "lucide-react";
 import { useApp, MARKETPLACE_LABEL } from "../../lib/state";
 import { brl } from "../../lib/format";
 import { toast } from "sonner";
-import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { BottomDock } from "./BottomDock";
 
 type ShellProps = {
@@ -20,10 +19,19 @@ type ShellProps = {
 };
 
 export function DashboardShell({ children, title, subtitle, actions, onLightningClick, onResetMetrics, forceLight }: ShellProps) {
-  const { user, logout, isAdmin, privacy, setPrivacy, selectedMarketplace, adminPresentationMode, toggleAdminPresentationMode, hasLightningAccess, adminBoostActive, recordLightningClick, resetTodaySales, passwordResetRequired } = useApp();
+  const { user, logout, isAdmin, privacy, setPrivacy, selectedMarketplace, hasLightningAccess, adminBoostActive, recordLightningClick, resetTodaySales, passwordResetRequired } = useApp();
   const navigate = useNavigate();
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [lightningLoading, setLightningLoading] = useState(false);
+
+  /* ── Editable admin display name/email ── */
+  const [adminName, setAdminName] = useState(user?.name || "");
+  const [adminEmail, setAdminEmail] = useState(user?.email || "");
+  const [editingName, setEditingName] = useState(false);
+  const [editingEmail, setEditingEmail] = useState(false);
+  const [nameFlash, setNameFlash] = useState(false);
+  const [emailFlash, setEmailFlash] = useState(false);
+  const nameInputRef = useRef<HTMLInputElement>(null);
+  const emailInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!user) navigate({ to: "/login" });
@@ -86,43 +94,58 @@ export function DashboardShell({ children, title, subtitle, actions, onLightning
               <Bell className="h-4 w-4" />
             </button>
 
-            {/* User avatar + info popover */}
+            {/* User avatar + editable info */}
             <div className="flex min-w-0 items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2 py-1.5">
               <div className="grid h-7 w-7 place-items-center rounded-md bg-[var(--accent-soft)] text-xs font-bold text-[var(--accent)]">
-                {(user?.name || "U").slice(0, 1).toUpperCase()}
+                {(adminName || user?.name || "U").slice(0, 1).toUpperCase()}
               </div>
               <div className="hidden min-w-0 max-w-[180px] text-xs leading-tight md:block">
-                <div className="truncate font-medium">{user?.name}</div>
-                <div className="truncate text-[var(--muted)]">{user?.email}</div>
+                {/* Editable name */}
+                {isAdmin && editingName ? (
+                  <input
+                    ref={nameInputRef}
+                    value={adminName}
+                    onChange={(e) => setAdminName(e.target.value)}
+                    onBlur={() => { setEditingName(false); if (adminName.trim()) { setNameFlash(true); setTimeout(() => setNameFlash(false), 1200); } }}
+                    onKeyDown={(e) => { if (e.key === "Enter") { setEditingName(false); if (adminName.trim()) { setNameFlash(true); setTimeout(() => setNameFlash(false), 1200); } } }}
+                    className={`w-full truncate bg-[var(--accent-soft)] px-1 py-0.5 rounded text-xs font-medium text-[var(--accent)] outline-none transition-colors ${nameFlash ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400" : ""}`}
+                  />
+                ) : (
+                  <div
+                    className={`truncate font-medium rounded px-1 -ml-1 transition-colors ${isAdmin ? "cursor-pointer hover:bg-[var(--accent-soft)]" : ""} ${nameFlash ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400" : ""}`}
+                    onDoubleClick={() => { if (isAdmin) { setEditingName(true); setTimeout(() => nameInputRef.current?.focus(), 10); } }}
+                  >
+                    {adminName || user?.name}
+                  </div>
+                )}
+                {/* Editable email */}
+                {isAdmin && editingEmail ? (
+                  <input
+                    ref={emailInputRef}
+                    value={adminEmail}
+                    onChange={(e) => setAdminEmail(e.target.value)}
+                    onBlur={() => { setEditingEmail(false); if (adminEmail.trim()) { setEmailFlash(true); setTimeout(() => setEmailFlash(false), 1200); } }}
+                    onKeyDown={(e) => { if (e.key === "Enter") { setEditingEmail(false); if (adminEmail.trim()) { setEmailFlash(true); setTimeout(() => setEmailFlash(false), 1200); } } }}
+                    className={`w-full truncate bg-[var(--accent-soft)] px-1 py-0.5 rounded text-xs text-[var(--muted)] outline-none transition-colors ${emailFlash ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400" : ""}`}
+                  />
+                ) : (
+                  <div
+                    className={`truncate text-[var(--muted)] rounded px-1 -ml-1 transition-colors ${isAdmin ? "cursor-pointer hover:bg-[var(--accent-soft)]" : ""} ${emailFlash ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400" : ""}`}
+                    onDoubleClick={() => { if (isAdmin) { setEditingEmail(true); setTimeout(() => emailInputRef.current?.focus(), 10); } }}
+                  >
+                    {adminEmail || user?.email}
+                  </div>
+                )}
               </div>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <button
-                    aria-label="Informações sobre o ambiente demonstrativo"
-                    onClick={() => {
-                      if (!isAdmin) return;
-                      const enabled = toggleAdminPresentationMode();
-                      toast.success(enabled ? "Modo apresentação ativado." : "Modo apresentação desativado.");
-                      if (enabled && pathname === "/dashboard/validar-cadastros") navigate({ to: "/dashboard" });
-                    }}
-                    className="grid h-6 w-6 place-items-center rounded-full border border-[var(--border)]/70 bg-[var(--bg)]/60 text-[var(--muted)] transition hover:text-[var(--text)]"
-                  >
-                    <Info className="h-3.5 w-3.5" />
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent align="end" sideOffset={8} className="w-[280px] text-xs leading-relaxed">
-                  <div className="mb-1 text-sm font-semibold text-[var(--text)]" style={{ fontFamily: "'Sora', sans-serif" }}>Ambiente demonstrativo</div>
-                  <p className="text-[var(--muted)]">
-                    Este painel é uma simulação da UpShopee, demonstrando como será a integração prevista para agosto de 2026 com Shopee, Mercado Livre e Shein. Os resultados, métricas, pedidos e comissões exibidos aqui são demonstrativos e não representam resultados reais.
-                  </p>
-                  <button
-                    onClick={handleLogout}
-                    className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-[var(--border)] px-3 py-2 text-xs font-medium text-[var(--muted)] transition-colors hover:bg-[var(--accent-soft)] hover:text-[var(--accent)]"
-                  >
-                    <LogOut className="h-3.5 w-3.5" /> Sair
-                  </button>
-                </PopoverContent>
-              </Popover>
+
+              {/* Logout button */}
+              <button
+                onClick={handleLogout}
+                className="grid h-6 w-6 place-items-center rounded-full border border-[var(--border)]/70 bg-[var(--bg)]/60 text-[var(--muted)] transition hover:text-red-500"
+                title="Sair"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+              </button>
             </div>
           </div>
         </header>
