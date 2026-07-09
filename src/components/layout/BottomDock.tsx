@@ -1,5 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useTheme } from "../../hooks/use-theme";
+import { useApp } from "../../lib/state";
 import type { LucideIcon } from "lucide-react";
 import {
   LayoutDashboard,
@@ -12,6 +13,8 @@ import {
   GraduationCap,
   Sun,
   Moon,
+  ShieldCheck,
+  Headset,
 } from "lucide-react";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -45,6 +48,16 @@ const DOCK_ITEMS: DockItem[] = [
 export function BottomDock() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { theme, toggleTheme } = useTheme();
+  const { isAdmin } = useApp();
+
+  const adminItems: DockItem[] = isAdmin
+    ? [
+        { to: "/dashboard/validar-cadastros", tooltip: "Validar Cadastros", icon: ShieldCheck },
+        { to: "/dashboard/suporte-admin", tooltip: "Responder Tickets", icon: Headset },
+      ]
+    : [];
+
+  const allItems = [...DOCK_ITEMS, ...adminItems];
 
   return (
     <>
@@ -59,7 +72,7 @@ export function BottomDock() {
           WebkitBackdropFilter: "blur(16px)",
         }}
       >
-        {DOCK_ITEMS.map(({ to, tooltip, icon: Icon, exact }) => {
+        {allItems.map(({ to, tooltip, icon: Icon, exact }) => {
           const active = exact ? pathname === to : pathname.startsWith(to);
           return (
             <Link
@@ -123,7 +136,7 @@ export function BottomDock() {
           WebkitBackdropFilter: "blur(16px)",
         }}
       >
-        {DOCK_ITEMS.map(({ to, tooltip, icon: Icon, exact }) => {
+        {allItems.map(({ to, tooltip, icon: Icon, exact }) => {
           const active = exact ? pathname === to : pathname.startsWith(to);
           return (
             <Link
