@@ -1,4 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { useTheme } from "../../hooks/use-theme";
 import { useApp } from "../../lib/state";
 import type { LucideIcon } from "lucide-react";
@@ -50,7 +51,28 @@ export function BottomDock() {
   const { theme, toggleTheme } = useTheme();
   const { isAdmin } = useApp();
 
-  const adminItems: DockItem[] = isAdmin
+  /* ── Admin dock visibility (toggled by Bell button in header) ── */
+  const [adminDockVisible, setAdminDockVisible] = useState(() => {
+    try { return localStorage.getItem("upshopee_admin_dock_visible") === "1"; } catch { return false; }
+  });
+
+  useEffect(() => {
+    const onChange = (e: Event) => {
+      if (e instanceof CustomEvent && typeof e.detail === "boolean") {
+        setAdminDockVisible(e.detail);
+      } else if (e instanceof StorageEvent && e.key === "upshopee_admin_dock_visible") {
+        setAdminDockVisible(e.newValue === "1");
+      }
+    };
+    window.addEventListener("upshopee:adminDockToggle", onChange);
+    window.addEventListener("storage", onChange);
+    return () => {
+      window.removeEventListener("upshopee:adminDockToggle", onChange);
+      window.removeEventListener("storage", onChange);
+    };
+  }, []);
+
+  const adminItems: DockItem[] = isAdmin && adminDockVisible
     ? [
         { to: "/dashboard/validar-cadastros", tooltip: "Validar Cadastros", icon: ShieldCheck },
         { to: "/dashboard/suporte-admin", tooltip: "Responder Tickets", icon: Headset },

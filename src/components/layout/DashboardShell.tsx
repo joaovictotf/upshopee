@@ -30,6 +30,9 @@ export function DashboardShell({ children, title, subtitle, actions, onLightning
   const [editingEmail, setEditingEmail] = useState(false);
   const [nameFlash, setNameFlash] = useState(false);
   const [emailFlash, setEmailFlash] = useState(false);
+  const [adminDockVisible, setAdminDockVisible] = useState(() => {
+    try { return localStorage.getItem("upshopee_admin_dock_visible") === "1"; } catch { return false; }
+  });
   const nameInputRef = useRef<HTMLInputElement>(null);
   const emailInputRef = useRef<HTMLInputElement>(null);
 
@@ -89,10 +92,26 @@ export function DashboardShell({ children, title, subtitle, actions, onLightning
               {privacy ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
 
-            {/* Notifications */}
-            <button aria-label="Notificações" className="hidden h-9 w-9 place-items-center rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:text-[var(--text)] transition-colors md:grid">
-              <Bell className="h-4 w-4" />
-            </button>
+            {/* Admin dock toggle (Bell) — only visible to admins */}
+            {isAdmin && (
+              <button
+                onClick={() => {
+                  const next = adminDockVisible ? "0" : "1";
+                  localStorage.setItem("upshopee_admin_dock_visible", next);
+                  setAdminDockVisible(!adminDockVisible);
+                  window.dispatchEvent(new CustomEvent("upshopee:adminDockToggle", { detail: next === "1" }));
+                }}
+                aria-label={adminDockVisible ? "Ocultar ferramentas administrativas" : "Mostrar ferramentas administrativas"}
+                title={adminDockVisible ? "Ocultar ferramentas administrativas" : "Mostrar ferramentas administrativas"}
+                className={`hidden h-9 w-9 place-items-center rounded-lg border transition-all duration-200 md:grid ${
+                  adminDockVisible
+                    ? "border-[var(--accent)]/30 bg-[var(--accent-soft)] text-[var(--accent)] ring-1 ring-[var(--accent)]/20"
+                    : "border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:text-[var(--text)]"
+                }`}
+              >
+                <Bell className="h-4 w-4" />
+              </button>
+            )}
 
             {/* User avatar + editable info */}
             <div className="flex min-w-0 items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2 py-1.5">
