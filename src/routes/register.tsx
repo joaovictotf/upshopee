@@ -1,14 +1,31 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { supabase } from "../integrations/supabase/client";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
-import { Card, CardContent } from "../components/ui/card";
 import { toast } from "sonner";
-import { Eye, EyeOff, UserPlus } from "lucide-react";
+import { Eye, EyeOff, User, Mail, Lock, ArrowRight } from "lucide-react";
 
 export const Route = createFileRoute("/register")({ component: RegisterPage });
+
+/* ── CSS animations (GPU-accelerated) ── */
+
+const REG_CSS = `
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes reg-slide-up {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes reg-orb-pulse {
+    0%, 100% { transform: scale(1);   opacity: 0.18; }
+    50%      { transform: scale(1.12); opacity: 0.26; }
+  }
+  .rg-enter { animation: reg-slide-up 0.5s ease-out both; }
+  .rg-orb   { animation: reg-orb-pulse 6s ease-in-out infinite; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rg-enter { animation: none; }
+  .rg-orb   { animation: none; }
+}
+`;
 
 function RegisterPage() {
   const navigate = useNavigate();
@@ -44,10 +61,6 @@ function RegisterPage() {
     }
 
     if (signUpData.user) {
-      // Approval is handled server-side by the handle_new_user() trigger
-      // (every new user is created 'approved'). The previous client-side
-      // UPDATE here was a no-op: it filtered .eq("id", ...) but the PK is
-      // user_id, and RLS only allows admins to UPDATE profiles. Removed.
       await supabase.auth.signOut();
     }
 
@@ -57,70 +70,90 @@ function RegisterPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#FFF8F5]">
-      {/* Left branding panel — hidden on mobile */}
-      <div className="relative hidden w-[480px] flex-shrink-0 flex-col justify-between overflow-hidden bg-[#EE4D2D] p-12 lg:flex">
-        {/* Background pattern */}
-        <div className="pointer-events-none absolute inset-0 opacity-[0.08]">
-          <div
-            className="absolute inset-0"
-            style={{
-              backgroundImage:
-                "radial-gradient(circle at 20% 30%, white 1px, transparent 1px), radial-gradient(circle at 80% 60%, white 1px, transparent 1px)",
-              backgroundSize: "60px 60px, 80px 80px",
-            }}
+    <>
+      <style>{REG_CSS}</style>
+      <div className="flex min-h-dvh bg-[#FFF8F5] dark:bg-[var(--bg)]">
+        {/* ═══ LEFT: Branding panel (desktop) ═══ */}
+        <div className="relative hidden w-[520px] flex-shrink-0 flex-col justify-between overflow-hidden bg-[#EE4D2D] p-14 lg:flex">
+          {/* Dot pattern background */}
+          <div className="pointer-events-none absolute inset-0 opacity-[0.07]">
+            <div
+              className="absolute inset-0"
+              style={{
+                backgroundImage:
+                  "radial-gradient(circle at 20% 30%, white 1.5px, transparent 1.5px), radial-gradient(circle at 80% 65%, white 1.5px, transparent 1.5px)",
+                backgroundSize: "64px 64px, 88px 88px",
+              }}
+            />
+          </div>
+
+          {/* Animated gradient orb */}
+          <div className="rg-orb pointer-events-none absolute -top-32 -right-32 h-[360px] w-[360px] rounded-full opacity-[0.16] blur-3xl"
+            style={{ background: "radial-gradient(circle, rgba(255,255,255,0.9) 0%, transparent 70%)" }}
           />
+
+          {/* Logo */}
+          <div className="relative z-10">
+            <img
+              src="/brand/logo.png"
+              alt="UpShopee"
+              className="h-20 w-auto object-contain drop-shadow-lg"
+              onError={(e) => { e.currentTarget.style.display = "none"; }}
+            />
+          </div>
+
+          {/* Headline */}
+          <div className="relative z-10">
+            <h2 className="text-4xl font-bold leading-tight tracking-tight text-white">
+              Venda mais com um
+              <br />
+              painel feito para operar.
+            </h2>
+            <p className="mt-5 max-w-sm text-lg leading-relaxed text-white/80">
+              Conecte Shopee, Mercado Livre e Shein, encontre produtos validados e
+              envie direto para sua loja.
+            </p>
+          </div>
+
+          {/* Copyright */}
+          <div className="relative z-10">
+            <p className="text-xs text-white/35">
+              &copy; UpShopee &middot; Painel do vendedor
+            </p>
+          </div>
         </div>
 
-        <div className="relative z-10">
-          <img src="/brand/logo.png" alt="UpShopee" className="h-16 w-auto object-contain" onError={(e)=>{e.currentTarget.style.display='none'}} />
-        </div>
+        {/* ═══ RIGHT: Form panel ═══ */}
+        <div className="flex flex-1 items-center justify-center px-4 py-10 sm:px-8 lg:py-0">
+          <div className="rg-enter w-full max-w-[420px]">
+            {/* Mobile logo */}
+            <img
+              src="/brand/logo.png"
+              alt="UpShopee"
+              className="mx-auto mb-10 block h-12 w-auto object-contain lg:hidden"
+              onError={(e) => { e.currentTarget.style.display = "none"; }}
+            />
 
-        <div className="relative z-10">
-          <h2 className="text-3xl font-bold leading-tight text-white">
-            Venda mais com um
-            <br />
-            painel feito para operar.
-          </h2>
-          <p className="mt-4 text-base leading-relaxed text-white/80">
-            Conecte Shopee, Mercado Livre e Shein, encontre produtos validados e
-            envie direto para sua loja.
-          </p>
-        </div>
+            {/* Heading */}
+            <div className="mb-8 text-center lg:text-left">
+              <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-[var(--text)]" style={{ fontFamily: "'Sora', sans-serif" }}>
+                Comece agora
+              </h1>
+              <p className="mt-2 text-sm text-gray-500 dark:text-[var(--muted)]">
+                Crie sua conta e comece a lucrar
+              </p>
+            </div>
 
-        <div className="relative z-10">
-          <p className="text-sm text-white/50">
-            &copy; UpShopee &middot; Painel do vendedor
-          </p>
-        </div>
-      </div>
-
-      {/* Right form panel */}
-      <div className="flex flex-1 items-center justify-center px-4 py-12 sm:px-6">
-        <div className="w-full max-w-[400px]">
-          {/* Mobile logo */}
-          <img src="/brand/logo.png" alt="UpShopee" className="mb-8 mx-auto block h-10 w-auto object-contain drop-shadow-sm lg:hidden" onError={(e)=>{e.currentTarget.style.display='none'}} />
-
-          <Card className="border-0 shadow-lg shadow-black/[0.04] ring-1 ring-black/[0.06]">
-            <CardContent className="p-4 sm:p-8">
-              <div className="mb-6">
-                <h1 className="text-2xl font-bold tracking-tight text-foreground">
-                  Crie sua conta
-                </h1>
-                <p className="mt-1.5 text-sm text-muted-foreground">
-                  Comece a gerenciar produtos, fornecedores e vendas em um so painel.
-                </p>
-              </div>
-
-              <form onSubmit={handleSubmit} className="space-y-5">
-                <div className="space-y-2">
-                  <Label
-                    htmlFor="name"
-                    className="text-sm font-medium text-foreground"
-                  >
-                    Nome
-                  </Label>
-                  <Input
+            {/* Form */}
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {/* Nome */}
+              <div>
+                <label htmlFor="name" className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-[var(--text)]">
+                  Nome
+                </label>
+                <div className="relative">
+                  <User className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <input
                     id="name"
                     type="text"
                     value={name}
@@ -128,18 +161,19 @@ function RegisterPage() {
                     placeholder="Seu nome completo"
                     autoComplete="name"
                     required
-                    className="h-11 rounded-lg border-gray-200 bg-white px-4 text-sm transition-shadow focus-visible:ring-[#EE4D2D]/30"
+                    className="h-12 w-full rounded-xl border border-gray-200 bg-white pl-11 pr-4 text-sm text-gray-900 placeholder:text-gray-400 outline-none transition-all duration-200 focus:border-[#EE4D2D] focus:ring-2 focus:ring-[#EE4D2D]/15 dark:border-[var(--border)] dark:bg-[var(--bg)] dark:text-[var(--text)] dark:placeholder:text-[var(--muted)] dark:focus:border-[var(--accent)] dark:focus:ring-[var(--accent)]/20"
                   />
                 </div>
+              </div>
 
-                <div className="space-y-2">
-                  <Label
-                    htmlFor="email"
-                    className="text-sm font-medium text-foreground"
-                  >
-                    E-mail
-                  </Label>
-                  <Input
+              {/* E-mail */}
+              <div>
+                <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-[var(--text)]">
+                  E-mail
+                </label>
+                <div className="relative">
+                  <Mail className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <input
                     id="email"
                     type="email"
                     value={email}
@@ -147,105 +181,93 @@ function RegisterPage() {
                     placeholder="seu@email.com"
                     autoComplete="email"
                     required
-                    className="h-11 rounded-lg border-gray-200 bg-white px-4 text-sm transition-shadow focus-visible:ring-[#EE4D2D]/30"
+                    className="h-12 w-full rounded-xl border border-gray-200 bg-white pl-11 pr-4 text-sm text-gray-900 placeholder:text-gray-400 outline-none transition-all duration-200 focus:border-[#EE4D2D] focus:ring-2 focus:ring-[#EE4D2D]/15 dark:border-[var(--border)] dark:bg-[var(--bg)] dark:text-[var(--text)] dark:placeholder:text-[var(--muted)] dark:focus:border-[var(--accent)] dark:focus:ring-[var(--accent)]/20"
                   />
                 </div>
-
-                <div className="space-y-2">
-                  <Label
-                    htmlFor="password"
-                    className="text-sm font-medium text-foreground"
-                  >
-                    Senha
-                  </Label>
-                  <div className="relative">
-                    <Input
-                      id="password"
-                      type={showPassword ? "text" : "password"}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Crie uma senha"
-                      autoComplete="new-password"
-                      required
-                      className="h-11 rounded-lg border-gray-200 bg-white pr-10 text-sm transition-shadow focus-visible:ring-[#EE4D2D]/30"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword((s) => !s)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                      aria-label={
-                        showPassword ? "Ocultar senha" : "Mostrar senha"
-                      }
-                    >
-                      {showPassword ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                <Button
-                  type="submit"
-                  disabled={submitting}
-                  className="h-11 w-full rounded-lg bg-[#EE4D2D] text-sm font-semibold text-white shadow-sm shadow-[#EE4D2D]/25 transition-all hover:bg-[#EE4D2D]/90 hover:shadow-md hover:shadow-[#EE4D2D]/30 active:scale-[0.98]"
-                >
-                  {submitting ? (
-                    <span className="flex items-center gap-2">
-                      <svg
-                        className="h-4 w-4 animate-spin"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        />
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                        />
-                      </svg>
-                      Criando conta...
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-2">
-                      <UserPlus className="h-4 w-4" />
-                      Criar conta
-                    </span>
-                  )}
-                </Button>
-              </form>
-
-              <div className="mt-6 text-center space-y-2">
-                <p className="text-sm text-muted-foreground">
-                  Já tem uma conta?{" "}
-                  <Link
-                    to="/login"
-                    className="font-semibold text-[#EE4D2D] hover:text-[#EE4D2D]/80 transition-colors"
-                  >
-                    Entrar
-                  </Link>
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  <Link
-                    to="/ofertas"
-                    className="font-medium text-gray-400 hover:text-[#EE4D2D] transition-colors"
-                  >
-                    Ver planos e preços →
-                  </Link>
-                </p>
               </div>
-            </CardContent>
-          </Card>
+
+              {/* Senha */}
+              <div>
+                <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-[var(--text)]">
+                  Senha
+                </label>
+                <div className="relative">
+                  <Lock className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Crie uma senha"
+                    autoComplete="new-password"
+                    required
+                    className="h-12 w-full rounded-xl border border-gray-200 bg-white pl-11 pr-12 text-sm text-gray-900 placeholder:text-gray-400 outline-none transition-all duration-200 focus:border-[#EE4D2D] focus:ring-2 focus:ring-[#EE4D2D]/15 dark:border-[var(--border)] dark:bg-[var(--bg)] dark:text-[var(--text)] dark:placeholder:text-[var(--muted)] dark:focus:border-[var(--accent)] dark:focus:ring-[var(--accent)]/20"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((s) => !s)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-[var(--muted)]"
+                    aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Submit */}
+              <button
+                type="submit"
+                disabled={submitting}
+                className="flex h-12 w-full items-center justify-center gap-2.5 rounded-xl bg-gradient-to-br from-[#EE4D2D] to-[#FF7A45] text-sm font-semibold text-white shadow-md shadow-[#EE4D2D]/25 transition-all duration-200 hover:shadow-lg hover:shadow-[#EE4D2D]/35 hover:-translate-y-0.5 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:translate-y-0"
+              >
+                {submitting ? (
+                  <>
+                    <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    Criando conta...
+                  </>
+                ) : (
+                  <>
+                    Criar conta
+                    <ArrowRight className="h-4 w-4" />
+                  </>
+                )}
+              </button>
+            </form>
+
+            {/* Divider */}
+            <div className="my-7 flex items-center gap-3">
+              <div className="h-px flex-1 bg-gray-200 dark:bg-[var(--border)]" />
+              <span className="text-xs text-gray-400 dark:text-[var(--muted)]">ou continue com</span>
+              <div className="h-px flex-1 bg-gray-200 dark:bg-[var(--border)]" />
+            </div>
+
+            {/* Login link */}
+            <p className="text-center text-sm text-gray-500 dark:text-[var(--muted)]">
+              Já tem conta?{" "}
+              <Link
+                to="/login"
+                className="font-semibold text-[#EE4D2D] transition-colors hover:text-[#EE4D2D]/70 dark:text-[var(--accent)]"
+              >
+                Entrar
+              </Link>
+            </p>
+
+            {/* Plans link */}
+            <p className="mt-3 text-center">
+              <Link
+                to="/ofertas"
+                className="text-xs font-medium text-gray-400 transition-colors hover:text-[#EE4D2D] dark:text-[var(--muted)] dark:hover:text-[var(--accent)]"
+              >
+                Ver planos e preços →
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
