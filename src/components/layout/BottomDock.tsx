@@ -36,6 +36,7 @@ const DOCK_ITEMS: DockItem[] = [
   { to: "/dashboard/video-ia", tooltip: "Vídeo IA", icon: Clapperboard },
   { to: "/dashboard/conectar-contas", tooltip: "Integrações", icon: Link2 },
   { to: "/dashboard/aulas", tooltip: "Aulas", icon: GraduationCap },
+  { to: "/dashboard/suporte", tooltip: "Suporte", icon: MessageCircle },
   { to: "/dashboard/configuracoes", tooltip: "Configurações", icon: Settings },
 ];
 
