@@ -4,7 +4,7 @@ import { DashboardShell } from "../components/layout/DashboardShell";
 import { useApp } from "../lib/state";
 import { supabase } from "../integrations/supabase/client";
 import {
-  Send, ArrowLeft, CheckCircle2, Circle, XCircle,
+  Send, ArrowLeft, CheckCircle2, Circle, XCircle, Zap,
 } from "lucide-react";
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -13,6 +13,36 @@ import {
    ═══════════════════════════════════════════════════════════════════ */
 
 export const Route = createFileRoute("/dashboard/suporte-admin")({ component: SuporteAdminPage });
+
+/* ── Constants ── */
+
+const ADMIN_DISPLAY_NAME = "Mateus Suporte";
+const ADMIN_INITIALS = "MS";
+
+/* ── Quick replies ── */
+
+const QUICK_REPLIES = [
+  {
+    label: "Reembolso",
+    text: "Seu reembolso está em análise pela nossa equipe financeira. O prazo é de até 7 dias úteis. Qualquer dúvida, é só chamar!",
+  },
+  {
+    label: "Ajuda com vídeos",
+    text: "Sobre a geração de vídeos, você precisa: 1) Ir até a aba Vídeo IA, 2) Escolher um produto, 3) Preencher as informações, 4) Selecionar o estilo, 5) Clicar em Gerar. Depois é só copiar o prompt, abrir o Gemini e colar lá. O vídeo é gerado na sua conta Google! Qualquer dúvida pode me chamar. 😊",
+  },
+  {
+    label: "Problemas técnicos",
+    text: "Vamos resolver! Pode me dar mais detalhes do que está acontecendo? Qual página você está? Aparece alguma mensagem de erro?",
+  },
+  {
+    label: "Como funciona",
+    text: "A UpShopee é uma plataforma para afiliados Shopee. Você encontra produtos, gera vídeos com IA, divulga nos grupos e ganha comissões. Tudo automático! Temos aulas gratuitas na aba Aulas também. 🚀",
+  },
+  {
+    label: "Liberação de acesso",
+    text: "Seu acesso já está liberado! Faça login com seu email e senha. Se não lembrar a senha, clique em 'Esqueci minha senha' na tela de login.",
+  },
+];
 
 /* ── CSS Animations (GPU-accelerated) ── */
 
@@ -42,21 +72,13 @@ type TicketRecord = {
   user_name?: string;
 };
 
-type MessageRecord = {
-  id: string;
-  ticket_id: string;
-  user_id: string;
-  is_admin: boolean;
-  message: string;
-  created_at: string;
-};
-
 type AdminMessage = {
   id: string;
   role: "user" | "admin";
   text: string;
   timestamp: Date;
-  senderLabel: string;
+  senderInitials: string;
+  displayName: string;
 };
 
 /* ── Helpers ── */
@@ -80,6 +102,13 @@ function timeAgo(date: string): string {
   const days = Math.floor(hours / 24);
   if (days === 1) return "ontem";
   return `há ${days} dias`;
+}
+
+function userInitials(name?: string | null): string {
+  if (!name || name === "Usuário" || name === "Cliente") return "CL";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return name.slice(0, 2).toUpperCase();
 }
 
 let _msgCounter = 0;
@@ -113,6 +142,13 @@ function SuporteAdminPage() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  /* ── Derived: selected ticket's user display name ── */
+  const selectedTicket = useMemo(
+    () => tickets.find((t) => t.id === selectedTicketId),
+    [tickets, selectedTicketId],
+  );
+  const selectedTicketUserName = selectedTicket?.user_name || "Cliente";
 
   /* ── Fetch tickets ── */
   const loadTickets = useCallback(async () => {
@@ -159,7 +195,7 @@ function SuporteAdminPage() {
   }, [loadTickets]);
 
   /* ── Load messages for selected ticket ── */
-  const loadMessages = useCallback(async (ticketId: string) => {
+  const loadMessages = useCallback(async (ticketId: string, userName?: string) => {
     setLoadingMessages(true);
     try {
       const { data, error } = await (supabase.from as any)("support_messages")
@@ -169,13 +205,17 @@ function SuporteAdminPage() {
 
       if (error) return;
 
+      const uName = userName || "Cliente";
+      const uInitials = userInitials(uName);
+
       setMessages(
         (data as any[]).map((m: any) => ({
           id: m.id,
           role: m.is_admin ? ("admin" as const) : ("user" as const),
           text: m.message,
           timestamp: new Date(m.created_at),
-          senderLabel: m.is_admin ? "ADM" : "USR",
+          senderInitials: m.is_admin ? ADMIN_INITIALS : uInitials,
+          displayName: m.is_admin ? ADMIN_DISPLAY_NAME : uName,
         })),
       );
     } catch (err) {
@@ -190,10 +230,12 @@ function SuporteAdminPage() {
     (ticketId: string) => {
       setSelectedTicketId(ticketId);
       setMessages([]);
-      loadMessages(ticketId);
+      // Pass the user name from the ticket data
+      const ticket = tickets.find((t) => t.id === ticketId);
+      loadMessages(ticketId, ticket?.user_name);
       setMobileShowChat(true);
     },
-    [loadMessages],
+    [loadMessages, tickets],
   );
 
   /* ── Back to list (mobile) ── */
@@ -206,6 +248,9 @@ function SuporteAdminPage() {
   /* ── Realtime: messages for selected ticket ── */
   useEffect(() => {
     if (!selectedTicketId) return;
+
+    const userName = selectedTicket?.user_name || "Cliente";
+    const uInitials = userInitials(userName);
 
     const channel = supabase
       .channel(`support-messages-${selectedTicketId}`)
@@ -232,7 +277,8 @@ function SuporteAdminPage() {
                 role: "user" as const,
                 text: m.message,
                 timestamp: new Date(m.created_at),
-                senderLabel: "USR",
+                senderInitials: uInitials,
+                displayName: userName,
               },
             ];
           });
@@ -243,7 +289,7 @@ function SuporteAdminPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [selectedTicketId]);
+  }, [selectedTicketId, selectedTicket]);
 
   /* ── Realtime: ticket status changes ── */
   useEffect(() => {
@@ -280,14 +326,11 @@ function SuporteAdminPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  /* ── Optimistic insert for admin replies ── */
-  const sendBubbleRef = useRef<AdminMessage | null>(null);
-
   /* ── Send message ── */
-  const handleSend = useCallback(async () => {
-    const text = input.trim();
+  const handleSend = useCallback(async (textOverride?: string) => {
+    const text = (textOverride ?? input).trim();
     if (!text || sending || !selectedTicketId || !currentUserId) return;
-    setInput("");
+    if (!textOverride) setInput("");
     setSending(true);
 
     const optId = nextMsgId();
@@ -296,9 +339,9 @@ function SuporteAdminPage() {
       role: "admin",
       text,
       timestamp: new Date(),
-      senderLabel: "ADM",
+      senderInitials: ADMIN_INITIALS,
+      displayName: ADMIN_DISPLAY_NAME,
     };
-    sendBubbleRef.current = optimistic;
     setMessages((prev) => [...prev, optimistic]);
 
     try {
@@ -328,10 +371,16 @@ function SuporteAdminPage() {
           .eq("status", "open");
       }
     } finally {
-      sendBubbleRef.current = null;
       setSending(false);
     }
   }, [input, sending, selectedTicketId, currentUserId]);
+
+  /* ── Quick reply: place text in input ── */
+  const handleQuickReply = useCallback((text: string) => {
+    setInput(text);
+    // Focus the textarea so admin can review then press send
+    setTimeout(() => textareaRef.current?.focus(), 50);
+  }, []);
 
   /* ── Close / resolve ticket ── */
   const handleCloseTicket = useCallback(async () => {
@@ -353,7 +402,8 @@ function SuporteAdminPage() {
         role: "admin",
         text: closeMsg,
         timestamp: new Date(),
-        senderLabel: "SYS",
+        senderInitials: "SYS",
+        displayName: "Sistema",
       },
     ]);
 
@@ -371,9 +421,9 @@ function SuporteAdminPage() {
     } catch (err) {
       console.error("Failed to close ticket:", err);
       loadTickets();
-      loadMessages(selectedTicketId);
+      loadMessages(selectedTicketId, selectedTicketUserName);
     }
-  }, [selectedTicketId, currentUserId, loadTickets, loadMessages]);
+  }, [selectedTicketId, currentUserId, loadTickets, loadMessages, selectedTicketUserName]);
 
   /* ── Key handler ── */
   const handleKeyDown = useCallback(
@@ -394,10 +444,6 @@ function SuporteAdminPage() {
   const closedTickets = useMemo(
     () => tickets.filter((t) => t.status === "resolved" || t.status === "closed"),
     [tickets],
-  );
-  const selectedTicket = useMemo(
-    () => tickets.find((t) => t.id === selectedTicketId),
-    [tickets, selectedTicketId],
   );
 
   /* ── Unread indicator — last message was from user ── */
@@ -463,6 +509,7 @@ function SuporteAdminPage() {
             onKeyDown={handleKeyDown}
             onCloseTicket={handleCloseTicket}
             onBack={backToList}
+            onQuickReply={handleQuickReply}
             textareaRef={textareaRef}
             messagesEndRef={messagesEndRef}
           />
@@ -596,10 +643,11 @@ type ChatPanelProps = {
   input: string;
   sending: boolean;
   onInputChange: (v: string) => void;
-  onSend: () => void;
+  onSend: (textOverride?: string) => void;
   onKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
   onCloseTicket: () => void;
   onBack: () => void;
+  onQuickReply: (text: string) => void;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
   messagesEndRef: React.RefObject<HTMLDivElement | null>;
 };
@@ -615,6 +663,7 @@ function ChatPanel({
   onKeyDown,
   onCloseTicket,
   onBack,
+  onQuickReply,
   textareaRef,
   messagesEndRef,
 }: ChatPanelProps) {
@@ -709,29 +758,48 @@ function ChatPanel({
         )}
       </div>
 
-      {/* ── Input (disabled for closed tickets) ── */}
+      {/* ── Input area ── */}
       <div className="shrink-0 border-t border-[var(--border)] bg-[var(--bg)] px-4 py-3">
         {canClose ? (
-          <div className="flex items-end gap-2 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 transition-colors focus-within:border-[var(--accent)] focus-within:ring-1 focus-within:ring-[var(--accent)]/30">
-            <textarea
-              ref={textareaRef}
-              value={input}
-              onChange={(e) => onInputChange(e.target.value)}
-              onKeyDown={onKeyDown}
-              placeholder="Digite sua resposta…"
-              disabled={sending}
-              rows={1}
-              className="min-h-[24px] max-h-[120px] flex-1 resize-none bg-transparent px-1 py-1 text-sm text-[var(--text)] placeholder:text-[var(--muted)] outline-none disabled:opacity-50"
-            />
-            <button
-              onClick={onSend}
-              disabled={!input.trim() || sending}
-              aria-label="Enviar resposta"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#EE4D2D] to-[#FF6B4A] text-white shadow-sm transition-all duration-200 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              <Send size={16} />
-            </button>
-          </div>
+          <>
+            {/* Quick reply pills */}
+            <div className="mb-3 flex flex-wrap gap-1.5">
+              {QUICK_REPLIES.map((qr) => (
+                <button
+                  key={qr.label}
+                  onClick={() => onQuickReply(qr.text)}
+                  disabled={sending}
+                  className="inline-flex items-center gap-1 rounded-full border border-[var(--accent)]/30 bg-[var(--accent-soft)] px-3 py-1.5 text-[11px] font-medium text-[var(--accent)] transition-colors hover:bg-[var(--accent)]/15 hover:border-[var(--accent)]/50 disabled:opacity-40"
+                  title={`Inserir resposta: ${qr.label}`}
+                >
+                  <Zap size={11} />
+                  {qr.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Input + send button */}
+            <div className="flex items-end gap-2 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 transition-colors focus-within:border-[var(--accent)] focus-within:ring-1 focus-within:ring-[var(--accent)]/30">
+              <textarea
+                ref={textareaRef}
+                value={input}
+                onChange={(e) => onInputChange(e.target.value)}
+                onKeyDown={onKeyDown}
+                placeholder="Digite sua resposta…"
+                disabled={sending}
+                rows={1}
+                className="min-h-[24px] max-h-[120px] flex-1 resize-none bg-transparent px-1 py-1 text-sm text-[var(--text)] placeholder:text-[var(--muted)] outline-none disabled:opacity-50"
+              />
+              <button
+                onClick={() => onSend()}
+                disabled={!input.trim() || sending}
+                aria-label="Enviar resposta"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#EE4D2D] to-[#FF6B4A] text-white shadow-sm transition-all duration-200 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <Send size={16} />
+              </button>
+            </div>
+          </>
         ) : (
           <p className="text-center text-xs text-[var(--muted)] italic">
             Este ticket está {statusLabel.toLowerCase()}. Não é possível enviar novas mensagens.
@@ -761,15 +829,20 @@ function AdminChatBubble({
         isAdmin ? "flex-row-reverse" : ""
       } ${isLast ? "ad-msg-enter" : ""}`}
     >
-      {/* Avatar */}
-      <div
-        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
-          isAdmin
-            ? "bg-gradient-to-br from-[#EE4D2D] to-[#FF6B4A] text-white"
-            : "bg-[var(--surface-2)] text-[var(--text)] ring-1 ring-[var(--border)]"
-        }`}
-      >
-        {message.senderLabel}
+      {/* Avatar + name */}
+      <div className={`flex flex-col items-center gap-1 ${isAdmin ? "items-center" : "items-center"}`}>
+        <div
+          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
+            isAdmin
+              ? "bg-gradient-to-br from-[#EE4D2D] to-[#FF6B4A] text-white"
+              : "bg-[var(--surface-2)] text-[var(--text)] ring-1 ring-[var(--border)]"
+          }`}
+        >
+          {message.senderInitials}
+        </div>
+        <span className="text-[9px] text-[var(--muted)] leading-none whitespace-nowrap max-w-[56px] truncate">
+          {message.displayName}
+        </span>
       </div>
 
       {/* Bubble */}
