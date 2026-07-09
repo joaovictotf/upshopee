@@ -124,7 +124,7 @@ function Conectar() {
             </div>
             <div className="mt-auto pt-5">
               {connected ? (
-                <div className="flex items-center justify-between gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3">
+                <div className="flex flex-col items-center gap-2 sm:flex-row sm:justify-between sm:gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3">
                   <span className="inline-flex items-center gap-2 text-sm font-semibold text-emerald-400">
                     <Check className="h-5 w-5" strokeWidth={2.5} />
                     Conta conectada
@@ -137,9 +137,9 @@ function Conectar() {
                   </button>
                 </div>
               ) : waiting ? (
-                <div className="flex items-center justify-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3">
+                <div className="flex flex-col items-center gap-2 sm:flex-row sm:justify-center sm:gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3">
                   <Loader2 className="h-4 w-4 animate-spin text-[var(--accent)]" />
-                  <span className="text-sm text-[var(--muted)]">Aguardando retorno...</span>
+                  <span className="text-xs sm:text-sm text-[var(--muted)]">Aguardando retorno...</span>
                 </div>
               ) : (
                 <button
