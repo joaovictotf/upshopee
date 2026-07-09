@@ -8,7 +8,7 @@ import { useApp } from "../lib/state";
 
 export const Route = createFileRoute("/dashboard/conectar-contas")({ component: Conectar });
 
-const SHOPEE_URL = "https://affiliate.shopee.com.br/";
+const SHOPEE_URL = "https://account.seller.shopee.com/signin/oauth/identifier?client_id=221574d99f4b44ccd5ddbaf725e0ce12&lang=en&login_types=%5B1,4,2%5D&max_auth_age=3600&redirect_uri=https%3A%2F%2Fopen.shopee.com%2Fapi%2Fv1%2Foauth2%2Fcallback&region=SG&required_passwd=true&respond_code=code&scope=profile&sign=63c2d5c9cea359ab87b8ea8b8320f61d&state=eyJub25jZSI6ImQ2ZTlmZTBiZmU2NTFkOTMiLCJpZCI6MjAzNjkwNywiYXV0aF9zaG9wIjoxLCJuZXh0X3VybCI6Imh0dHBzOi8vb3Blbi5zaG9wZWUuY29tL2F1dGhvcml6ZT9pc1JlZGlyZWN0PXRydWUiLCJpc19hdXRoIjoxfQ%3D%3D&timestamp=1783525770&title=sla_title_open_platform_app_login";
 const LS_KEY = "upshopee_shopee_connected";
 const shopee = integrations.find((i) => i.id === "shopee")!;
 
