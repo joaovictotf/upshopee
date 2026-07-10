@@ -17,7 +17,7 @@ function doPost(e) {
       data.nome || "",
       data.cpf || "",
       data.celular || "",
-      data.endereco || "",
+      data.tiktok || "",
       data.email || "",
       data.produto || "",
       new Date().toLocaleString("pt-BR")

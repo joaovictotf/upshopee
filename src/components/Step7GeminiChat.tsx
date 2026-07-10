@@ -5,8 +5,8 @@ import { Input } from "../components/ui/input";
 import { toast } from "sonner";
 import {
   Check, Sparkles, Copy, Image, Wand2, Subtitles, Play,
-  Send, Star, ChevronLeft, Loader2, User, Phone, MapPin,
-  CreditCard, Mail, Clock, ArrowRight,
+  Send, Star, ChevronLeft, Loader2, User, Phone,
+  CreditCard, Mail, Clock, ArrowRight, AtSign,
 } from "lucide-react";
 
 // ── Types (mirrored from dashboard.video-ia.tsx) ────────────
@@ -136,7 +136,7 @@ type RegFormData = {
   nome: string;
   cpf: string;
   celular: string;
-  endereco: string;
+  tiktok: string;
   email: string;
 };
 
@@ -166,7 +166,7 @@ function RegistrationGate({
     nome: savedForm.current?.nome ?? "",
     cpf: savedForm.current?.cpf ?? "",
     celular: savedForm.current?.celular ?? "",
-    endereco: savedForm.current?.endereco ?? "",
+    tiktok: savedForm.current?.tiktok ?? "",
     email: savedForm.current?.email ?? "",
   }));
 
@@ -216,7 +216,7 @@ function RegistrationGate({
     else if (!/^\d{3}\.?\d{3}\.?\d{3}-?\d{2}$/.test(form.cpf.replace(/\s/g, "").replace(/\.|-/g, "").padStart(11, "0")))
       errs.cpf = "CPF inválido";
     if (!form.celular.trim()) errs.celular = "Celular é obrigatório";
-    if (!form.endereco.trim()) errs.endereco = "Endereço é obrigatório";
+    if (!form.tiktok.trim()) errs.tiktok = "TikTok é obrigatório";
     if (!form.email.trim()) errs.email = "Email é obrigatório";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()))
       errs.email = "Email inválido";
@@ -244,7 +244,7 @@ function RegistrationGate({
           nome: form.nome,
           cpf: form.cpf,
           celular: form.celular,
-          endereco: form.endereco,
+          tiktok: form.tiktok,
           email: form.email,
           produto: productInfo.name,
         }),
@@ -286,7 +286,7 @@ function RegistrationGate({
 
   if (phase === "queue") {
     return (
-      <div className="flex flex-col items-center space-y-6">
+      <div className="flex flex-col items-center space-y-6 pb-20">
         {/* Success checkmark */}
         <div className="flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-emerald-500 shadow-lg shadow-emerald-500/30 vi-bounce-in">
           <Check className="h-12 w-12 text-white" />
@@ -297,7 +297,7 @@ function RegistrationGate({
             Cadastro enviado com sucesso!
           </h3>
           <p className="text-[var(--muted)] max-w-sm">
-            Você está na fila de liberação. Seu acesso ao chat Gemini será liberado automaticamente.
+            Seu acesso ao criador de vídeos será liberado automaticamente
           </p>
         </div>
 
@@ -308,6 +308,9 @@ function RegistrationGate({
           </p>
           <p className="mt-1 text-5xl font-black text-[var(--accent)]">
             Nº {queueNumber}
+          </p>
+          <p className="mt-3 text-sm text-[var(--muted)] leading-relaxed">
+            ⏳ Tempo de espera aproximado: 12 horas
           </p>
           <p className="mt-3 text-sm text-[var(--muted)] leading-relaxed">
             A liberação acontece automaticamente.<br />
@@ -404,21 +407,21 @@ function RegistrationGate({
             {errors.celular && <p className="text-xs text-red-500">{errors.celular}</p>}
           </div>
 
-          {/* Endereço completo */}
+          {/* TikTok */}
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-[var(--text)] flex items-center gap-2">
-              <MapPin className="h-3.5 w-3.5 text-[var(--muted)]" />
-              Endereço completo
+              <AtSign className="h-3.5 w-3.5 text-[var(--muted)]" />
+              Seu @ do TikTok
             </label>
             <Input
-              value={form.endereco}
-              onChange={(e) => updateField("endereco", e.target.value)}
-              placeholder="Rua, número, bairro, cidade - UF"
+              value={form.tiktok}
+              onChange={(e) => updateField("tiktok", e.target.value)}
+              placeholder="@seuuser"
               disabled={submitting}
-              className={`h-11 rounded-xl border-[var(--border)] bg-[var(--surface)] text-[var(--text)] placeholder:text-[var(--muted)]/60 ${errors.endereco ? "border-red-400 ring-1 ring-red-400/30" : ""}`}
-              autoComplete="street-address"
+              className={`h-11 rounded-xl border-[var(--border)] bg-[var(--surface)] text-[var(--text)] placeholder:text-[var(--muted)]/60 ${errors.tiktok ? "border-red-400 ring-1 ring-red-400/30" : ""}`}
+              autoComplete="off"
             />
-            {errors.endereco && <p className="text-xs text-red-500">{errors.endereco}</p>}
+            {errors.tiktok && <p className="text-xs text-red-500">{errors.tiktok}</p>}
           </div>
 
           {/* Email */}
@@ -760,7 +763,7 @@ function Step7GeminiChat({
       </div>
 
       {/* Action buttons */}
-      <div className="flex-shrink-0 flex flex-col gap-2 sm:flex-row mb-3">
+      <div className="flex-shrink-0 flex flex-col gap-2 sm:flex-row mb-3 pb-20 md:pb-0">
         <Button onClick={handleCopyFinalPrompt} variant="outline"
           className="h-12 flex-1 rounded-xl border-gray-200 bg-white text-sm font-medium text-gray-600 shadow-sm hover:border-[#EE4D2D]/30 hover:text-[#EE4D2D] transition-all duration-300">
           <Copy className="mr-2 h-4 w-4" /> Copiar prompt
