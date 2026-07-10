@@ -170,7 +170,7 @@ export function DashboardShell({ children, title, subtitle, actions, onLightning
         </header>
 
         {/* ── Main content ── */}
-        <main key={privacy ? "p1" : "p0"} className="min-w-0 overflow-x-hidden px-4 py-6 md:px-8 md:py-8 pb-20 md:pb-0">
+        <main key={privacy ? "p1" : "p0"} className="min-w-0 overflow-x-hidden px-4 py-6 md:px-8 md:py-8 pb-24 md:pb-0">
           {actions && <div className="mb-6 flex flex-wrap items-center justify-between gap-3">{actions}</div>}
           {children}
         </main>

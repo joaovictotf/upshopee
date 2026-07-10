@@ -763,7 +763,7 @@ function Step7GeminiChat({
       </div>
 
       {/* Action buttons */}
-      <div className="flex-shrink-0 flex flex-col gap-2 sm:flex-row mb-3 pb-20 md:pb-0">
+      <div className="flex-shrink-0 flex flex-col gap-2 sm:flex-row mb-3 pb-6 sm:pb-0">
         <Button onClick={handleCopyFinalPrompt} variant="outline"
           className="h-12 flex-1 rounded-xl border-gray-200 bg-white text-sm font-medium text-gray-600 shadow-sm hover:border-[#EE4D2D]/30 hover:text-[#EE4D2D] transition-all duration-300">
           <Copy className="mr-2 h-4 w-4" /> Copiar prompt
