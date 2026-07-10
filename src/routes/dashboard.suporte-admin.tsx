@@ -122,13 +122,13 @@ function nextMsgId(): string {
    ═══════════════════════════════════════════════════════════════════ */
 
 function SuporteAdminPage() {
-  const { isAdmin, adminPresentationMode, currentUserId } = useApp();
+  const { isAdmin, currentUserId } = useApp();
   const navigate = useNavigate();
 
   /* ── Admin gate ── */
   useEffect(() => {
-    if (!isAdmin || adminPresentationMode) navigate({ to: "/dashboard" });
-  }, [isAdmin, adminPresentationMode, navigate]);
+    if (!isAdmin) navigate({ to: "/dashboard" });
+  }, [isAdmin, navigate]);
 
   /* ── State ── */
   const [tickets, setTickets] = useState<TicketRecord[]>([]);
@@ -459,7 +459,7 @@ function SuporteAdminPage() {
   );
 
   /* ── Admin gate render ── */
-  if (!isAdmin || adminPresentationMode) {
+  if (!isAdmin) {
     return null;
   }
 

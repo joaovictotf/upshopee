@@ -112,7 +112,6 @@ function ValidarCadastros() {
     validateUserPendingConnections,
     bulkApproveAllProductsAndMakeReady,
     getUserCommissionTotal,
-    adminPresentationMode,
     blockAccountPayment,
     unblockAccountPayment,
     approveAllPendingAccounts,
@@ -134,8 +133,7 @@ function ValidarCadastros() {
 
   useEffect(() => {
     if (!isAdmin) navigate({ to: "/dashboard" });
-    if (isAdmin && adminPresentationMode) navigate({ to: "/dashboard" });
-  }, [isAdmin, adminPresentationMode, navigate]);
+  }, [isAdmin, navigate]);
 
   const [filter, setFilter] = useState<FilterKey>("all");
   const [connFilter, setConnFilter] = useState<ConnFilter>("all");
@@ -185,11 +183,11 @@ function ValidarCadastros() {
   const [blockFor, setBlockFor] = useState<AccountRow | null>(null);
   const [unblockFor, setUnblockFor] = useState<AccountRow | null>(null);
 
-  if (!isAdmin || adminPresentationMode) return null;
+  if (!isAdmin) return null;
 
   return (
     <DashboardShell title="Validar Cadastros" subtitle="Aprove, pesquise e gerencie usuários da UpShopee.">
-      <div className="page-enter" className="grid gap-3 sm:grid-cols-3">
+      <div className="page-enter grid gap-3 sm:grid-cols-3">
         <Stat icon={<ShieldAlert className="h-4 w-4" />} label="Cadastros pendentes" value={String(counts.pending)} accent />
         <Stat icon={<ShieldCheck className="h-4 w-4" />} label="Cadastros aprovados" value={String(counts.approved)} />
         <Stat icon={<Lock className="h-4 w-4" />} label="Cadastros recusados" value={String(counts.rejected)} />
