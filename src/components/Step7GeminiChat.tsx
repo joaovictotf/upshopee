@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState, memo } from "react";
 import { supabase } from "../integrations/supabase/client";
 import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
 import { toast } from "sonner";
 import {
   Check, Sparkles, Copy, Image, Wand2, Subtitles, Play,
-  Send, Star, ChevronLeft,
+  Send, Star, ChevronLeft, Loader2, User, Phone, MapPin,
+  CreditCard, Mail, Clock, ArrowRight,
 } from "lucide-react";
 
 // ── Types (mirrored from dashboard.video-ia.tsx) ────────────
@@ -50,7 +52,439 @@ function arePropsEqual(prev: Step7GeminiChatProps, next: Step7GeminiChatProps): 
   );
 }
 
-// ── Component ────────────────────────────────────────────────
+// ── LocalStorage helpers ──
+
+const REGISTERED_KEY = "upshopee_video_registered";
+const QUEUE_NUMBER_KEY = "upshopee_queue_number";
+const QUEUE_LAST_UPDATE_KEY = "upshopee_queue_last_update";
+const REG_FORM_DATA_KEY = "upshopee_reg_form_data";
+
+function getRegistered(): boolean {
+  try { return localStorage.getItem(REGISTERED_KEY) === "1"; } catch { return false; }
+}
+function setRegistered() {
+  try { localStorage.setItem(REGISTERED_KEY, "1"); } catch {}
+}
+
+function getQueueNumber(): number {
+  try {
+    const raw = localStorage.getItem(QUEUE_NUMBER_KEY);
+    if (raw === null) return -1; // not set
+    return parseInt(raw, 10);
+  } catch { return -1; }
+}
+function getQueueLastUpdate(): number {
+  try {
+    const raw = localStorage.getItem(QUEUE_LAST_UPDATE_KEY);
+    if (raw === null) return 0;
+    return parseInt(raw, 10);
+  } catch { return 0; }
+}
+function setQueueState(number: number, lastUpdate: number) {
+  try {
+    localStorage.setItem(QUEUE_NUMBER_KEY, String(number));
+    localStorage.setItem(QUEUE_LAST_UPDATE_KEY, String(lastUpdate));
+  } catch {}
+}
+
+// ── Compute current queue number accounting for elapsed 2h intervals ──
+
+function computeQueueNumber(storedNumber: number, storedLastUpdate: number): number {
+  if (storedNumber <= 0) return 0;
+  const now = Date.now();
+  const elapsed = now - storedLastUpdate;
+  const intervalsPassed = Math.floor(elapsed / (2 * 60 * 60 * 1000)); // 2 hours in ms
+  const newNumber = Math.max(0, storedNumber - intervalsPassed);
+  const newLastUpdate = storedLastUpdate + intervalsPassed * (2 * 60 * 60 * 1000);
+  setQueueState(newNumber, newLastUpdate);
+  return newNumber;
+}
+
+// ── CSS for animations ──
+
+const ANIM_CSS = `
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes vi-bounce-in {
+    0% { transform: scale(0); opacity: 0; }
+    60% { transform: scale(1.15); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .vi-bounce-in { animation: vi-bounce-in 0.5s ease-out both; }
+  @keyframes ad-msg-enter {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .ad-msg-enter { animation: ad-msg-enter 0.3s ease-out both; }
+  @keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(238,77,45,0.4); }
+    50% { box-shadow: 0 0 0 12px rgba(238,77,45,0); }
+  }
+  .pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vi-bounce-in, .ad-msg-enter, .pulse-glow { animation: none; }
+}
+`;
+
+// ═══════════════════════════════════════════════════════════════
+// Registration Form (Phase 1)
+// ═══════════════════════════════════════════════════════════════
+
+const GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbwcQgsGcAR92aN_S2xQSzxhbE1NA6ANuOJRjTumTHCT5nYCMpUksKWDWKYfq7xqh8Ea/exec";
+
+type RegFormData = {
+  nome: string;
+  cpf: string;
+  celular: string;
+  endereco: string;
+  email: string;
+};
+
+type RegPhase = "loading" | "form" | "submitting" | "queue";
+
+function RegistrationGate({
+  productInfo,
+  onUnlocked,
+}: {
+  productInfo: ProductInfo;
+  onUnlocked: () => void;
+}) {
+  // Try to load saved form data so user doesn't lose work on refresh
+  const savedForm = useRef<RegFormData | null>(null);
+  try {
+    const raw = localStorage.getItem(REG_FORM_DATA_KEY);
+    if (raw) savedForm.current = JSON.parse(raw);
+  } catch {}
+
+  const [phase, setPhase] = useState<RegPhase>(() => {
+    // If already registered, skip to queue check
+    if (getRegistered()) return "queue";
+    return "form";
+  });
+
+  const [form, setForm] = useState<RegFormData>(() => ({
+    nome: savedForm.current?.nome ?? "",
+    cpf: savedForm.current?.cpf ?? "",
+    celular: savedForm.current?.celular ?? "",
+    endereco: savedForm.current?.endereco ?? "",
+    email: savedForm.current?.email ?? "",
+  }));
+
+  const [errors, setErrors] = useState<Partial<Record<keyof RegFormData, string>>>({});
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const [queueNumber, setQueueNumber] = useState<number>(() => {
+    const stored = getQueueNumber();
+    if (stored >= 0) {
+      const lastUpdate = getQueueLastUpdate();
+      return computeQueueNumber(stored, lastUpdate);
+    }
+    return 0;
+  });
+
+  // ── Queue timer: decrease by 1 every 2 hours ──
+  const queueIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (phase !== "queue" || queueNumber <= 0) return;
+    const tick = () => {
+      setQueueNumber((prev) => {
+        const next = Math.max(0, prev - 1);
+        setQueueState(next, Date.now());
+        return next;
+      });
+    };
+    queueIntervalRef.current = setInterval(tick, 2 * 60 * 60 * 1000); // 2h
+    return () => {
+      if (queueIntervalRef.current) clearInterval(queueIntervalRef.current);
+    };
+  }, [phase, queueNumber]);
+
+  // ── Auto-unlock when queue hits 0 ──
+  useEffect(() => {
+    if (phase === "queue" && queueNumber <= 0 && getRegistered()) {
+      onUnlocked();
+    }
+  }, [phase, queueNumber, onUnlocked]);
+
+  // ── Validate form ──
+  const validate = (): boolean => {
+    const errs: Partial<Record<keyof RegFormData, string>> = {};
+    if (!form.nome.trim()) errs.nome = "Nome completo é obrigatório";
+    if (!form.cpf.trim()) errs.cpf = "CPF é obrigatório";
+    else if (!/^\d{3}\.?\d{3}\.?\d{3}-?\d{2}$/.test(form.cpf.replace(/\s/g, "").replace(/\.|-/g, "").padStart(11, "0")))
+      errs.cpf = "CPF inválido";
+    if (!form.celular.trim()) errs.celular = "Celular é obrigatório";
+    if (!form.endereco.trim()) errs.endereco = "Endereço é obrigatório";
+    if (!form.email.trim()) errs.email = "Email é obrigatório";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()))
+      errs.email = "Email inválido";
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
+  // ── Submit form ──
+  const handleSubmit = async () => {
+    if (!validate()) return;
+    setSubmitting(true);
+    setSubmitError(null);
+
+    // Save form data before sending
+    try { localStorage.setItem(REG_FORM_DATA_KEY, JSON.stringify(form)); } catch {}
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      const res = await fetch(GOOGLE_SHEETS_URL, {
+        method: "POST",
+        mode: "no-cors", // Google Apps Script requires no-cors for cross-origin
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({
+          nome: form.nome,
+          cpf: form.cpf,
+          celular: form.celular,
+          endereco: form.endereco,
+          email: form.email,
+          produto: productInfo.name,
+        }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      // no-cors returns opaque response — we treat any non-throw as success
+    } catch (err: any) {
+      setSubmitting(false);
+      setSubmitError(err?.name === "AbortError"
+        ? "Tempo esgotado. Verifique sua conexão e tente novamente."
+        : "Erro ao enviar cadastro. Verifique sua conexão.");
+      toast.error("Erro ao enviar cadastro. Tente novamente.");
+      return;
+    }
+
+    // Generate random queue number 13-19
+    const q = Math.floor(Math.random() * 7) + 13;
+    setQueueNumber(q);
+    setQueueState(q, Date.now());
+    setRegistered();
+    setSubmitting(false);
+    setPhase("queue");
+    // Clear saved form data
+    try { localStorage.removeItem(REG_FORM_DATA_KEY); } catch {}
+
+    toast.success("Cadastro enviado com sucesso!");
+  };
+
+  // ── Update form field ──
+  const updateField = (field: keyof RegFormData, value: string) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }));
+  };
+
+  // ═══════════════════════════════════════════════════════════
+  // PHASE 2 — Queue waiting
+  // ═══════════════════════════════════════════════════════════
+
+  if (phase === "queue") {
+    return (
+      <div className="flex flex-col items-center space-y-6">
+        {/* Success checkmark */}
+        <div className="flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-emerald-500 shadow-lg shadow-emerald-500/30 vi-bounce-in">
+          <Check className="h-12 w-12 text-white" />
+        </div>
+
+        <div className="text-center space-y-3">
+          <h3 className="text-2xl font-bold text-[var(--text)]">
+            Cadastro enviado com sucesso!
+          </h3>
+          <p className="text-[var(--muted)] max-w-sm">
+            Você está na fila de liberação. Seu acesso ao chat Gemini será liberado automaticamente.
+          </p>
+        </div>
+
+        {/* Queue position card */}
+        <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8 text-center w-full max-w-sm pulse-glow">
+          <p className="text-sm font-medium text-[var(--muted)] uppercase tracking-wide">
+            Sua posição na fila
+          </p>
+          <p className="mt-1 text-5xl font-black text-[var(--accent)]">
+            Nº {queueNumber}
+          </p>
+          <p className="mt-3 text-sm text-[var(--muted)] leading-relaxed">
+            A liberação acontece automaticamente.<br />
+            Aguarde alguns instantes...
+          </p>
+          <div className="mt-5 flex items-center justify-center gap-2 text-xs text-[var(--muted)]">
+            <Clock className="h-3.5 w-3.5" />
+            <span>Atualiza a cada 2 horas</span>
+          </div>
+        </div>
+
+        {queueNumber <= 0 && (
+          <Button
+            onClick={onUnlocked}
+            className="h-12 px-8 rounded-xl bg-gradient-to-r from-[#EE4D2D] to-[#FF6B3D] text-sm font-semibold text-white shadow-md shadow-[#EE4D2D]/25 hover:shadow-lg hover:shadow-[#EE4D2D]/30 active:scale-[0.98] transition-all duration-300"
+          >
+            Liberado! <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        )}
+      </div>
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // PHASE 1 — Registration form
+  // ═══════════════════════════════════════════════════════════
+
+  return (
+    <div className="flex flex-col space-y-5">
+      {/* Header */}
+      <div className="text-center space-y-1.5">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[var(--accent)]/10 vi-bounce-in">
+          <Sparkles className="h-7 w-7 text-[var(--accent)]" />
+        </div>
+        <h3 className="text-xl font-bold text-[var(--text)]">
+          Quase lá! Preencha seus dados para liberar o acesso
+        </h3>
+        <p className="text-sm text-[var(--muted)] max-w-md mx-auto">
+          Seus dados são enviados com segurança e usados apenas para validação
+        </p>
+      </div>
+
+      {/* Form card */}
+      <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 sm:p-6 shadow-sm shadow-black/[0.02]">
+        <div className="space-y-4">
+          {/* Nome completo */}
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-[var(--text)] flex items-center gap-2">
+              <User className="h-3.5 w-3.5 text-[var(--muted)]" />
+              Nome completo
+            </label>
+            <Input
+              value={form.nome}
+              onChange={(e) => updateField("nome", e.target.value)}
+              placeholder="Seu nome completo"
+              disabled={submitting}
+              className={`h-11 rounded-xl border-[var(--border)] bg-[var(--surface)] text-[var(--text)] placeholder:text-[var(--muted)]/60 ${errors.nome ? "border-red-400 ring-1 ring-red-400/30" : ""}`}
+              autoComplete="name"
+            />
+            {errors.nome && <p className="text-xs text-red-500">{errors.nome}</p>}
+          </div>
+
+          {/* CPF */}
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-[var(--text)] flex items-center gap-2">
+              <CreditCard className="h-3.5 w-3.5 text-[var(--muted)]" />
+              CPF
+            </label>
+            <Input
+              value={form.cpf}
+              onChange={(e) => updateField("cpf", e.target.value)}
+              placeholder="000.000.000-00"
+              disabled={submitting}
+              className={`h-11 rounded-xl border-[var(--border)] bg-[var(--surface)] text-[var(--text)] placeholder:text-[var(--muted)]/60 ${errors.cpf ? "border-red-400 ring-1 ring-red-400/30" : ""}`}
+              autoComplete="off"
+            />
+            {errors.cpf && <p className="text-xs text-red-500">{errors.cpf}</p>}
+          </div>
+
+          {/* Celular com DDD */}
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-[var(--text)] flex items-center gap-2">
+              <Phone className="h-3.5 w-3.5 text-[var(--muted)]" />
+              Celular com DDD
+            </label>
+            <Input
+              value={form.celular}
+              onChange={(e) => updateField("celular", e.target.value)}
+              placeholder="(34) 99999-9999"
+              disabled={submitting}
+              className={`h-11 rounded-xl border-[var(--border)] bg-[var(--surface)] text-[var(--text)] placeholder:text-[var(--muted)]/60 ${errors.celular ? "border-red-400 ring-1 ring-red-400/30" : ""}`}
+              autoComplete="tel"
+            />
+            {errors.celular && <p className="text-xs text-red-500">{errors.celular}</p>}
+          </div>
+
+          {/* Endereço completo */}
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-[var(--text)] flex items-center gap-2">
+              <MapPin className="h-3.5 w-3.5 text-[var(--muted)]" />
+              Endereço completo
+            </label>
+            <Input
+              value={form.endereco}
+              onChange={(e) => updateField("endereco", e.target.value)}
+              placeholder="Rua, número, bairro, cidade - UF"
+              disabled={submitting}
+              className={`h-11 rounded-xl border-[var(--border)] bg-[var(--surface)] text-[var(--text)] placeholder:text-[var(--muted)]/60 ${errors.endereco ? "border-red-400 ring-1 ring-red-400/30" : ""}`}
+              autoComplete="street-address"
+            />
+            {errors.endereco && <p className="text-xs text-red-500">{errors.endereco}</p>}
+          </div>
+
+          {/* Email */}
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-[var(--text)] flex items-center gap-2">
+              <Mail className="h-3.5 w-3.5 text-[var(--muted)]" />
+              Email
+            </label>
+            <Input
+              value={form.email}
+              onChange={(e) => updateField("email", e.target.value)}
+              placeholder="seu@email.com"
+              disabled={submitting}
+              type="email"
+              className={`h-11 rounded-xl border-[var(--border)] bg-[var(--surface)] text-[var(--text)] placeholder:text-[var(--muted)]/60 ${errors.email ? "border-red-400 ring-1 ring-red-400/30" : ""}`}
+              autoComplete="email"
+            />
+            {errors.email && <p className="text-xs text-red-500">{errors.email}</p>}
+          </div>
+        </div>
+
+        {/* Submit error */}
+        {submitError && (
+          <div className="mt-4 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-600">
+            <span>{submitError}</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="ml-auto h-8 rounded-lg text-xs text-red-600 hover:bg-red-100"
+              onClick={handleSubmit}
+            >
+              Tentar novamente
+            </Button>
+          </div>
+        )}
+
+        {/* Submit button */}
+        <Button
+          onClick={handleSubmit}
+          disabled={submitting}
+          className="mt-5 h-12 w-full rounded-xl bg-gradient-to-r from-[#EE4D2D] to-[#FF6B3D] text-sm font-semibold text-white shadow-md shadow-[#EE4D2D]/25 hover:shadow-lg hover:shadow-[#EE4D2D]/30 active:scale-[0.98] transition-all duration-300 disabled:opacity-60"
+        >
+          {submitting ? (
+            <span className="flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Enviando...
+            </span>
+          ) : (
+            <span className="flex items-center gap-2">
+              Enviar cadastro
+              <ArrowRight className="h-4 w-4" />
+            </span>
+          )}
+        </Button>
+
+        <p className="mt-3 text-center text-[11px] text-[var(--muted)]/60">
+          Ao enviar, você concorda com o uso dos seus dados para validação de acesso.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Main Component
+// ═══════════════════════════════════════════════════════════════
 
 function Step7GeminiChat({
   productInfo,
@@ -60,6 +494,46 @@ function Step7GeminiChat({
   handleBack,
   handleCopyFinalPrompt,
 }: Step7GeminiChatProps) {
+  // ── Registration gate state ──
+  const [unlocked, setUnlocked] = useState<boolean>(() => {
+    if (!getRegistered()) return false;
+    const stored = getQueueNumber();
+    if (stored < 0) return false;
+    const lastUpdate = getQueueLastUpdate();
+    const q = computeQueueNumber(stored, lastUpdate);
+    return q <= 0;
+  });
+
+  const handleUnlocked = useCallback(() => {
+    localStorage.removeItem(QUEUE_NUMBER_KEY);
+    localStorage.removeItem(QUEUE_LAST_UPDATE_KEY);
+    setUnlocked(true);
+  }, []);
+
+  // ── Inject animation CSS once ──
+  useEffect(() => {
+    const styleId = "step7-gemini-anim";
+    if (document.getElementById(styleId)) return;
+    const el = document.createElement("style");
+    el.id = styleId;
+    el.textContent = ANIM_CSS;
+    document.head.appendChild(el);
+  }, []);
+
+  // ── If not unlocked, show registration gate ──
+  if (!unlocked) {
+    return (
+      <>
+        <style>{ANIM_CSS}</style>
+        <RegistrationGate productInfo={productInfo} onUnlocked={handleUnlocked} />
+      </>
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // PHASE 3 — Gemini Chat (existing functionality, unchanged)
+  // ═══════════════════════════════════════════════════════════
+
   const [chatMessages, setChatMessages] = useState<ChatMsg[]>([
     {
       role: "assistant",
