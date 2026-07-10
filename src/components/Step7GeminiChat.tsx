@@ -130,7 +130,7 @@ const ANIM_CSS = `
 // Registration Form (Phase 1)
 // ═══════════════════════════════════════════════════════════════
 
-const GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbwcQgsGcAR92aN_S2xQSzxhbE1NA6ANuOJRjTumTHCT5nYCMpUksKWDWKYfq7xqh8Ea/exec";
+const GOOGLE_SHEETS_URL = "https://ndawyrqzqhzbyjdmkdge.supabase.co/functions/v1/send-registration";
 
 type RegFormData = {
   nome: string;
@@ -238,8 +238,7 @@ function RegistrationGate({
       const timeoutId = setTimeout(() => controller.abort(), 15000);
       const res = await fetch(GOOGLE_SHEETS_URL, {
         method: "POST",
-        mode: "no-cors", // Google Apps Script requires no-cors for cross-origin
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           nome: form.nome,
           cpf: form.cpf,
@@ -251,13 +250,23 @@ function RegistrationGate({
         signal: controller.signal,
       });
       clearTimeout(timeoutId);
-      // no-cors returns opaque response — we treat any non-throw as success
+
+      if (!res.ok) {
+        const errText = await res.text().catch(() => "");
+        throw new Error(errText || `Erro ${res.status} ao enviar cadastro`);
+      }
+
+      const data = await res.json();
+      if (!data.ok) {
+        throw new Error(data.error || "Erro ao processar cadastro");
+      }
     } catch (err: any) {
       setSubmitting(false);
-      setSubmitError(err?.name === "AbortError"
+      const msg = err?.name === "AbortError"
         ? "Tempo esgotado. Verifique sua conexão e tente novamente."
-        : "Erro ao enviar cadastro. Verifique sua conexão.");
-      toast.error("Erro ao enviar cadastro. Tente novamente.");
+        : err?.message || "Erro ao enviar cadastro. Verifique sua conexão.";
+      setSubmitError(msg);
+      toast.error(msg);
       return;
     }
 
