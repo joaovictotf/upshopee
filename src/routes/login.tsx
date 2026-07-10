@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { memo, useCallback, useState } from "react";
 import { useApp } from "../lib/state";
 import { toast } from "sonner";
 import { Eye, EyeOff, Mail, Lock, ArrowRight, LogIn } from "lucide-react";
@@ -27,6 +27,146 @@ const LOGIN_CSS = `
 }
 `;
 
+/* ── Memoized form — isolates inputs from parent context re-renders ── */
+
+const LoginForm = memo(function LoginForm({
+  email, setEmail, password, setPassword,
+  submitting, showPassword, setShowPassword,
+  handleSubmit,
+}: {
+  email: string; setEmail: (v: string) => void;
+  password: string; setPassword: (v: string) => void;
+  submitting: boolean; showPassword: boolean;
+  setShowPassword: (v: boolean) => void;
+  handleSubmit: (e: React.FormEvent) => void;
+}) {
+  return (
+    <>
+      {/* Heading */}
+      <div className="mb-8 text-center lg:text-left">
+        <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-[var(--text)]" style={{ fontFamily: "'Sora', sans-serif" }}>
+          Bem-vindo de volta
+        </h1>
+        <p className="mt-2 text-sm text-gray-500 dark:text-[var(--muted)]">
+          Entre para continuar gerenciando sua operação
+        </p>
+      </div>
+
+      {/* Form */}
+      <form onSubmit={handleSubmit} className="space-y-5">
+        {/* Email */}
+        <div>
+          <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-[var(--text)]">
+            E-mail
+          </label>
+          <div className="relative">
+            <Mail className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="seu@email.com"
+              autoComplete="email"
+              required
+              className="h-12 w-full rounded-xl border border-gray-200 bg-white pl-11 pr-4 text-sm text-gray-900 placeholder:text-gray-400 outline-none transition-all duration-200 focus:border-[#EE4D2D] focus:ring-2 focus:ring-[#EE4D2D]/15 dark:border-[var(--border)] dark:bg-[var(--bg)] dark:text-[var(--text)] dark:placeholder:text-[var(--muted)] dark:focus:border-[var(--accent)] dark:focus:ring-[var(--accent)]/20"
+            />
+          </div>
+        </div>
+
+        {/* Password */}
+        <div>
+          <div className="mb-1.5 flex items-center justify-between">
+            <label htmlFor="password" className="text-sm font-medium text-gray-700 dark:text-[var(--text)]">
+              Senha
+            </label>
+            <Link
+              to="/redefinir-senha"
+              className="text-xs font-semibold text-[#EE4D2D] transition-colors hover:text-[#EE4D2D]/70 dark:text-[var(--accent)]"
+            >
+              Esqueceu a senha?
+            </Link>
+          </div>
+          <div className="relative">
+            <Lock className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            <input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Sua senha"
+              autoComplete="current-password"
+              required
+              className="h-12 w-full rounded-xl border border-gray-200 bg-white pl-11 pr-12 text-sm text-gray-900 placeholder:text-gray-400 outline-none transition-all duration-200 focus:border-[#EE4D2D] focus:ring-2 focus:ring-[#EE4D2D]/15 dark:border-[var(--border)] dark:bg-[var(--bg)] dark:text-[var(--text)] dark:placeholder:text-[var(--muted)] dark:focus:border-[var(--accent)] dark:focus:ring-[var(--accent)]/20"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((s) => !s)}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-[var(--muted)]"
+              aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+              tabIndex={-1}
+            >
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+        </div>
+
+        {/* Submit */}
+        <button
+          type="submit"
+          disabled={submitting}
+          className="flex h-12 w-full items-center justify-center gap-2.5 rounded-xl bg-gradient-to-br from-[#EE4D2D] to-[#FF7A45] text-sm font-semibold text-white shadow-md shadow-[#EE4D2D]/25 transition-all duration-200 hover:shadow-lg hover:shadow-[#EE4D2D]/35 hover:-translate-y-0.5 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:translate-y-0"
+        >
+          {submitting ? (
+            <>
+              <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+              Entrando...
+            </>
+          ) : (
+            <>
+              Entrar
+              <ArrowRight className="h-4 w-4" />
+            </>
+          )}
+        </button>
+      </form>
+
+      {/* Divider */}
+      <div className="my-7 flex items-center gap-3">
+        <div className="h-px flex-1 bg-gray-200 dark:bg-[var(--border)]" />
+        <span className="text-xs text-gray-400 dark:text-[var(--muted)]">ou continue com</span>
+        <div className="h-px flex-1 bg-gray-200 dark:bg-[var(--border)]" />
+      </div>
+
+      {/* Register */}
+      <p className="text-center text-sm text-gray-500 dark:text-[var(--muted)]">
+        Não tem conta?{" "}
+        <Link
+          to="/register"
+          className="font-semibold text-[#EE4D2D] transition-colors hover:text-[#EE4D2D]/70 dark:text-[var(--accent)]"
+        >
+          Criar conta
+        </Link>
+      </p>
+
+      {/* Plans link */}
+      <p className="mt-3 text-center">
+        <Link
+          to="/ofertas"
+          className="text-xs font-medium text-gray-400 transition-colors hover:text-[#EE4D2D] dark:text-[var(--muted)] dark:hover:text-[var(--accent)]"
+        >
+          Ver planos e preços →
+        </Link>
+      </p>
+    </>
+  );
+});
+
+/* ── Page shell — owns state, delegates rendering to memoized form ── */
+
 function LoginPage() {
   const { login } = useApp();
   const navigate = useNavigate();
@@ -35,7 +175,7 @@ function LoginPage() {
   const [submitting, setSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     try {
@@ -60,7 +200,7 @@ function LoginPage() {
     } finally {
       setSubmitting(false);
     }
-  };
+  }, [email, password, login, navigate]);
 
   return (
     <>
@@ -127,125 +267,16 @@ function LoginPage() {
               onError={(e) => { e.currentTarget.style.display = "none"; }}
             />
 
-            {/* Heading */}
-            <div className="mb-8 text-center lg:text-left">
-              <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-[var(--text)]" style={{ fontFamily: "'Sora', sans-serif" }}>
-                Bem-vindo de volta
-              </h1>
-              <p className="mt-2 text-sm text-gray-500 dark:text-[var(--muted)]">
-                Entre para continuar gerenciando sua operação
-              </p>
-            </div>
-
-            {/* Form */}
-            <form onSubmit={handleSubmit} className="space-y-5">
-              {/* Email */}
-              <div>
-                <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-[var(--text)]">
-                  E-mail
-                </label>
-                <div className="relative">
-                  <Mail className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                  <input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="seu@email.com"
-                    autoComplete="email"
-                    required
-                    className="h-12 w-full rounded-xl border border-gray-200 bg-white pl-11 pr-4 text-sm text-gray-900 placeholder:text-gray-400 outline-none transition-all duration-200 focus:border-[#EE4D2D] focus:ring-2 focus:ring-[#EE4D2D]/15 dark:border-[var(--border)] dark:bg-[var(--bg)] dark:text-[var(--text)] dark:placeholder:text-[var(--muted)] dark:focus:border-[var(--accent)] dark:focus:ring-[var(--accent)]/20"
-                  />
-                </div>
-              </div>
-
-              {/* Password */}
-              <div>
-                <div className="mb-1.5 flex items-center justify-between">
-                  <label htmlFor="password" className="text-sm font-medium text-gray-700 dark:text-[var(--text)]">
-                    Senha
-                  </label>
-                  <Link
-                    to="/redefinir-senha"
-                    className="text-xs font-semibold text-[#EE4D2D] transition-colors hover:text-[#EE4D2D]/70 dark:text-[var(--accent)]"
-                  >
-                    Esqueceu a senha?
-                  </Link>
-                </div>
-                <div className="relative">
-                  <Lock className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                  <input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Sua senha"
-                    autoComplete="current-password"
-                    required
-                    className="h-12 w-full rounded-xl border border-gray-200 bg-white pl-11 pr-12 text-sm text-gray-900 placeholder:text-gray-400 outline-none transition-all duration-200 focus:border-[#EE4D2D] focus:ring-2 focus:ring-[#EE4D2D]/15 dark:border-[var(--border)] dark:bg-[var(--bg)] dark:text-[var(--text)] dark:placeholder:text-[var(--muted)] dark:focus:border-[var(--accent)] dark:focus:ring-[var(--accent)]/20"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((s) => !s)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-[var(--muted)]"
-                    aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
-                    tabIndex={-1}
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-              </div>
-
-              {/* Submit */}
-              <button
-                type="submit"
-                disabled={submitting}
-                className="flex h-12 w-full items-center justify-center gap-2.5 rounded-xl bg-gradient-to-br from-[#EE4D2D] to-[#FF7A45] text-sm font-semibold text-white shadow-md shadow-[#EE4D2D]/25 transition-all duration-200 hover:shadow-lg hover:shadow-[#EE4D2D]/35 hover:-translate-y-0.5 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:translate-y-0"
-              >
-                {submitting ? (
-                  <>
-                    <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                    </svg>
-                    Entrando...
-                  </>
-                ) : (
-                  <>
-                    Entrar
-                    <ArrowRight className="h-4 w-4" />
-                  </>
-                )}
-              </button>
-            </form>
-
-            {/* Divider */}
-            <div className="my-7 flex items-center gap-3">
-              <div className="h-px flex-1 bg-gray-200 dark:bg-[var(--border)]" />
-              <span className="text-xs text-gray-400 dark:text-[var(--muted)]">ou continue com</span>
-              <div className="h-px flex-1 bg-gray-200 dark:bg-[var(--border)]" />
-            </div>
-
-            {/* Register */}
-            <p className="text-center text-sm text-gray-500 dark:text-[var(--muted)]">
-              Não tem conta?{" "}
-              <Link
-                to="/register"
-                className="font-semibold text-[#EE4D2D] transition-colors hover:text-[#EE4D2D]/70 dark:text-[var(--accent)]"
-              >
-                Criar conta
-              </Link>
-            </p>
-
-            {/* Plans link */}
-            <p className="mt-3 text-center">
-              <Link
-                to="/ofertas"
-                className="text-xs font-medium text-gray-400 transition-colors hover:text-[#EE4D2D] dark:text-[var(--muted)] dark:hover:text-[var(--accent)]"
-              >
-                Ver planos e preços →
-              </Link>
-            </p>
+            <LoginForm
+              email={email}
+              setEmail={setEmail}
+              password={password}
+              setPassword={setPassword}
+              submitting={submitting}
+              showPassword={showPassword}
+              setShowPassword={setShowPassword}
+              handleSubmit={handleSubmit}
+            />
           </div>
         </div>
       </div>
