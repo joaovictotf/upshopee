@@ -438,11 +438,13 @@ export function OfertasLanding({ config }: { config: LandingConfig }) {
     e.currentTarget.style.display = "none";
   };
 
-  // CTA helpers — vitalício goes direct, mensal shows confirmation first
+  // CTA helpers — when hasPaymentModal, vitalício opens payment chooser; otherwise links direct
   const vitalicioHref = config.checkouts.vitalicio.pix;
   const mensalHref = config.checkouts.mensal.pix;
 
-  const ctaVitalicio = { href: vitalicioHref, onClick: undefined };
+  const ctaVitalicio = config.hasPaymentModal
+    ? { href: "#", onClick: (e: React.MouseEvent) => { e.preventDefault(); setPaymentPlan('vitalicio'); } }
+    : { href: vitalicioHref, onClick: undefined };
   // Mensal uses inline onClick to show popup — no helper needed
 
   return (
@@ -749,7 +751,7 @@ export function OfertasLanding({ config }: { config: LandingConfig }) {
                 </div>
                 <div className="pay-text">
                   <span className="pay-title">Pagar com Pix</span>
-                  <span className="pay-sub">Aprovação imediata</span>
+                  <span className="pay-sub">Liberação imediata e 10% de desconto</span>
                 </div>
                 <span className="pay-pill">Mais rápido</span>
                 {paymentLoading && <span className="pay-spin" />}
@@ -772,7 +774,7 @@ export function OfertasLanding({ config }: { config: LandingConfig }) {
                 </div>
                 <div className="pay-text">
                   <span className="pay-title">Pagar com Cartão</span>
-                  <span className="pay-sub">{paymentPlan === 'vitalicio' ? 'até 12x de R$ 27,61' : 'parcelamento disponível'}</span>
+                  <span className="pay-sub">{paymentPlan === 'vitalicio' ? 'até 12x de R$ 27,61' : 'Parcele em até 12x no cartão'}</span>
                 </div>
                 {paymentLoading && <span className="pay-spin" />}
               </button>
@@ -800,12 +802,19 @@ export function OfertasLanding({ config }: { config: LandingConfig }) {
               No plano mensal você pagaria <b className="text-white">R$ 1.740 em 1 ano</b>. No vitalício, você economiza <b className="text-[#FF7A45]">R$ 1.481</b>.
             </p>
 
-            <a href={config.checkouts.vitalicio.pix} target="_blank" rel="noopener noreferrer"
-              className="block w-full rounded-full bg-gradient-to-r from-[#F4541E] to-[#FF7A45] py-3.5 text-sm font-bold text-white mb-2.5 hover:shadow-lg hover:shadow-[#F4541E]/30 transition-all">
-              Quero o Vitalício por R$ 259 →
-            </a>
+            {config.hasPaymentModal ? (
+              <a href="#" onClick={(e) => { e.preventDefault(); setShowMensalConfirm(false); setPaymentPlan('vitalicio'); }}
+                className="block w-full rounded-full bg-gradient-to-r from-[#F4541E] to-[#FF7A45] py-3.5 text-sm font-bold text-white mb-2.5 hover:shadow-lg hover:shadow-[#F4541E]/30 transition-all">
+                Quero o Vitalício por R$ 259 →
+              </a>
+            ) : (
+              <a href={config.checkouts.vitalicio.pix} target="_blank" rel="noopener noreferrer"
+                className="block w-full rounded-full bg-gradient-to-r from-[#F4541E] to-[#FF7A45] py-3.5 text-sm font-bold text-white mb-2.5 hover:shadow-lg hover:shadow-[#F4541E]/30 transition-all">
+                Quero o Vitalício por R$ 259 →
+              </a>
+            )}
 
-            <button onClick={() => { setShowMensalConfirm(false); window.open(config.checkouts.mensal.pix, "_blank", "noopener,noreferrer"); }}
+            <button onClick={() => { setShowMensalConfirm(false); if (config.hasPaymentModal) { setPaymentPlan('mensal'); } else { window.open(config.checkouts.mensal.pix, "_blank", "noopener,noreferrer"); } }}
               className="w-full text-[#6E6E76] text-xs hover:text-white transition-colors py-2">
               Continuar com o Plano Mensal
             </button>
