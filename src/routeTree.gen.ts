@@ -15,6 +15,7 @@ import { Route as PlanosupRouteImport } from './routes/planosup'
 import { Route as Planos3RouteImport } from './routes/planos3'
 import { Route as Planos2RouteImport } from './routes/planos2'
 import { Route as PagamentoBloqueadoRouteImport } from './routes/pagamento-bloqueado'
+import { Route as Ofertas4RouteImport } from './routes/ofertas4'
 import { Route as Ofertas3RouteImport } from './routes/ofertas3'
 import { Route as Ofertas2RouteImport } from './routes/ofertas2'
 import { Route as OfertasRouteImport } from './routes/ofertas'
@@ -73,6 +74,11 @@ const Planos2Route = Planos2RouteImport.update({
 const PagamentoBloqueadoRoute = PagamentoBloqueadoRouteImport.update({
   id: '/pagamento-bloqueado',
   path: '/pagamento-bloqueado',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const Ofertas4Route = Ofertas4RouteImport.update({
+  id: '/ofertas4',
+  path: '/ofertas4',
   getParentRoute: () => rootRouteImport,
 } as any)
 const Ofertas3Route = Ofertas3RouteImport.update({
@@ -234,6 +240,7 @@ export interface FileRoutesByFullPath {
   '/ofertas': typeof OfertasRoute
   '/ofertas2': typeof Ofertas2Route
   '/ofertas3': typeof Ofertas3Route
+  '/ofertas4': typeof Ofertas4Route
   '/pagamento-bloqueado': typeof PagamentoBloqueadoRoute
   '/planos2': typeof Planos2Route
   '/planos3': typeof Planos3Route
@@ -269,6 +276,7 @@ export interface FileRoutesByTo {
   '/ofertas': typeof OfertasRoute
   '/ofertas2': typeof Ofertas2Route
   '/ofertas3': typeof Ofertas3Route
+  '/ofertas4': typeof Ofertas4Route
   '/pagamento-bloqueado': typeof PagamentoBloqueadoRoute
   '/planos2': typeof Planos2Route
   '/planos3': typeof Planos3Route
@@ -307,6 +315,7 @@ export interface FileRoutesById {
   '/ofertas': typeof OfertasRoute
   '/ofertas2': typeof Ofertas2Route
   '/ofertas3': typeof Ofertas3Route
+  '/ofertas4': typeof Ofertas4Route
   '/pagamento-bloqueado': typeof PagamentoBloqueadoRoute
   '/planos2': typeof Planos2Route
   '/planos3': typeof Planos3Route
@@ -346,6 +355,7 @@ export interface FileRouteTypes {
     | '/ofertas'
     | '/ofertas2'
     | '/ofertas3'
+    | '/ofertas4'
     | '/pagamento-bloqueado'
     | '/planos2'
     | '/planos3'
@@ -381,6 +391,7 @@ export interface FileRouteTypes {
     | '/ofertas'
     | '/ofertas2'
     | '/ofertas3'
+    | '/ofertas4'
     | '/pagamento-bloqueado'
     | '/planos2'
     | '/planos3'
@@ -418,6 +429,7 @@ export interface FileRouteTypes {
     | '/ofertas'
     | '/ofertas2'
     | '/ofertas3'
+    | '/ofertas4'
     | '/pagamento-bloqueado'
     | '/planos2'
     | '/planos3'
@@ -456,6 +468,7 @@ export interface RootRouteChildren {
   OfertasRoute: typeof OfertasRoute
   Ofertas2Route: typeof Ofertas2Route
   Ofertas3Route: typeof Ofertas3Route
+  Ofertas4Route: typeof Ofertas4Route
   PagamentoBloqueadoRoute: typeof PagamentoBloqueadoRoute
   Planos2Route: typeof Planos2Route
   Planos3Route: typeof Planos3Route
@@ -506,6 +519,13 @@ declare module '@tanstack/react-router' {
       path: '/pagamento-bloqueado'
       fullPath: '/pagamento-bloqueado'
       preLoaderRoute: typeof PagamentoBloqueadoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ofertas4': {
+      id: '/ofertas4'
+      path: '/ofertas4'
+      fullPath: '/ofertas4'
+      preLoaderRoute: typeof Ofertas4RouteImport
       parentRoute: typeof rootRouteImport
     }
     '/ofertas3': {
@@ -795,6 +815,7 @@ const rootRouteChildren: RootRouteChildren = {
   OfertasRoute: OfertasRoute,
   Ofertas2Route: Ofertas2Route,
   Ofertas3Route: Ofertas3Route,
+  Ofertas4Route: Ofertas4Route,
   PagamentoBloqueadoRoute: PagamentoBloqueadoRoute,
   Planos2Route: Planos2Route,
   Planos3Route: Planos3Route,
