@@ -8,7 +8,6 @@ import {
 import { AppProvider } from "../lib/state";
 import { ThemeProvider } from "../hooks/use-theme";
 import { Toaster } from "../components/ui/sonner";
-import { WhatsAppChannelPopup } from "../components/WhatsAppChannelPopup";
 
 function NotFoundComponent() {
   return (
@@ -79,7 +78,6 @@ function RootComponent() {
       <ThemeProvider>
         <AppProvider>
           <Outlet />
-          <WhatsAppChannelPopup />
           <Toaster richColors position="top-right" />
         </AppProvider>
       </ThemeProvider>

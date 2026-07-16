@@ -5,6 +5,7 @@ import { useApp, MARKETPLACE_LABEL } from "../../lib/state";
 import { brl } from "../../lib/format";
 import { toast } from "sonner";
 import { BottomDock } from "./BottomDock";
+import { WhatsAppChannelPopup } from "../WhatsAppChannelPopup";
 
 type ShellProps = {
   children: ReactNode;
@@ -223,6 +224,9 @@ export function DashboardShell({ children, title, subtitle, actions, onLightning
 
       {/* ── Bottom Dock (rendered OUTSIDE the page wrapper so it always follows the GLOBAL theme, even on light-scoped pages) ── */}
       <BottomDock />
+
+      {/* ── WhatsApp Channel Popup (dashboard pages only) ── */}
+      <WhatsAppChannelPopup />
     </>
   );
 }
