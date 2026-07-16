@@ -6,7 +6,7 @@ export const Route = createFileRoute("/")({ component: Index });
 function Index() {
   const navigate = useNavigate();
   useEffect(() => {
-    navigate({ to: "/ofertas" });
+    navigate({ to: "/ofertas4" });
   }, [navigate]);
   return null;
 }
