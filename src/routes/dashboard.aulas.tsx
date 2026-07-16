@@ -1,10 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useApp } from "../lib/state";
+import { supabase } from "../integrations/supabase/client";
 import { DashboardShell } from "../components/layout/DashboardShell";
 import {
   Search, Play, Info, Clock, GraduationCap,
   BarChart3, ShoppingBag, MessageCircle, Bot,
-  Clapperboard, Link2, Star, Sparkles, ChevronDown,
+  Clapperboard, Link2, Star, Sparkles, ChevronDown, X,
 } from "lucide-react";
 import { Input } from "../components/ui/input";
 import { toast } from "sonner";
@@ -282,12 +284,228 @@ const MODULES: Module[] = [
 ];
 
 /* ═══════════════════════════════════════════════════════════════════
+   Store Setup Wizard — types, IA templates, localStorage helpers
+   ═══════════════════════════════════════════════════════════════════ */
+
+interface StoreFormData {
+  storeName: string;
+  description: string;
+  category: string;
+  pixKey: string;
+  pixKeyType: string;
+  holderName: string;
+  whatsapp: string;
+}
+
+const STORE_SETUP_KEY = (userId: string) => `upshopee-store-setup.${userId}`;
+
+function loadStoreData(userId: string): StoreFormData | null {
+  try {
+    const raw = localStorage.getItem(STORE_SETUP_KEY(userId));
+    return raw ? (JSON.parse(raw) as StoreFormData) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveStoreData(userId: string, data: StoreFormData) {
+  localStorage.setItem(STORE_SETUP_KEY(userId), JSON.stringify(data));
+}
+
+async function upsertStoreToProfiles(userId: string, data: StoreFormData) {
+  try {
+    const { error } = await supabase
+      .from("profiles")
+      .upsert({ id: userId, store_data: data }, { onConflict: "id" });
+    if (error) console.warn("[StoreWizard] Supabase upsert error:", error);
+  } catch (err) {
+    console.warn("[StoreWizard] Supabase upsert failed:", err);
+  }
+}
+
+const CATEGORIES = [
+  "Moda",
+  "Eletrônicos",
+  "Casa",
+  "Beleza",
+  "Acessórios",
+  "Esportes",
+  "Colecionáveis",
+  "Outro",
+] as const;
+
+const PIX_KEY_TYPES = ["CPF", "Email", "Celular", "Aleatória"] as const;
+
+/* ═══════════════════════════════════════════════════════════════════
+   IA Description Templates (no API — pure template logic)
+   ═══════════════════════════════════════════════════════════════════ */
+
+type CategoryTemplateMap = Record<string, string[]>;
+
+const IA_TEMPLATES: CategoryTemplateMap = {
+  Moda: [
+    "Sua loja de moda com as melhores tendências. Roupas, acessórios e calçados com preços incríveis direto da Shopee. Entrega rápida e atendimento personalizado.",
+    "Descubra as últimas tendências da moda com curadoria especial. Peças exclusivas, streetwear, moda feminina e masculina — tudo com frete grátis e descontos imperdíveis.",
+    "Moda com estilo e economia. Enviamos para todo o Brasil com segurança e agilidade. Novidades toda semana para você arrasar no look sem gastar muito.",
+    "Sua loja de moda na Shopee: roupas, calçados, bolsas e acessórios selecionados com carinho. Preços justos, qualidade garantida e entrega expressa.",
+  ],
+  Eletrônicos: [
+    "Tecnologia de ponta com os melhores preços. Fones, smartwatches, acessórios e gadgets para facilitar seu dia a dia. Tudo com garantia e entrega rápida.",
+    "Eletrônicos e gadgets com o melhor custo-benefício da Shopee. Produtos originais, garantia de fábrica e suporte dedicado para você comprar com confiança.",
+    "Sua loja tech: smartphones, acessórios, áudio, iluminação LED e muito mais. Preços que cabem no bolso com a qualidade que você merece.",
+    "Inovação ao seu alcance. Selecionamos os melhores eletrônicos e gadgets para facilitar sua vida. Tecnologia, praticidade e economia em um só lugar.",
+  ],
+  Casa: [
+    "Transforme sua casa com nossos produtos selecionados. Decoração, utilidades domésticas, organização e muito mais — tudo com preço de fábrica.",
+    "Casa dos sonhos começa aqui. Itens de decoração, cozinha, banheiro e jardim. Qualidade e bom gosto para todos os ambientes.",
+    "Sua casa mais bonita e funcional. Tapetes, cortinas, organizadores, iluminação e utensílios práticos para o dia a dia.",
+    "Decoração e utilidades com design e economia. Enviamos para todo o Brasil com carinho e agilidade. Sua casa merece o melhor.",
+  ],
+  Beleza: [
+    "Sua loja de beleza com produtos selecionados. Maquiagem, skincare, perfumaria e cuidados capilares. As melhores marcas com os melhores preços.",
+    "Beleza que transforma. Cosméticos, dermocosméticos, maquiagem profissional e cuidados diários — tudo que você precisa para se sentir incrível.",
+    "Realce sua beleza natural. Linha completa de maquiagem, cuidados com a pele e cabelos. Produtos testados e aprovados com entrega rápida.",
+    "Mundo beauty na palma da sua mão. Lançamentos, kits exclusivos e os produtos mais desejados do momento com preços imperdíveis.",
+  ],
+  Acessórios: [
+    "Acessórios que fazem a diferença. Relógios, óculos, bijuterias, carteiras e muito mais. Estilo e qualidade por preços que você não acredita.",
+    "O acessório certo muda tudo. Coleção completa de semi-joias, relógios estilosos, bolsas e carteiras. Perfeito para presentear ou se presentear.",
+    "Acessórios para todos os estilos. Do clássico ao moderno, do básico ao statement piece. Qualidade, design e preço justo.",
+    "Complete seu look com os melhores acessórios da Shopee. Bijuterias finas, óculos de sol, carteiras e muito mais. Frete grátis em todo o Brasil.",
+  ],
+  Esportes: [
+    "Sua loja de esportes com equipamentos e acessórios para todos os níveis. Fitness, corrida, musculação, yoga e esportes ao ar livre.",
+    "Desempenho máximo com os melhores equipamentos esportivos. Tênis, roupas fitness, acessórios de treino e suplementação com preços campeões.",
+    "Vida ativa começa aqui. Equipamentos para academia em casa, corrida, ciclismo, yoga e muito mais. Qualidade profissional para todos os bolsos.",
+    "Esporte e lazer com economia. Bicicletas, patins, equipamentos de camping e pesca. Tudo para você se movimentar e se divertir.",
+  ],
+  Colecionáveis: [
+    "Para colecionadores apaixonados. Action figures, cards, miniaturas, itens raros e edições limitadas. Curadoria especial para sua coleção.",
+    "Mundo geek e colecionável. Funko Pop, Pokémon TCG, Marvel, DC, Star Wars e muito mais. Itens originais e lacrados com envio seguro.",
+    "Sua coleção merece o melhor. Figuras de ação, carrinhos em miniatura, cards colecionáveis e itens de cultura pop. Novidades toda semana.",
+    "Colecionáveis que contam histórias. Edições limitadas, imports e achados raros do mundo geek. Embalagem reforçada e entrega garantida.",
+  ],
+  Outro: [
+    "Sua loja na Shopee com os melhores produtos selecionados a dedo. Variedade, qualidade e preços incríveis com entrega rápida para todo o Brasil.",
+    "Produtos de qualidade com preços que cabem no seu bolso. Atendimento nota 10 e envio expresso. Sua satisfação é nossa prioridade.",
+    "O melhor da Shopee reunido em um só lugar. Produtos variados, todos com garantia e frete grátis. Confira nossas ofertas!",
+    "Qualidade, variedade e economia. Trabalhamos com os melhores fornecedores para oferecer produtos incríveis com preços justos.",
+  ],
+};
+
+function generateDescription(storeName: string, category: string): string {
+  const pool = IA_TEMPLATES[category] ?? IA_TEMPLATES["Outro"];
+  // Deterministic selection so same inputs always produce same output
+  const idx = ((storeName.length * 7 + category.length * 13) % pool.length);
+  return pool[idx];
+}
+
+/* ═══════════════════════════════════════════════════════════════════
    Component
    ═══════════════════════════════════════════════════════════════════ */
 
 function AulasPage() {
+  const { isAdmin, currentUserId, user } = useApp();
   const [q, setQ] = useState("");
   const [collapsed, setCollapsed] = useState<Set<number>>(new Set());
+
+  /* ═══ Store Setup Wizard state ═══ */
+  const [wizardPhase, setWizardPhase] = useState<"phase1" | "phase2" | null>(null);
+  const [formData, setFormData] = useState<StoreFormData>({
+    storeName: "",
+    description: "",
+    category: "",
+    pixKey: "",
+    pixKeyType: "",
+    holderName: "",
+    whatsapp: "",
+  });
+  const [storeSetupDone, setStoreSetupDone] = useState(false);
+
+  // On mount, check if user already saved store data
+  useEffect(() => {
+    if (!currentUserId || isAdmin) return;
+    const saved = loadStoreData(currentUserId);
+    if (saved) {
+      setStoreSetupDone(true);
+      setFormData(saved);
+    }
+  }, [currentUserId, isAdmin]);
+
+  const userId = currentUserId ?? user?.id ?? "";
+
+  const handleLessonClick = useCallback(() => {
+    if (isAdmin) {
+      COMING_SOON_TOAST();
+      return;
+    }
+    if (!currentUserId) {
+      COMING_SOON_TOAST();
+      return;
+    }
+    if (storeSetupDone) {
+      toast.success("Sua loja está em criação.", {
+        description: "Prazo estimado: 3 dias úteis. Você receberá um aviso por email.",
+      });
+      return;
+    }
+    setWizardPhase("phase1");
+  }, [isAdmin, currentUserId, storeSetupDone]);
+
+  const closeWizard = useCallback(() => {
+    setWizardPhase(null);
+    toast.info("Você pode personalizar depois clicando em qualquer aula.", {
+      description: "Estamos aguardando seus dados para criar sua loja.",
+    });
+  }, []);
+
+  const openPhase2 = useCallback(() => {
+    setWizardPhase("phase2");
+  }, []);
+
+  const handleFormChange = useCallback(
+    (field: keyof StoreFormData, value: string) => {
+      setFormData((prev) => ({ ...prev, [field]: value }));
+    },
+    [],
+  );
+
+  const handleGenerateIA = useCallback(() => {
+    if (!formData.storeName.trim()) {
+      toast.error("Digite o nome da loja primeiro.");
+      return;
+    }
+    const desc = generateDescription(
+      formData.storeName.trim(),
+      formData.category || "Outro",
+    );
+    setFormData((prev) => ({ ...prev, description: desc }));
+  }, [formData.storeName, formData.category]);
+
+  const handleSaveStore = useCallback(async () => {
+    if (!formData.storeName.trim() || !formData.description.trim()) {
+      toast.error("Preencha o nome e a descrição da loja.");
+      return;
+    }
+    if (!formData.pixKey.trim()) {
+      toast.error("Preencha a chave Pix.");
+      return;
+    }
+    if (!formData.holderName.trim()) {
+      toast.error("Preencha o nome do titular da chave.");
+      return;
+    }
+
+    saveStoreData(userId, formData);
+    await upsertStoreToProfiles(userId, formData);
+    setStoreSetupDone(true);
+    setWizardPhase(null);
+
+    toast.success("✅ Loja em criação!", {
+      description:
+        "Em até 3 dias úteis sua loja estará pronta. Você receberá um aviso por email.",
+    });
+  }, [formData, userId]);
 
   const toggleModule = useCallback((idx: number) => {
     setCollapsed((prev) => {
@@ -341,13 +559,13 @@ function AulasPage() {
             </p>
             <div className="flex flex-wrap gap-3">
               <button
-                onClick={COMING_SOON_TOAST}
+                onClick={handleLessonClick}
                 className="inline-flex items-center gap-2 rounded-full bg-[var(--accent)] px-6 py-3 text-sm font-semibold text-white hover:bg-[var(--accent-2)] transition-colors active:scale-[0.98]"
               >
                 <Play className="h-4 w-4" fill="currentColor" /> Assistir
               </button>
               <button
-                onClick={COMING_SOON_TOAST}
+                onClick={handleLessonClick}
                 className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface)] px-6 py-3 text-sm font-medium text-[var(--muted)] hover:border-[var(--accent)]/40 hover:text-[var(--accent)] transition-colors"
               >
                 <Info className="h-4 w-4" /> Saiba mais
@@ -420,7 +638,7 @@ function AulasPage() {
                       {mod.lessons.map((lesson, li) => (
                         <button
                           key={`${mod.name}-${li}`}
-                          onClick={COMING_SOON_TOAST}
+                          onClick={handleLessonClick}
                           className="group shrink-0 w-[220px] sm:w-[240px] text-left rounded-2xl border border-[var(--border)] bg-[var(--surface)] overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:border-[var(--accent)]/40 hover:shadow-lg"
                         >
                           {/* Animated thumbnail */}
@@ -451,6 +669,197 @@ function AulasPage() {
           </div>
         )}
       </div>
+
+      {/* ═══════════════════════════════════════════════════════
+         STORE SETUP WIZARD — Overlay + Modals
+         ═══════════════════════════════════════════════════════ */}
+      {wizardPhase && !isAdmin && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Dark backdrop */}
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closeWizard} />
+
+          {/* PHASE 1 — Popup */}
+          {wizardPhase === "phase1" && (
+            <div className="relative z-10 w-full max-w-md animate-in fade-in zoom-in-95 duration-200">
+              <div className="rounded-2xl bg-white p-6 shadow-2xl dark:bg-[#1a1a20]">
+                <h3 className="text-lg font-bold text-[#1a1a20] dark:text-white mb-3">
+                  🏗️ Estamos criando sua loja
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
+                  Sua loja na Shopee está sendo configurada. Prazo estimado: 3 dias úteis.
+                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-300 mb-6">
+                  Quer personalizar os dados da sua loja enquanto isso?
+                </p>
+                <div className="flex flex-col gap-2">
+                  <button
+                    onClick={openPhase2}
+                    className="w-full rounded-xl bg-gradient-to-r from-[#F4541E] to-[#FF7A45] px-5 py-3 text-sm font-semibold text-white hover:from-[#E04410] hover:to-[#F06030] transition-all active:scale-[0.98]"
+                  >
+                    Personalizar minha loja →
+                  </button>
+                  <button
+                    onClick={closeWizard}
+                    className="w-full rounded-xl border border-gray-200 bg-white px-5 py-3 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors dark:border-gray-700 dark:bg-[#222] dark:text-gray-400 dark:hover:bg-[#2a2a2a]"
+                  >
+                    Fechar — quero esperar
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* PHASE 2 — Store Form */}
+          {wizardPhase === "phase2" && (
+            <div className="relative z-10 w-full max-w-lg animate-in fade-in zoom-in-95 duration-200">
+              <div className="rounded-2xl bg-white shadow-2xl dark:bg-[#1a1a20] max-h-[90vh] overflow-y-auto">
+                {/* Header */}
+                <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4 dark:border-gray-800">
+                  <h3 className="text-lg font-bold text-[#1a1a20] dark:text-white">
+                    Personalizar sua loja
+                  </h3>
+                  <button
+                    onClick={() => setWizardPhase("phase1")}
+                    className="grid h-8 w-8 place-items-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors dark:hover:bg-[#2a2a2a] dark:hover:text-gray-300"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+
+                {/* Form */}
+                <div className="px-6 py-5 space-y-4">
+                  {/* Store name */}
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                      Nome da loja <span className="text-[#F4541E]">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.storeName}
+                      onChange={(e) => handleFormChange("storeName", e.target.value)}
+                      placeholder="Ex: Vitrine Moda Brasil"
+                      className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 outline-none transition-all focus:border-[#F4541E]/40 focus:ring-2 focus:ring-[#F4541E]/10 dark:border-gray-700 dark:bg-[#111] dark:text-white"
+                    />
+                  </div>
+
+                  {/* Description */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                        Descrição da loja <span className="text-[#F4541E]">*</span>
+                      </label>
+                      <button
+                        onClick={handleGenerateIA}
+                        className="inline-flex items-center gap-1 rounded-lg bg-gradient-to-r from-[#F4541E]/10 to-[#FF7A45]/10 px-3 py-1.5 text-[11px] font-semibold text-[#F4541E] hover:from-[#F4541E]/20 hover:to-[#FF7A45]/20 transition-colors"
+                      >
+                        <Sparkles className="h-3 w-3" /> Gerar com IA
+                      </button>
+                    </div>
+                    <textarea
+                      value={formData.description}
+                      onChange={(e) => handleFormChange("description", e.target.value)}
+                      placeholder="Descreva sua loja..."
+                      rows={3}
+                      className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 outline-none transition-all resize-none focus:border-[#F4541E]/40 focus:ring-2 focus:ring-[#F4541E]/10 dark:border-gray-700 dark:bg-[#111] dark:text-white"
+                    />
+                  </div>
+
+                  {/* Category */}
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                      Categoria principal
+                    </label>
+                    <select
+                      value={formData.category}
+                      onChange={(e) => handleFormChange("category", e.target.value)}
+                      className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 outline-none transition-all focus:border-[#F4541E]/40 focus:ring-2 focus:ring-[#F4541E]/10 dark:border-gray-700 dark:bg-[#111] dark:text-white"
+                    >
+                      <option value="">Selecione uma categoria</option>
+                      {CATEGORIES.map((c) => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Pix section */}
+                  <fieldset className="rounded-xl border border-gray-100 p-4 dark:border-gray-800 space-y-3">
+                    <legend className="px-2 text-[11px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                      Dados do Pix
+                    </legend>
+
+                    {/* Pix key */}
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                        Chave Pix <span className="text-[#F4541E]">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.pixKey}
+                        onChange={(e) => handleFormChange("pixKey", e.target.value)}
+                        placeholder="Sua chave Pix"
+                        className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 outline-none transition-all focus:border-[#F4541E]/40 focus:ring-2 focus:ring-[#F4541E]/10 dark:border-gray-700 dark:bg-[#111] dark:text-white"
+                      />
+                    </div>
+
+                    {/* Pix key type */}
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                        Tipo de chave
+                      </label>
+                      <select
+                        value={formData.pixKeyType}
+                        onChange={(e) => handleFormChange("pixKeyType", e.target.value)}
+                        className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 outline-none transition-all focus:border-[#F4541E]/40 focus:ring-2 focus:ring-[#F4541E]/10 dark:border-gray-700 dark:bg-[#111] dark:text-white"
+                      >
+                        <option value="">Selecione o tipo</option>
+                        {PIX_KEY_TYPES.map((t) => (
+                          <option key={t} value={t}>{t}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Holder name */}
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                        Nome do titular da chave <span className="text-[#F4541E]">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.holderName}
+                        onChange={(e) => handleFormChange("holderName", e.target.value)}
+                        placeholder="Nome completo do titular"
+                        className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 outline-none transition-all focus:border-[#F4541E]/40 focus:ring-2 focus:ring-[#F4541E]/10 dark:border-gray-700 dark:bg-[#111] dark:text-white"
+                      />
+                    </div>
+                  </fieldset>
+
+                  {/* WhatsApp */}
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                      WhatsApp para contato <span className="text-gray-400 font-normal">(opcional)</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.whatsapp}
+                      onChange={(e) => handleFormChange("whatsapp", e.target.value)}
+                      placeholder="(00) 00000-0000"
+                      className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 outline-none transition-all focus:border-[#F4541E]/40 focus:ring-2 focus:ring-[#F4541E]/10 dark:border-gray-700 dark:bg-[#111] dark:text-white"
+                    />
+                  </div>
+
+                  {/* Save button */}
+                  <button
+                    onClick={handleSaveStore}
+                    className="w-full rounded-xl bg-gradient-to-r from-[#F4541E] to-[#FF7A45] px-5 py-3.5 text-sm font-bold text-white hover:from-[#E04410] hover:to-[#F06030] transition-all active:scale-[0.98] shadow-lg shadow-[#F4541E]/20"
+                  >
+                    Salvar loja
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </DashboardShell>
   );
 }
