@@ -7,6 +7,7 @@ import {
   Search, Play, Info, Clock, GraduationCap,
   BarChart3, ShoppingBag, MessageCircle, Bot,
   Clapperboard, Link2, Star, Sparkles, ChevronDown, X,
+  User, CheckCircle2, Calendar, Trash2,
 } from "lucide-react";
 import { Input } from "../components/ui/input";
 import { toast } from "sonner";
@@ -16,6 +17,123 @@ export const Route = createFileRoute("/dashboard/aulas")({ component: AulasPage 
 const COMING_SOON_TOAST = () => toast.info("Aulas em breve!", {
   description: "Os vídeos serão adicionados em breve. Fique ligado!",
 });
+
+/* ═══════════════════════════════════════════════════════════════════
+   LIVE CLASS BOOKING — types, helpers, localStorage
+   ═══════════════════════════════════════════════════════════════════ */
+
+interface Professor {
+  id: string;
+  name: string;
+  bio: string;
+  initial: string;
+  color: string;
+}
+
+const PROFESSORS: Professor[] = [
+  { id: "renan", name: "Professor Renan", bio: "Especialista em Shopify e marketplaces", initial: "R", color: "#F4541E" },
+  { id: "marcelo", name: "Professor Marcelo", bio: "Especialista em anúncios e conversão", initial: "M", color: "#6366F1" },
+  { id: "junior", name: "Professor Júnior", bio: "Especialista em IA e automação de vendas", initial: "J", color: "#10B981" },
+];
+
+interface TimeSlot {
+  time: string;
+  totalSpots: number;
+}
+
+const TIME_SLOTS: TimeSlot[] = [
+  { time: "18:30", totalSpots: 3 },
+  { time: "20:30", totalSpots: 2 },
+  { time: "22:00", totalSpots: 4 },
+];
+
+interface Booking {
+  professorId: string;
+  professorName: string;
+  professorColor: string;
+  date: string; // ISO date string YYYY-MM-DD
+  time: string;
+}
+
+const BOOKING_KEY = (userId: string) => `upshopee-live-class.${userId}`;
+
+function loadBooking(userId: string): Booking | null {
+  try {
+    const raw = localStorage.getItem(BOOKING_KEY(userId));
+    return raw ? (JSON.parse(raw) as Booking) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveBooking(userId: string, booking: Booking) {
+  localStorage.setItem(BOOKING_KEY(userId), JSON.stringify(booking));
+}
+
+function clearBooking(userId: string) {
+  localStorage.removeItem(BOOKING_KEY(userId));
+}
+
+/** Count 3 business days (Mon-Fri) forward from `from` (inclusive of `from` if it's a business day? No — "from 3 business days AFTER today"). Returns a Date at midnight local time. */
+function getEarliestBookingDate(from: Date = new Date()): Date {
+  const d = new Date(from);
+  d.setHours(0, 0, 0, 0);
+  // Advance one day at a time, counting only Mon-Fri
+  let counted = 0;
+  while (counted < 3) {
+    d.setDate(d.getDate() + 1);
+    const day = d.getDay(); // 0=Sun, 6=Sat
+    if (day !== 0 && day !== 6) {
+      counted++;
+    }
+  }
+  return d;
+}
+
+/** Generate the next N available dates (including earliest) for the date picker — skips weekends. */
+function generateAvailableDates(earliest: Date, count: number = 10): Date[] {
+  const dates: Date[] = [];
+  const d = new Date(earliest);
+  while (dates.length < count) {
+    dates.push(new Date(d));
+    d.setDate(d.getDate() + 1);
+    // skip weekends
+    const day = d.getDay();
+    if (day === 0 || day === 6) {
+      d.setDate(d.getDate() + (day === 6 ? 2 : 1));
+    }
+  }
+  return dates;
+}
+
+/** Format a Date as "DD/MM" for pills */
+function formatDateShort(d: Date): string {
+  return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+/** Full format: "Quarta-feira, 23 de Julho de 2026" */
+function formatDateLong(d: Date): string {
+  const days = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
+  const months = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+  return `${days[d.getDay()]}, ${d.getDate()} de ${months[d.getMonth()]} de ${d.getFullYear()}`;
+}
+
+/** Format a short weekday label for date pills: "Qua 23/07" */
+function formatDatePill(d: Date): { day: string; date: string } {
+  const days = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+  return {
+    day: days[d.getDay()],
+    date: formatDateShort(d),
+  };
+}
+
+/** Check if date is within 30 days from today */
+function isWithin30Days(d: Date): boolean {
+  const now = new Date(); now.setHours(0, 0, 0, 0);
+  const thirtyDaysOut = new Date(now);
+  thirtyDaysOut.setDate(thirtyDaysOut.getDate() + 30);
+  return d <= thirtyDaysOut;
+}
 
 /* ═══════════════════════════════════════════════════════════════════
    CSS Animations — all GPU-accelerated (transform + opacity only)
@@ -422,6 +540,23 @@ function AulasPage() {
   });
   const [storeSetupDone, setStoreSetupDone] = useState(false);
 
+  /* ═══ Live Class Booking state ═══ */
+  const [selectedProfessor, setSelectedProfessor] = useState<Professor | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null); // YYYY-MM-DD
+  const [booking, setBooking] = useState<Booking | null>(null);
+  const earliestDate = useMemo(() => getEarliestBookingDate(), []);
+  const availableDates = useMemo(() => {
+    const dates = generateAvailableDates(earliestDate, 10);
+    return dates.filter(isWithin30Days);
+  }, [earliestDate]);
+
+  // On mount, load existing booking
+  useEffect(() => {
+    if (!currentUserId) return;
+    const existing = loadBooking(currentUserId);
+    if (existing) setBooking(existing);
+  }, [currentUserId]);
+
   // On mount, check if user already saved store data
   useEffect(() => {
     if (!currentUserId || isAdmin) return;
@@ -432,7 +567,7 @@ function AulasPage() {
     }
   }, [currentUserId, isAdmin]);
 
-  const userId = currentUserId ?? user?.id ?? "";
+  const userId = currentUserId ?? user?.email ?? "guest";
 
   const handleLessonClick = useCallback(() => {
     if (isAdmin) {
@@ -458,6 +593,42 @@ function AulasPage() {
       description: "Estamos aguardando seus dados para criar sua loja.",
     });
   }, []);
+
+  /* ═══ Live Class Booking handlers ═══ */
+  const handleSelectProfessor = useCallback((prof: Professor) => {
+    setSelectedProfessor(prof);
+    setSelectedDate(null); // reset date when professor changes
+  }, []);
+
+  const handleSelectDate = useCallback((dateStr: string) => {
+    setSelectedDate(dateStr);
+  }, []);
+
+  const handleBookSlot = useCallback((time: string) => {
+    if (!selectedProfessor || !selectedDate) return;
+    const newBooking: Booking = {
+      professorId: selectedProfessor.id,
+      professorName: selectedProfessor.name,
+      professorColor: selectedProfessor.color,
+      date: selectedDate,
+      time,
+    };
+    saveBooking(userId, newBooking);
+    setBooking(newBooking);
+    setSelectedProfessor(null);
+    setSelectedDate(null);
+    toast.success("✅ Aula agendada com sucesso!", {
+      description: `${selectedProfessor.name} — ${time}. Você receberá o link por WhatsApp.`,
+    });
+  }, [selectedProfessor, selectedDate, userId]);
+
+  const handleCancelBooking = useCallback(() => {
+    clearBooking(userId);
+    setBooking(null);
+    toast.info("Agendamento cancelado.", {
+      description: "Você pode reagendar quando quiser.",
+    });
+  }, [userId]);
 
   const openPhase2 = useCallback(() => {
     setWizardPhase("phase2");
@@ -538,6 +709,217 @@ function AulasPage() {
     >
       <style>{ANIM_CSS}</style>
       <div className="page-enter">
+
+        {/* ══════════════════════════════════════════════════════════════
+            LIVE CLASS BOOKING — Agende sua aula ao vivo
+            ══════════════════════════════════════════════════════════════ */}
+        <section className="mb-8 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 sm:p-6">
+          <div className="flex items-center gap-3 mb-1">
+            <span className="text-2xl">📅</span>
+            <div>
+              <h2 className="text-lg sm:text-xl font-bold text-[var(--text)]">
+                Agende sua aula ao vivo
+              </h2>
+              <p className="text-xs sm:text-sm text-[var(--muted)]">
+                Tenha uma sessão individual com um especialista
+              </p>
+            </div>
+          </div>
+
+          {booking ? (
+            /* ═══ CONFIRMATION CARD ═══ */
+            <div className="mt-5 rounded-2xl border-2 border-emerald-500/40 bg-emerald-50/60 dark:bg-emerald-500/5 p-5 animate-in fade-in zoom-in-95 duration-300">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-emerald-500">
+                  <CheckCircle2 className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <p className="text-base font-bold text-emerald-700 dark:text-emerald-400">
+                    ✅ Aula Agendada!
+                  </p>
+                  <p className="text-xs text-emerald-600/70 dark:text-emerald-400/60">
+                    Seu agendamento está confirmado
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-2.5 rounded-xl border border-emerald-200 dark:border-emerald-500/15 bg-white/60 dark:bg-white/[0.03] p-4">
+                <div className="flex items-center gap-2.5">
+                  <div
+                    className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-sm font-bold text-white"
+                    style={{ background: booking.professorColor }}
+                  >
+                    {PROFESSORS.find((p) => p.id === booking.professorId)?.initial ?? "?"}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-[var(--text)]">{booking.professorName}</p>
+                    <p className="text-[11px] text-[var(--muted)]">
+                      {PROFESSORS.find((p) => p.id === booking.professorId)?.bio ?? ""}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t border-emerald-200/50 dark:border-emerald-500/10">
+                  <div className="flex items-center gap-1.5">
+                    <Calendar className="h-3.5 w-3.5 text-[var(--muted)]" />
+                    <span className="text-xs text-[var(--text)]">
+                      {formatDateLong(new Date(booking.date + "T12:00:00"))}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Clock className="h-3.5 w-3.5 text-[var(--muted)]" />
+                    <span className="text-xs font-semibold text-[var(--text)]">{booking.time}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs text-[var(--muted)]">Duração:</span>
+                    <span className="text-xs font-semibold text-[var(--text)]">60 minutos</span>
+                  </div>
+                </div>
+              </div>
+
+              <p className="mt-3 text-[11px] text-[var(--muted)] leading-relaxed">
+                Você receberá o link de acesso por WhatsApp no dia da aula.
+              </p>
+
+              <button
+                onClick={handleCancelBooking}
+                className="mt-4 inline-flex items-center gap-2 rounded-full border border-red-200 bg-white px-4 py-2 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors dark:border-red-500/20 dark:bg-red-500/5 dark:text-red-400 dark:hover:bg-red-500/10"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                Cancelar agendamento
+              </button>
+            </div>
+          ) : (
+            /* ═══ BOOKING FORM ═══ */
+            <div className="mt-5 space-y-5">
+              {/* Step 1 — Select Professor */}
+              <div>
+                <p className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wider mb-3">
+                  {selectedProfessor ? "✅ Professor selecionado" : "1. Escolha seu professor"}
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {PROFESSORS.map((prof) => {
+                    const isSelected = selectedProfessor?.id === prof.id;
+                    return (
+                      <button
+                        key={prof.id}
+                        onClick={() => handleSelectProfessor(prof)}
+                        className={`group flex items-center gap-3 rounded-2xl border p-4 text-left transition-all duration-200 active:scale-[0.98] ${
+                          isSelected
+                            ? "border-[var(--accent)] bg-[var(--accent)]/5 shadow-sm"
+                            : "border-[var(--border)] bg-[var(--surface)] hover:border-[var(--accent)]/40 hover:-translate-y-0.5 hover:shadow-md"
+                        }`}
+                      >
+                        <div
+                          className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-sm font-bold text-white transition-transform duration-200 group-hover:scale-110"
+                          style={{ background: prof.color }}
+                        >
+                          {prof.initial}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-[var(--text)]">{prof.name}</p>
+                          <p className="text-[11px] text-[var(--muted)] line-clamp-2">{prof.bio}</p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Step 2 — Date Picker */}
+              {selectedProfessor && (
+                <div className="animate-in fade-in slide-in-from-top-2 duration-200">
+                  <p className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wider mb-3">
+                    2. Escolha o dia
+                  </p>
+                  {availableDates.length === 0 ? (
+                    <p className="text-xs text-[var(--muted)] italic">
+                      Nenhuma data disponível no momento.
+                    </p>
+                  ) : (
+                    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none -mx-1 px-1">
+                      {availableDates.map((d) => {
+                        const dateStr = d.toISOString().slice(0, 10); // YYYY-MM-DD
+                        const isSelected = selectedDate === dateStr;
+                        const isToday = new Date().toDateString() === d.toDateString();
+                        const { day, date } = formatDatePill(d);
+                        return (
+                          <button
+                            key={dateStr}
+                            onClick={() => handleSelectDate(dateStr)}
+                            className={`shrink-0 flex flex-col items-center rounded-xl border px-4 py-2.5 text-center transition-all duration-200 active:scale-[0.95] ${
+                              isSelected
+                                ? "border-[var(--accent)] bg-[var(--accent)] text-white shadow-sm"
+                                : "border-[var(--border)] bg-[var(--surface)] hover:border-[var(--accent)]/40 text-[var(--text)]"
+                            }`}
+                          >
+                            <span className={`text-[10px] font-medium uppercase tracking-wider ${isSelected ? "text-white/80" : "text-[var(--muted)]"}`}>
+                              {day}
+                            </span>
+                            <span className={`text-sm font-bold ${isSelected ? "text-white" : "text-[var(--text)]"}`}>
+                              {date}
+                            </span>
+                            {isToday && (
+                              <span className={`text-[9px] font-medium mt-0.5 ${isSelected ? "text-white/70" : "text-[var(--accent)]"}`}>
+                                Hoje
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Step 3 — Time Slots */}
+              {selectedProfessor && selectedDate && (() => {
+                const selDate = new Date(selectedDate + "T12:00:00");
+                const isBeforeEarliest = selDate < earliestDate;
+                // For dates exactly at earliest or later, all slots available
+                return (
+                  <div className="animate-in fade-in slide-in-from-top-2 duration-200">
+                    <p className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wider mb-3">
+                      3. Escolha o horário
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {TIME_SLOTS.map((slot) => {
+                        const isAvailable = !isBeforeEarliest && slot.totalSpots > 0;
+                        return (
+                          <button
+                            key={slot.time}
+                            disabled={!isAvailable}
+                            onClick={() => isAvailable && handleBookSlot(slot.time)}
+                            className={`group flex flex-col items-center rounded-2xl border p-4 text-center transition-all duration-200 ${
+                              isAvailable
+                                ? "border-[var(--border)] bg-[var(--surface)] hover:border-[var(--accent)]/50 hover:-translate-y-0.5 hover:shadow-md cursor-pointer active:scale-[0.97]"
+                                : "border-gray-200 bg-gray-50/50 cursor-not-allowed opacity-60 dark:border-gray-700 dark:bg-gray-800/30"
+                            }`}
+                          >
+                            <Clock className={`h-5 w-5 mb-1.5 ${isAvailable ? "text-[var(--accent)]" : "text-gray-300 dark:text-gray-600"}`} />
+                            <span className={`text-lg font-bold ${isAvailable ? "text-[var(--text)]" : "text-gray-300 dark:text-gray-600 line-through"}`}>
+                              {slot.time}
+                            </span>
+                            {isAvailable ? (
+                              <span className="text-[11px] text-[var(--muted)] mt-0.5">
+                                {slot.totalSpots} {slot.totalSpots === 1 ? "vaga" : "vagas"} disponíveis
+                              </span>
+                            ) : (
+                              <span className="inline-block rounded-full bg-gray-200 px-2 py-0.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider mt-0.5 dark:bg-gray-700 dark:text-gray-500">
+                                Esgotado
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+        </section>
+
         {/* ═══ HERO — Featured Module ═══ */}
         <div className="relative overflow-hidden rounded-2xl p-6 sm:p-8 mb-8"
           style={{
