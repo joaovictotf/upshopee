@@ -53,7 +53,7 @@ function Produtos() {
     >
       <div className="page-enter">
         {/* ═══ SEARCH + FILTERS ═══ */}
-        <div className="sticky top-16 z-10 -mx-4 px-4 pb-4 md:-mx-8 md:px-8">
+        <div className="sticky top-16 z-10 -mx-4 bg-[var(--bg)]/80 px-4 pb-4 pt-4 backdrop-blur md:-mx-8 md:px-8">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             {/* Search */}
             <div className="relative w-full lg:max-w-md">

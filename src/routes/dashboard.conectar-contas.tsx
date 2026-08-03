@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { DashboardShell } from "../components/layout/DashboardShell";
 import { integrations } from "../lib/mock/integrations";
-import { Check, ExternalLink, Loader2, Info } from "lucide-react";
+import { Check, ExternalLink, Loader2, Info, ShieldCheck, Lock, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 import { useApp } from "../lib/state";
 
@@ -31,7 +31,7 @@ const TEASER_PLATFORMS: TeaserPlatform[] = [
   {
     name: "Amazon",
     logo: "https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg",
-    description: "Alcance milhões de clientes na maior marketplace do mundo",
+    description: "Alcance milhões de clientes no maior marketplace do mundo",
   },
   {
     name: "Bling",
@@ -56,10 +56,60 @@ const TEASER_PLATFORMS: TeaserPlatform[] = [
   },
 ];
 
+/* ═══════ Copy blocks ═══════ */
+
+const TRUST_ITEMS = [
+  { Icon: ShieldCheck, text: "Login feito no site oficial da Shopee" },
+  { Icon: Lock, text: "Sua senha nunca passa pela UpShopee" },
+  { Icon: Undo2, text: "Desconecte quando quiser, em um clique" },
+];
+
+const STEPS = [
+  {
+    title: "Clique em conectar",
+    text: "Abrimos a página de login da Shopee em uma nova aba, no site oficial.",
+  },
+  {
+    title: "Entre na sua conta",
+    text: "O acesso acontece direto na Shopee, com toda a segurança de sempre.",
+  },
+  {
+    title: "Volte para esta aba",
+    text: "A conexão é confirmada automaticamente — sem etapas extras.",
+  },
+];
+
+const CONNECTED_PERKS = ["Produtos sincronizados", "Pedidos acompanhados", "Comissões no painel"];
+
+/* ═══════ Motion — every keyframe lives inside the no-preference query,
+   so with reduced motion the animations simply never run ═══════ */
+
+const ANIM_CSS = `
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes cc-breathe {
+    0%, 100% { opacity: 0.55; transform: scale(1); }
+    50%      { opacity: 1;    transform: scale(1.08); }
+  }
+  @keyframes cc-pop {
+    0%   { transform: scale(0);    opacity: 0; }
+    70%  { transform: scale(1.18); opacity: 1; }
+    100% { transform: scale(1);    opacity: 1; }
+  }
+  @keyframes cc-rise {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .cc-pop  { animation: cc-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+  .cc-rise { animation: cc-rise 0.35s ease-out both; }
+}
+`;
+
+const SORA = { fontFamily: "'Sora', sans-serif" } as const;
+
 /* ═══════ Component ═══════ */
 
 function Conectar() {
-  const { requestMarketplaceConnection } = useApp();
+  const { requestMarketplaceConnection, disconnectMarketplace } = useApp();
   const [connected, setConnected] = useState(() => localStorage.getItem(LS_KEY) === "true");
   const [waiting, setWaiting] = useState(false);
 
@@ -94,7 +144,8 @@ function Conectar() {
     setConnected(false);
     setWaiting(false);
     localStorage.removeItem(LS_KEY);
-  }, []);
+    disconnectMarketplace("shopee");
+  }, [disconnectMarketplace]);
 
   const handleTeaser = useCallback((name: string) => {
     toast.info(name, {
@@ -103,99 +154,199 @@ function Conectar() {
   }, []);
 
   return (
-    <DashboardShell title="Conectar Contas" subtitle="Vincule suas contas de marketplace para sincronizar produtos e pedidos.">
+    <DashboardShell
+      title="Integrações"
+      subtitle="Conecte suas contas de marketplace e acompanhe tudo em um só painel."
+    >
+      <style>{ANIM_CSS}</style>
       <div className="page-enter">
-        <div className="grid gap-4 grid-cols-2 md:grid-cols-3">
-          {/* ═══ Shopee — Active ═══ */}
-          <IntegrationCard>
-            <div className="flex flex-col items-center text-center">
-              <div className="flex h-[72px] w-[72px] items-center justify-center rounded-2xl border border-[var(--border)] bg-[var(--surface-2)] p-3.5">
-                <img
-                  src={shopee.logo}
-                  alt="Shopee"
-                  className="h-11 w-11 object-contain dark:brightness-0 dark:invert"
-                  onError={(e) => { e.currentTarget.style.display = "none"; }}
-                />
-              </div>
-              <h3 className="mt-3 text-sm font-semibold text-[var(--text)]">Shopee</h3>
-              <p className="mt-1 text-xs text-[var(--muted)] max-w-[200px]">
-                Conecte sua conta da Shopee à nossa ferramenta
-              </p>
-            </div>
-            <div className="mt-auto pt-5">
-              {connected ? (
-                <div className="flex flex-col items-center gap-2 sm:flex-row sm:justify-between sm:gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3">
-                  <span className="inline-flex items-center gap-2 text-sm font-semibold text-emerald-400">
-                    <Check className="h-5 w-5" strokeWidth={2.5} />
-                    Conta conectada
-                  </span>
-                  <button
-                    onClick={handleDisconnect}
-                    className="shrink-0 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-xs font-medium text-[var(--muted)] hover:border-[var(--border-warm)] hover:text-[var(--accent)] transition-colors"
-                  >
-                    Desconectar
-                  </button>
-                </div>
-              ) : waiting ? (
-                <div className="flex flex-col items-center gap-2 sm:flex-row sm:justify-center sm:gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3">
-                  <Loader2 className="h-4 w-4 animate-spin text-[var(--accent)]" />
-                  <span className="text-xs sm:text-sm text-[var(--muted)]">Aguardando retorno...</span>
-                </div>
-              ) : (
-                <button
-                  onClick={handleConnect}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--accent)] px-6 py-3 text-sm font-semibold text-white hover:bg-[var(--accent-2)] transition-colors"
-                >
-                  <ExternalLink className="h-4 w-4" />
-                  Conectar
-                </button>
-              )}
-            </div>
-          </IntegrationCard>
+        {/* ═══ HERO — Shopee ═══ */}
+        <section
+          className={`relative overflow-hidden rounded-3xl border bg-[var(--surface)] shadow-[var(--shadow-card)] ${
+            connected ? "border-emerald-500/30" : "border-[var(--border)]"
+          }`}
+        >
+          {/* Ambient glow */}
+          <div
+            aria-hidden
+            className={`pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full blur-3xl ${
+              connected ? "bg-emerald-500/10" : "bg-[var(--accent-soft)]"
+            }`}
+            style={{ animation: "cc-breathe 6s ease-in-out infinite" }}
+          />
 
-          {/* ═══ Teaser cards ═══ */}
-          {TEASER_PLATFORMS.map((p) => (
-            <IntegrationCard key={p.name}>
-              <div className="flex flex-col items-center text-center">
-                <div className="relative">
-                  <span className="absolute -top-2 -right-2 z-10 rounded-full bg-[var(--accent)] px-2.5 py-0.5 text-[10px] font-semibold text-white whitespace-nowrap">
-                    Em breve
-                  </span>
-                  <div className="flex h-[72px] w-[72px] items-center justify-center rounded-2xl border border-[var(--border)] bg-[var(--surface-2)] p-3.5">
+          {connected ? (
+            /* ── Connected: the reward ── */
+            <div className="cc-rise relative flex flex-col gap-6 p-5 sm:p-8 md:flex-row md:items-center md:justify-between">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-5">
+                <div className="relative w-fit shrink-0">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-emerald-500/30 bg-[var(--surface-2)] p-3">
                     <img
-                      src={p.logo}
-                      alt={p.name}
-                      className={`h-11 w-11 object-contain ${p.logoFilter ?? "dark:brightness-0 dark:invert"}`}
+                      src={shopee.logo}
+                      alt="Shopee"
+                      className="h-full w-full object-contain dark:brightness-0 dark:invert"
+                      onError={(e) => { e.currentTarget.style.display = "none"; }}
                     />
                   </div>
+                  <span className="cc-pop absolute -bottom-1.5 -right-1.5 grid h-6 w-6 place-items-center rounded-full bg-emerald-500 text-white ring-2 ring-[var(--surface)]">
+                    <Check className="h-3.5 w-3.5" strokeWidth={3} />
+                  </span>
                 </div>
-                <h3 className="mt-3 text-sm font-semibold text-[var(--text)]">{p.name}</h3>
-                <p className="mt-1 text-xs text-[var(--muted)] max-w-[200px]">
-                  {p.description}
-                </p>
+                <div>
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                    <Check className="h-3 w-3" strokeWidth={3} />
+                    Conta conectada
+                  </span>
+                  <h2 className="mt-2 text-xl font-bold text-[var(--text)] sm:text-2xl">
+                    Shopee conectada!
+                  </h2>
+                  <p className="mt-1 max-w-md text-sm text-[var(--muted)]">
+                    Tudo certo. Sua conta está vinculada e o painel já acompanha a sua operação.
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {CONNECTED_PERKS.map((perk) => (
+                      <span
+                        key={perk}
+                        className="inline-flex items-center gap-1 rounded-full bg-[var(--surface-2)] px-2.5 py-1 text-[11px] font-medium text-[var(--muted)]"
+                      >
+                        <Check className="h-3 w-3 text-emerald-600 dark:text-emerald-400" strokeWidth={3} />
+                        {perk}
+                      </span>
+                    ))}
+                  </div>
+                </div>
               </div>
-              <div className="mt-auto pt-5">
-                <button
-                  onClick={() => handleTeaser(p.name)}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-6 py-3 text-sm font-semibold text-[var(--muted)] hover:border-[var(--accent)]/40 hover:text-[var(--accent)] transition-colors"
+              <button onClick={handleDisconnect} className="btn-ghost shrink-0 self-start text-xs md:self-center">
+                Desconectar conta
+              </button>
+            </div>
+          ) : (
+            /* ── Disconnected / waiting ── */
+            <div className="relative flex flex-col gap-6 p-5 sm:p-8 md:flex-row md:items-start md:justify-between md:gap-10">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-5">
+                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-[var(--border)] bg-[var(--surface-2)] p-3">
+                  <img
+                    src={shopee.logo}
+                    alt="Shopee"
+                    className="h-full w-full object-contain dark:brightness-0 dark:invert"
+                    onError={(e) => { e.currentTarget.style.display = "none"; }}
+                  />
+                </div>
+                <div>
+                  <span className="inline-flex items-center rounded-full bg-[var(--accent-soft)] px-2.5 py-1 text-[11px] font-semibold text-[var(--accent)]">
+                    Disponível agora
+                  </span>
+                  <h2 className="mt-2 text-xl font-bold text-[var(--text)] sm:text-2xl">
+                    Conecte sua conta Shopee
+                  </h2>
+                  <p className="mt-1 max-w-md text-sm text-[var(--muted)]">
+                    Vincule sua conta em menos de um minuto e acompanhe produtos, pedidos e
+                    comissões direto no painel.
+                  </p>
+                  <ul className="mt-4 space-y-2">
+                    {TRUST_ITEMS.map(({ Icon, text }) => (
+                      <li key={text} className="flex items-center gap-2 text-xs text-[var(--muted)] sm:text-[13px]">
+                        <Icon className="h-3.5 w-3.5 shrink-0 text-[var(--accent)]" />
+                        {text}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+
+              <div className="w-full shrink-0 md:w-72 md:pt-1">
+                {waiting ? (
+                  <div className="cc-rise rounded-2xl border border-[var(--border)] bg-[var(--surface-2)] p-4">
+                    <div className="flex items-center gap-2.5">
+                      <Loader2 className="h-4 w-4 shrink-0 animate-spin text-[var(--accent)] motion-reduce:animate-none" />
+                      <p className="text-sm font-semibold text-[var(--text)]" style={SORA}>
+                        Aguardando a Shopee…
+                      </p>
+                    </div>
+                    <p className="mt-1.5 text-xs leading-relaxed text-[var(--muted)]">
+                      Conclua o login na aba que abrimos. Quando você voltar para cá, a conexão é
+                      confirmada automaticamente.
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <button onClick={handleConnect} className="btn-primary w-full py-3!">
+                      <ExternalLink className="h-4 w-4" />
+                      Conectar com a Shopee
+                    </button>
+                    <p className="mt-2 text-center text-[11px] text-[var(--muted)]">
+                      Abriremos o login da Shopee em uma nova aba.
+                    </p>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+        </section>
+
+        {/* ═══ HOW IT WORKS — hidden once connected ═══ */}
+        {!connected && (
+          <section className="mt-4 grid gap-3 sm:grid-cols-3 md:gap-4">
+            {STEPS.map((step, i) => (
+              <div
+                key={step.title}
+                className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 sm:p-5"
+              >
+                <span
+                  className="grid h-7 w-7 place-items-center rounded-full bg-[var(--accent-soft)] text-xs font-bold text-[var(--accent)]"
+                  style={SORA}
                 >
-                  <Info className="h-4 w-4" />
-                  Saiba mais
-                </button>
+                  {i + 1}
+                </span>
+                <p className="mt-3 text-sm font-semibold text-[var(--text)]" style={SORA}>
+                  {step.title}
+                </p>
+                <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">{step.text}</p>
               </div>
-            </IntegrationCard>
-          ))}
-        </div>
+            ))}
+          </section>
+        )}
+
+        {/* ═══ COMING SOON ═══ */}
+        <section className="mt-10">
+          <div className="mb-4">
+            <h3 className="text-base font-semibold text-[var(--text)]">Próximas integrações</h3>
+            <p className="mt-1 text-xs text-[var(--muted)] sm:text-sm">
+              Novos marketplaces estão a caminho — tudo no mesmo painel.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
+            {TEASER_PLATFORMS.map((p) => (
+              <div
+                key={p.name}
+                className="group relative flex flex-col rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 transition-all duration-200 hover:-translate-y-1 hover:border-[var(--accent)]/35 hover:shadow-[var(--shadow-elevated)] sm:p-5"
+              >
+                <span className="absolute right-3 top-3 rounded-full bg-[var(--accent-soft)] px-2 py-0.5 text-[10px] font-semibold text-[var(--accent)]">
+                  Em breve
+                </span>
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-2.5">
+                  <img
+                    src={p.logo}
+                    alt={p.name}
+                    className={`h-full w-full object-contain ${p.logoFilter ?? "dark:brightness-0 dark:invert"}`}
+                  />
+                </div>
+                <p className="mt-3 text-sm font-semibold text-[var(--text)]" style={SORA}>{p.name}</p>
+                <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">{p.description}</p>
+                <div className="mt-auto pt-4">
+                  <button
+                    onClick={() => handleTeaser(p.name)}
+                    className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--muted)] transition-colors hover:text-[var(--accent)]"
+                  >
+                    <Info className="h-3.5 w-3.5" />
+                    Saiba mais
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
       </div>
     </DashboardShell>
-  );
-}
-
-/** Shared card shell — identical sizing for all integration cards */
-function IntegrationCard({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="flex flex-col rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 sm:p-6">
-      {children}
-    </div>
   );
 }

@@ -5,7 +5,7 @@ import { supabase } from "../integrations/supabase/client";
 import { DashboardShell } from "../components/layout/DashboardShell";
 import {
   Search, Play, Info, Clock, GraduationCap,
-  BarChart3, ShoppingBag, MessageCircle, Bot,
+  BarChart3, ShoppingBag, MessageCircle,
   Clapperboard, Link2, Star, Sparkles, ChevronDown, X,
   User, CheckCircle2, Calendar, Trash2,
 } from "lucide-react";
@@ -197,7 +197,6 @@ const THUMB_GRADIENTS = [
   "linear-gradient(160deg, #FF7A45 0%, #F4541E 40%, #2a1a30 100%)",
   "linear-gradient(145deg, #F4541E 0%, #FFB088 40%, #0a1a28 100%)",
   "linear-gradient(150deg, #FF7A45 0%, #F4541E 35%, #1a2a18 100%)",
-  "linear-gradient(140deg, #F4541E 0%, #FF9A65 45%, #201a10 100%)",
   "linear-gradient(155deg, #FF7A45 0%, #F4541E 30%, #101a28 100%)",
   "linear-gradient(135deg, #F4541E 0%, #FFB088 50%, #1a1028 100%)",
 ];
@@ -256,19 +255,7 @@ const THUMB_ICONS: Array<{
       </>
     ),
   },
-  /* 4 — IA Divulgadora: Bot with typing dots */
-  {
-    Icon: Bot,
-    extras: () => (
-      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
-        {[0, 1, 2].map((i) => (
-          <div key={i} className="h-2 w-2 rounded-full bg-white/60"
-            style={{ animation: `a-type 1.4s ease-in-out infinite ${i * 0.2}s` }} />
-        ))}
-      </div>
-    ),
-  },
-  /* 5 — Vídeo IA: Clapperboard with zoom pulse */
+  /* 4 — Vídeo IA: Clapperboard with zoom pulse */
   {
     Icon: Clapperboard,
     extras: () => (
@@ -278,7 +265,7 @@ const THUMB_ICONS: Array<{
       </>
     ),
   },
-  /* 6 — Integrações: Link2 with connected dots */
+  /* 5 — Integrações: Link2 with connected dots */
   {
     Icon: Link2,
     extras: () => (
@@ -367,16 +354,6 @@ const MODULES: Module[] = [
       { title: "O que são grupos de divulgação", duration: "5 min" },
       { title: "Criando e gerenciando seus grupos", duration: "9 min" },
       { title: "Estratégias para divulgar em grupos", duration: "13 min" },
-    ],
-  },
-  {
-    name: "IA Divulgadora",
-    lessonCount: 4,
-    lessons: [
-      { title: "Apresentando o Robô Divulgador", duration: "8 min" },
-      { title: "Configurando divulgação automática", duration: "16 min" },
-      { title: "Melhores horários para divulgar", duration: "7 min" },
-      { title: "Analisando resultados das divulgações", duration: "11 min" },
     ],
   },
   {
@@ -704,7 +681,7 @@ function AulasPage() {
 
   return (
     <DashboardShell
-      title="Aulas"
+      title="Uptube"
       subtitle="Domine a plataforma com cursos gratuitos"
     >
       <style>{ANIM_CSS}</style>

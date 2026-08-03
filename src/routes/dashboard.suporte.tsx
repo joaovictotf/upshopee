@@ -71,19 +71,13 @@ const KEYWORD_RULES: KeywordRule[] = [
     priority: 3,
     keywords: ["vídeo", "video", "ia", "criar video", "roteiro"],
     response: () =>
-      "Na seção Vídeo IA você pode criar roteiros profissionais para divulgar seus produtos! Basta escolher um produto, definir o estilo e a IA gera tudo automaticamente. Quer um tutorial rápido? Acesse a aba Aulas para ver o passo a passo completo!",
-  },
-  {
-    priority: 4,
-    keywords: ["divulgar", "divulgação", "divulgacao", "grupos", "robo", "robô", "ia divulgadora"],
-    response: () =>
-      "A IA Divulgadora publica automaticamente seus links de afiliado em grupos de WhatsApp, Facebook e outros canais. É só colar seu link de afiliado e escolher os canais. A divulgação roda 24 horas por dia!",
+      "Na seção Vídeo IA você pode criar roteiros profissionais para divulgar seus produtos! Basta escolher um produto, definir o estilo e a IA gera tudo automaticamente. Quer um tutorial rápido? Acesse a aba Uptube para ver o passo a passo completo!",
   },
   {
     priority: 5,
     keywords: ["aula", "aulas", "tutorial", "aprender", "como usar"],
     response: () =>
-      "Temos uma seção completa de Aulas em vídeo! Acesse a aba Aulas no menu inferior e confira módulos sobre Dashboard, Produtos, Vídeo IA, Grupos e muito mais. Tudo gratuito e disponível 24h!",
+      "Temos uma seção completa de aulas em vídeo no Uptube! Acesse a aba Uptube no menu inferior e confira módulos sobre Dashboard, Produtos, Vídeo IA, Grupos e muito mais. Tudo gratuito e disponível 24h!",
   },
   {
     priority: 6,

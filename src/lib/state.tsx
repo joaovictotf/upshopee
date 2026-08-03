@@ -611,6 +611,7 @@ type Ctx = {
   myConnections: UserConnections;
   getApprovedMarketplaces: () => Marketplace[];
   requestMarketplaceConnection: (mp: Marketplace) => Promise<{ ok: boolean; error?: string }>;
+  disconnectMarketplace: (mp: Marketplace) => Promise<{ ok: boolean; error?: string }>;
   getUserConnectionsByEmail: (email: string) => UserConnections;
   getUserApprovedMarketplaces: (email: string) => Marketplace[];
   validateMarketplaceConnection: (userId: string, mp: Marketplace) => Promise<{ ok: boolean; error?: string }>;
@@ -1635,6 +1636,35 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return { ok: true };
   };
 
+  const disconnectMarketplace = async (mp: Marketplace) => {
+    if (!currentUserId) return { ok: false, error: "Sessão não encontrada." };
+    // Admin: demo connection lives only in sessionStorage — mirror of requestMarketplaceConnection.
+    if (isAdmin) {
+      setAdminDemoConns((prev) => {
+        const next = prev.filter((m) => m !== mp);
+        try { sessionStorage.setItem(ADMIN_DEMO_CONN_KEY, JSON.stringify(next)); } catch {}
+        return next;
+      });
+      return { ok: true };
+    }
+    // Regular user: clear the in-session view first so every screen agrees immediately.
+    // The DB delete is best-effort: RLS has no user DELETE policy and only allows
+    // updates to 'pending_validation', so the row may survive and resurface on the
+    // next full load until a migration adds a delete policy.
+    setMyConnections((s) => {
+      const next = { ...s };
+      delete next[mp];
+      return next;
+    });
+    const { error } = await supabase
+      .from("user_marketplace_connections")
+      .delete()
+      .eq("user_id", currentUserId)
+      .eq("marketplace", mp);
+    if (error) console.warn("[Shopee] disconnectMarketplace: DB delete blocked:", error.message);
+    return { ok: true };
+  };
+
   const getApprovedMarketplaces = (): Marketplace[] => {
     if (isAdmin) return MARKETPLACES.filter((m) => adminDemoMap[m] === "approved");
     // Connection is automatic/instant: as soon as the user connects, it counts as
@@ -2539,7 +2569,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <C.Provider value={{ user, currentUserId, isAdmin, authReady, login, register, logout, selectedMarketplace, setSelectedMarketplace, data, triggerDemoSale, saveMeuProduto, addSalesOrderForProduct, vendasHoje: vendasHojeStore.values, privacy, setPrivacy, adminPresentationMode, toggleAdminPresentationMode, getCommissionSum, listAccounts, refreshAccounts, approveAccount, rejectAccount, blockAccountPayment, unblockAccountPayment, addManualCommissionToUser, bulkAdminDemoCommissionShopee, approveAllPendingAccounts, adminCreateBoostCampaign, adminCancelBoostCampaign, getActiveBoostByUserId, myActiveBoost, getUserConnectedMarketplaces, getUserProducts, myConnections: isAdmin ? adminDemoMap : myConnections, getApprovedMarketplaces, requestMarketplaceConnection, getUserConnectionsByEmail, getUserApprovedMarketplaces, validateMarketplaceConnection, rejectMarketplaceConnection, allUserProducts, refreshAllUserProducts, getUserCommissionTotal, validateUserProduct, validateAllPendingProducts, validateUserPendingProducts, validateAllPendingConnections, validateUserPendingConnections, bulkApproveAllProductsAndMakeReady, accountCreatedAt, accountApprovedAt, isDemo, demoExpiresAt, submitWithdrawalRequest, listMyWithdrawalRequests, accountStatus, isPresentationAdmin, hasLightningAccess, adminBoostActive, recordLightningClick, resetTodaySales, isTodayReset, listAllProfiles, grantPresentationAdmin, revokePresentationAdmin, passwordResetRequired, clearPasswordResetRequired }}>
+    <C.Provider value={{ user, currentUserId, isAdmin, authReady, login, register, logout, selectedMarketplace, setSelectedMarketplace, data, triggerDemoSale, saveMeuProduto, addSalesOrderForProduct, vendasHoje: vendasHojeStore.values, privacy, setPrivacy, adminPresentationMode, toggleAdminPresentationMode, getCommissionSum, listAccounts, refreshAccounts, approveAccount, rejectAccount, blockAccountPayment, unblockAccountPayment, addManualCommissionToUser, bulkAdminDemoCommissionShopee, approveAllPendingAccounts, adminCreateBoostCampaign, adminCancelBoostCampaign, getActiveBoostByUserId, myActiveBoost, getUserConnectedMarketplaces, getUserProducts, myConnections: isAdmin ? adminDemoMap : myConnections, getApprovedMarketplaces, requestMarketplaceConnection, disconnectMarketplace, getUserConnectionsByEmail, getUserApprovedMarketplaces, validateMarketplaceConnection, rejectMarketplaceConnection, allUserProducts, refreshAllUserProducts, getUserCommissionTotal, validateUserProduct, validateAllPendingProducts, validateUserPendingProducts, validateAllPendingConnections, validateUserPendingConnections, bulkApproveAllProductsAndMakeReady, accountCreatedAt, accountApprovedAt, isDemo, demoExpiresAt, submitWithdrawalRequest, listMyWithdrawalRequests, accountStatus, isPresentationAdmin, hasLightningAccess, adminBoostActive, recordLightningClick, resetTodaySales, isTodayReset, listAllProfiles, grantPresentationAdmin, revokePresentationAdmin, passwordResetRequired, clearPasswordResetRequired }}>
       {children}
     </C.Provider>
   );

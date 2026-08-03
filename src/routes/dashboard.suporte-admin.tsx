@@ -36,7 +36,7 @@ const QUICK_REPLIES = [
   },
   {
     label: "Como funciona",
-    text: "A UpShopee é uma plataforma para afiliados Shopee. Você encontra produtos, gera vídeos com IA, divulga nos grupos e ganha comissões. Tudo automático! Temos aulas gratuitas na aba Aulas também. 🚀",
+    text: "A UpShopee é uma plataforma para afiliados Shopee. Você encontra produtos, gera vídeos com IA, divulga nos grupos e ganha comissões. Tudo automático! Temos aulas gratuitas na aba Uptube também. 🚀",
   },
   {
     label: "Liberação de acesso",
