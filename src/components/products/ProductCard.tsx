@@ -21,9 +21,11 @@ function fnv1a(str: string): number {
   return h >>> 0;
 }
 
-/** Stable pseudo-random position, used by the page to interleave the grid. */
-export function catalogOrder(id: string): number {
-  return fnv1a(id + ":order");
+/** Stable pseudo-random position, used by the page to interleave the grid.
+ *  Folds in a time-window index so the order stays fixed inside a window
+ *  and reshuffles when the window rolls over — never Math.random(). */
+export function catalogOrder(id: string, windowIndex: number): number {
+  return fnv1a(id + ":order:" + windowIndex);
 }
 
 function viewsFor(id: string): number {

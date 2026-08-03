@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { DashboardShell } from "../components/layout/DashboardShell";
 import { products, categories, type Product } from "../lib/mock/products";
 import { affiliateProducts } from "../lib/mock/affiliate-products";
@@ -8,6 +8,7 @@ import { GenerateListingFlow } from "../components/products/GenerateListingFlow"
 import { Input } from "../components/ui/input";
 import { RolePickerDialog } from "../components/products/RolePickerDialog";
 import { Search, Package } from "lucide-react";
+import { spWindowIndex, msUntilNextSpWindow } from "../lib/timeWindow";
 
 export const Route = createFileRoute("/dashboard/produtos")({ component: Produtos });
 
@@ -23,12 +24,57 @@ const allCategories = [
   ),
 ];
 
+// Products reshuffle every 6h, aligned to round America/Sao_Paulo local
+// hours (00:00, 06:00, 12:00, 18:00) — see src/lib/timeWindow.ts.
+const WINDOW_MS = 6 * 60 * 60 * 1000;
+
+/** Isolated so its per-second tick only re-renders this line, never the
+ *  302-card grid above it. */
+function ProdutosCountdown() {
+  const [msLeft, setMsLeft] = useState(() => msUntilNextSpWindow(WINDOW_MS));
+
+  useEffect(() => {
+    const id = setInterval(() => setMsLeft(msUntilNextSpWindow(WINDOW_MS)), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const totalSeconds = Math.max(0, Math.ceil(msLeft / 1000));
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
+
+  return (
+    <p className="mb-4 text-xs text-[var(--muted)]">
+      Produtos atualizam em{" "}
+      <span className="font-semibold text-[var(--text)]">
+        {h}h {String(m).padStart(2, "0")}m {String(s).padStart(2, "0")}s
+      </span>
+    </p>
+  );
+}
+
 function Produtos() {
   const [q, setQ] = useState("");
   const [cat, setCat] = useState("Todos");
   const [selected, setSelected] = useState<Product | null>(null);
   const [open, setOpen] = useState(false);
   const [rolePickProduct, setRolePickProduct] = useState<Product | null>(null);
+  const [windowIndex, setWindowIndex] = useState(() => spWindowIndex(WINDOW_MS));
+
+  // Fires once per 6h window, right at the boundary, rather than polling —
+  // negligible cost, and it only touches state when the window actually rolls.
+  useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout>;
+    const scheduleNext = () => {
+      const delay = msUntilNextSpWindow(WINDOW_MS) + 500;
+      timeoutId = setTimeout(() => {
+        setWindowIndex(spWindowIndex(WINDOW_MS));
+        scheduleNext();
+      }, delay);
+    };
+    scheduleNext();
+    return () => clearTimeout(timeoutId);
+  }, []);
 
   const list = useMemo(() => {
     let l = catalog;
@@ -43,9 +89,9 @@ function Produtos() {
       const pa = Number(a.kind === "legacy" && !!a.product.pinned);
       const pb = Number(b.kind === "legacy" && !!b.product.pinned);
       if (pa !== pb) return pb - pa;
-      return catalogOrder(a.product.id) - catalogOrder(b.product.id);
+      return catalogOrder(a.product.id, windowIndex) - catalogOrder(b.product.id, windowIndex);
     });
-  }, [q, cat]);
+  }, [q, cat, windowIndex]);
 
   return (
     <DashboardShell
@@ -87,6 +133,9 @@ function Produtos() {
             </div>
           </div>
         </div>
+
+        {/* Scrolls normally with the content — not inside the sticky bar above */}
+        <ProdutosCountdown />
 
         {/* ═══ PRODUCT GRID ═══ */}
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 md:gap-3 md:grid-cols-3 xl:grid-cols-4">

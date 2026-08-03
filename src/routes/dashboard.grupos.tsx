@@ -9,8 +9,14 @@ import { ExternalLink, Copy, Clock, Tag, ShieldCheck, Sparkles, Loader2, Refresh
 import { toast } from "sonner";
 import { brl } from "../lib/format";
 import { useApp } from "../lib/state";
+import { catalogOrder } from "../components/products/ProductCard";
+import { spWindowIndex } from "../lib/timeWindow";
 
 export const Route = createFileRoute("/dashboard/grupos")({ component: Grupos });
+
+// Groups reshuffle once a day, at America/Sao_Paulo local midnight —
+// see src/lib/timeWindow.ts.
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 const tones = [
   "Direto", "Oferta urgente", "Simples", "Profissional", "Chamativo",
@@ -103,6 +109,8 @@ function Grupos() {
     [meus, productId],
   );
 
+  const windowIndex = useMemo(() => spWindowIndex(DAY_MS), []);
+
   const handleGenerate = () => {
     if (!selectedProduct) return;
     setLoading(true);
@@ -127,21 +135,23 @@ function Grupos() {
   };
 
   const filtered = useMemo(() => {
-    return groups.filter((g) => {
-      if (!g.url) return false;
-      if (filter === "Facebook" || filter === "WhatsApp") { if (g.platform !== filter) return false; }
-      else if (filter !== "Todos") {
-        const hay = `${g.name} ${g.category} ${g.description}`.toLowerCase();
-        if (!hay.includes(filter.toLowerCase())) return false;
-      }
-      if (search.trim()) {
-        const q = search.toLowerCase();
-        const hay = `${g.name} ${g.platform} ${g.category} ${g.description}`.toLowerCase();
-        if (!hay.includes(q)) return false;
-      }
-      return true;
-    });
-  }, [filter, search]);
+    return groups
+      .filter((g) => {
+        if (!g.url) return false;
+        if (filter === "Facebook" || filter === "WhatsApp") { if (g.platform !== filter) return false; }
+        else if (filter !== "Todos") {
+          const hay = `${g.name} ${g.category} ${g.description}`.toLowerCase();
+          if (!hay.includes(filter.toLowerCase())) return false;
+        }
+        if (search.trim()) {
+          const q = search.toLowerCase();
+          const hay = `${g.name} ${g.platform} ${g.category} ${g.description}`.toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
+        return true;
+      })
+      .sort((a, b) => catalogOrder(a.id, windowIndex) - catalogOrder(b.id, windowIndex));
+  }, [filter, search, windowIndex]);
 
   const filters: Array<typeof filter> = ["Todos", "Facebook", "WhatsApp", "Achadinhos", "Promoções", "Shopee"];
   const filterIcons: Record<typeof filter, string> = {
@@ -589,6 +599,9 @@ function Grupos() {
               </button>
             </div>
           )}
+
+          {/* Refresh cadence note */}
+          <p className="mb-3 text-xs text-[var(--muted)]">Grupos atualizam todos os dias</p>
 
           {/* Groups grid — responsive 3/2/1 columns */}
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
