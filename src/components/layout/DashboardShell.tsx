@@ -6,6 +6,11 @@ import { brl } from "../../lib/format";
 import { toast } from "sonner";
 import { BottomDock } from "./BottomDock";
 
+/* Identidade fixa pintada no header para contas admin. APENAS exibição —
+   login, sessão, queries do Supabase e isAdmin continuam lendo o user real. */
+const ADMIN_DISPLAY_NAME = "Renan Santos";
+const ADMIN_DISPLAY_EMAIL = "renan@gmail.com";
+
 type ShellProps = {
   children: ReactNode;
   title: string;
@@ -23,9 +28,10 @@ export function DashboardShell({ children, title, subtitle, actions, onLightning
   const navigate = useNavigate();
   const [lightningLoading, setLightningLoading] = useState(false);
 
-  /* ── Editable admin display name/email ── */
-  const [adminName, setAdminName] = useState(user?.name || "");
-  const [adminEmail, setAdminEmail] = useState(user?.email || "");
+  /* ── Editable admin display name/email (edição vale só na sessão; ao
+        recarregar, admin volta sempre para a identidade fixa) ── */
+  const [adminName, setAdminName] = useState("");
+  const [adminEmail, setAdminEmail] = useState("");
   const [editingName, setEditingName] = useState(false);
   const [editingEmail, setEditingEmail] = useState(false);
   const [nameFlash, setNameFlash] = useState(false);
@@ -35,6 +41,9 @@ export function DashboardShell({ children, title, subtitle, actions, onLightning
   });
   const nameInputRef = useRef<HTMLInputElement>(null);
   const emailInputRef = useRef<HTMLInputElement>(null);
+
+  const displayName = isAdmin ? (adminName || ADMIN_DISPLAY_NAME) : (user?.name || "");
+  const displayEmail = isAdmin ? (adminEmail || ADMIN_DISPLAY_EMAIL) : (user?.email || "");
 
   useEffect(() => {
     if (!user) navigate({ to: "/login" });
@@ -116,7 +125,7 @@ export function DashboardShell({ children, title, subtitle, actions, onLightning
             {/* User avatar + editable info */}
             <div className="flex min-w-0 items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2 py-1.5">
               <div className="grid h-7 w-7 place-items-center rounded-md bg-[var(--accent-soft)] text-xs font-bold text-[var(--accent)]">
-                {(adminName || user?.name || "U").slice(0, 1).toUpperCase()}
+                {(displayName || "U").slice(0, 1).toUpperCase()}
               </div>
               <div className="hidden min-w-0 max-w-[180px] text-xs leading-tight md:block">
                 {/* Editable name */}
@@ -132,9 +141,9 @@ export function DashboardShell({ children, title, subtitle, actions, onLightning
                 ) : (
                   <div
                     className={`truncate font-medium rounded px-1 -ml-1 transition-colors ${isAdmin ? "cursor-pointer hover:bg-[var(--accent-soft)]" : ""} ${nameFlash ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400" : ""}`}
-                    onDoubleClick={() => { if (isAdmin) { setEditingName(true); setTimeout(() => nameInputRef.current?.focus(), 10); } }}
+                    onDoubleClick={() => { if (isAdmin) { if (!adminName) setAdminName(displayName); setEditingName(true); setTimeout(() => nameInputRef.current?.focus(), 10); } }}
                   >
-                    {adminName || user?.name}
+                    {displayName}
                   </div>
                 )}
                 {/* Editable email */}
@@ -150,9 +159,9 @@ export function DashboardShell({ children, title, subtitle, actions, onLightning
                 ) : (
                   <div
                     className={`truncate text-[var(--muted)] rounded px-1 -ml-1 transition-colors ${isAdmin ? "cursor-pointer hover:bg-[var(--accent-soft)]" : ""} ${emailFlash ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400" : ""}`}
-                    onDoubleClick={() => { if (isAdmin) { setEditingEmail(true); setTimeout(() => emailInputRef.current?.focus(), 10); } }}
+                    onDoubleClick={() => { if (isAdmin) { if (!adminEmail) setAdminEmail(displayEmail); setEditingEmail(true); setTimeout(() => emailInputRef.current?.focus(), 10); } }}
                   >
-                    {adminEmail || user?.email}
+                    {displayEmail}
                   </div>
                 )}
               </div>

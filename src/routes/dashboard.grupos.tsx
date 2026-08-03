@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { DashboardShell } from "../components/layout/DashboardShell";
 import { groups } from "../lib/mock/groups";
 import { Button } from "../components/ui/button";
@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { brl } from "../lib/format";
 import { useApp } from "../lib/state";
 import { catalogOrder } from "../components/products/ProductCard";
-import { spWindowIndex } from "../lib/timeWindow";
+import { spWindowIndex, msUntilNextSpWindow } from "../lib/timeWindow";
 
 export const Route = createFileRoute("/dashboard/grupos")({ component: Grupos });
 
@@ -109,7 +109,23 @@ function Grupos() {
     [meus, productId],
   );
 
-  const windowIndex = useMemo(() => spWindowIndex(DAY_MS), []);
+  const [windowIndex, setWindowIndex] = useState(() => spWindowIndex(DAY_MS));
+
+  // Fires once per 24h window, right at local midnight, so a tab left open
+  // across the rollover reshuffles without needing a reload — same pattern
+  // as the produtos page's window-index timer.
+  useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout>;
+    const scheduleNext = () => {
+      const delay = msUntilNextSpWindow(DAY_MS) + 500;
+      timeoutId = setTimeout(() => {
+        setWindowIndex(spWindowIndex(DAY_MS));
+        scheduleNext();
+      }, delay);
+    };
+    scheduleNext();
+    return () => clearTimeout(timeoutId);
+  }, []);
 
   const handleGenerate = () => {
     if (!selectedProduct) return;
