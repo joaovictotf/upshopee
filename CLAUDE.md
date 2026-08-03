@@ -1,36 +1,40 @@
 # UpShopee — Project Memory for Claude Code
 
-> This file is the permanent memory for any Claude Code session, including sessions on a different account.
-> Last updated: 2026-06-25
+> Memória permanente do projeto. Vale para qualquer sessão do Claude Code, em qualquer conta.
+> **Última atualização: 2026-08-03** — reescrito a partir do código real (rotas, migrations, bundle publicado), não da doc anterior.
 
 ---
 
-## 1. PROJECT OVERVIEW
+## 1. VISÃO GERAL
 
-- **Name:** UpShopee (formerly ShopeSync)
-- **What it is:** SaaS dashboard for Shopee affiliates and sellers. Users connect Shopee accounts, track sales/commissions, boost products, manage affiliate groups, and use the "Robô Divulgador" automation tool.
-- **Status:** Functional presentation prototype. Real launch: August 2026.
-- **GOLDEN RULE:** All financial flows (sales, commissions, withdrawals, boost, payments) are VISUAL only. No real transactions ever happen. The product must look and behave like a real product at all times.
+- **Nome:** UpShopee (ex-ShopeSync)
+- **O que é:** SaaS para afiliados e sellers da Shopee. O usuário conecta contas, acompanha vendas e comissões, usa a IA Divulgadora, gera vídeos com IA, participa de grupos e assiste aulas.
+- **Status:** protótipo funcional de apresentação. Lançamento real: agosto de 2026.
+- **REGRA DE OURO:** todo fluxo financeiro (vendas, comissões, saques) é VISUAL. Nenhuma transação real acontece no produto. O site precisa parecer e se comportar como produto real o tempo todo.
+  - **Exceção conhecida:** as Edge Functions `evopay-create-pix` / `evopay-webhook` criam cobrança PIX real. **O Impulsionar não está liberado para nenhum usuário** — o código está dormente e é intencional. **Não remover.** Antes de expor qualquer entrada para o Impulsionar, falar com o Juam.
 
 ---
 
-## 2. TECH STACK
+## 2. STACK
 
-Confirmed from `package.json`:
+Confirmado no `package.json`:
 
-| Layer | Technology | Version |
+| Camada | Tecnologia | Versão |
 |---|---|---|
-| UI Framework | React | ^19.2.0 |
+| UI | React | ^19.2.0 |
 | Router | TanStack Router (file-based) | ^1.168.25 |
-| Build tool | Vite | ^7.3.1 |
-| Styling | Tailwind CSS v4 | ^4.2.1 |
-| Component library | shadcn/ui + Radix UI primitives | various |
-| Language | TypeScript | ^5.8.3 |
+| Data fetching | TanStack Query | ^5.83.0 |
+| Build | Vite | ^7.3.1 |
+| Estilo | Tailwind CSS v4 | ^4.2.1 |
+| Componentes | shadcn/ui + Radix | várias |
+| Linguagem | TypeScript | ^5.8.3 |
 | Backend/Auth/DB | Supabase | ^2.106.0 |
-| Forms | react-hook-form + zod | ^7.x / ^3.x |
-| Charts | recharts | ^2.15.4 |
-| Package manager | Bun (preferred) / npm fallback | — |
-| CF plugin | @cloudflare/vite-plugin | ^1.25.5 (to be removed on Vercel migration) |
+| Forms | react-hook-form + zod | ^7.71 / ^3.24 |
+| Gráficos | recharts | ^2.15.4 |
+| Toasts | sonner | ^2.0.7 |
+| Package manager | npm (há `bun.lock` legado no repo) | — |
+
+O plugin `@cloudflare/vite-plugin` **já foi removido**. `wrangler.jsonc` continua no repo como resíduo.
 
 **Supabase project ID:** `ndawyrqzqhzbyjdmkdge`
 
@@ -38,236 +42,269 @@ Confirmed from `package.json`:
 
 ## 3. REPO & DEPLOY
 
-- **GitHub:** https://github.com/joaovictotf/shopesyncnew
-- **Local folder:** `C:\Users\vinic\shopesyncnew-main\shopesyncnew-main`
-- **Deploy platform:** Lovable (click "Publish" in the Lovable UI)
+- **GitHub:** `https://github.com/joaovictotf/upshopee.git` (remote `origin`) — confirmado por `git remote -v` em 03/08/2026. A doc antiga dizia `shopesyncnew`; estava errado.
+- **Pasta local:** `C:\Users\vinic\upshopee-novo`
+- **Deploy:** **Vercel** — projeto `upshopee` (`prj_uVLs45AHIGaDPjQlZZcpKdwmXgWM`), confirmado em `.vercel/repo.json`. Build `npm run build`, output `dist`, SPA fallback via `vercel.json`.
+- `.lovable/project.json` contém só o marcador de template (`tanstack_start_ts_2026-05-12`), sem vínculo de projeto ativo. Indício forte de que a Lovable **não publica mais** — mas confirmar com o Juam antes de apagar a pasta.
 
-### CRITICAL — Branch rule
-Lovable watches the **`main`** branch. The repo has both `master` and `main`. Claude Code sometimes defaults to `master`. **Always push to `main`** or changes won't be published.
+### Como verificar que está no repo certo
+```bash
+git remote -v                                    # deve mostrar joaovictotf/upshopee.git
+git rev-parse --abbrev-ref --symbolic-full-name @{u}   # deve mostrar origin/main
+```
 
-Standard end-of-task commit sequence:
+### Branch
+O repo tem `master` e `main`. **Sempre trabalhar e dar push em `main`.** Branch atual: `main`.
+
 ```bash
 git add .
-git commit -m "description"
+git commit -m "descrição"
 git push origin main
 ```
 
-If currently on `master`:
+Nunca usar `--force` em `main` (ver §14).
+
+### Line endings — LEIA ANTES DE COMMITAR
+O repo não tem `.gitattributes`. Por isso ~154 arquivos aparecem como modificados no `git status` sendo que a diferença é **só CRLF vs LF** — `git diff --ignore-all-space` retorna vazio.
+
+Antes de qualquer commit, verificar o que é mudança real:
+
 ```bash
-git push origin master:main
+git diff --ignore-all-space --stat
 ```
+
+Se aparecer vazio, não há mudança de conteúdo. **Nunca commitar os 154 arquivos de ruído junto com uma alteração real** — isso torna o histórico inútil e impossibilita rollback preciso.
 
 ---
 
-## 4. PROJECT STRUCTURE
+## 4. ESTRUTURA
 
 ```
 src/
-├── assets/
 ├── components/
 │   ├── layout/
-│   │   ├── DashboardShell.tsx   ← sidebar + global layout; contains NAV array
-│   │   └── DemoShell.tsx
-│   ├── boost/
-│   ├── products/
-│   ├── withdrawal/
-│   ├── ui/                      ← shadcn/ui components
-│   ├── WhatsAppChannelPopup.tsx
-│   └── WhatsAppSupportButton.tsx
+│   │   ├── DashboardShell.tsx   ← header, logout, atalhos admin
+│   │   ├── BottomDock.tsx       ← NAVEGAÇÃO PRINCIPAL (array NAV)
+│   │   ├── DemoShell.tsx
+│   │   └── LightScope.tsx
+│   ├── OfertasLanding.tsx       ← landing parametrizável (padrão bom, reusar)
+│   ├── Step7GeminiChat.tsx
+│   ├── AdminStep7Video.tsx
+│   ├── boost/ products/ withdrawal/ ui/
 ├── hooks/
-│   ├── useShopSyncData.ts       ← data hook; reads data.salesOrders (SINGLE SOURCE)
+│   ├── useShopSyncData.ts       ← agrega data.salesOrders por período
+│   ├── use-metrics.ts
+│   ├── use-theme.tsx
 │   └── use-mobile.tsx
-├── integrations/
-│   └── supabase/
-│       ├── client.ts
-│       ├── client.server.ts
-│       ├── types.ts
-│       ├── auth-attacher.ts
-│       └── auth-middleware.ts
+├── integrations/supabase/
+│   ├── client.ts                ← client público (lazy via Proxy)
+│   ├── client.server.ts         ← SERVICE_ROLE, só servidor
+│   └── types.ts
 ├── lib/
-│   ├── state.tsx                ← AppProvider global state (~2300 lines, huge)
-│   ├── mock/
-│   ├── format.ts
-│   ├── utils.ts
-│   ├── error-capture.ts
-│   └── error-page.ts
-├── routes/
-│   ├── __root.tsx
-│   ├── index.tsx                ← landing page (/)
-│   ├── login.tsx
-│   ├── register.tsx
-│   ├── planos.tsx               ← /planos pricing page (dark theme)
-│   ├── conta-em-analise.tsx
-│   ├── pagamento-bloqueado.tsx
-│   ├── dashboard.tsx            ← dashboard layout shell
-│   ├── dashboard.index.tsx      ← /dashboard home
-│   ├── dashboard.vendas-clientes.tsx
-│   ├── dashboard.meus-produtos.tsx
-│   ├── dashboard.produtos.tsx
-│   ├── dashboard.robo-divulgador.tsx
-│   ├── dashboard.impulsionar-vendas.tsx
-│   ├── dashboard.impulsionar-vendas.backup.tsx
-│   ├── dashboard.grupos.tsx
-│   ├── dashboard.metricas.tsx
-│   ├── dashboard.precificacao.tsx
-│   ├── dashboard.conectar-contas.tsx
-│   ├── dashboard.tutoriais.tsx
-│   ├── dashboard.configuracoes.tsx
-│   ├── dashboard.validar-cadastros.tsx  ← admin panel: validate user products
-│   ├── dashboard.adicionar-adms.tsx
-│   ├── demo.tsx                 ← demo shell
-│   ├── demo.index.tsx
-│   ├── demo.grupos.tsx
-│   ├── demo.precificacao.tsx
-│   ├── demo.produtos.tsx
-│   ├── demo.robo-divulgador.tsx
-│   └── demo.vendas-clientes.tsx
-├── routeTree.gen.ts             ← auto-generated by TanStack Router (do not edit manually)
-├── router.tsx
-├── server.ts
-├── start.ts
-└── styles.css
+│   ├── state.tsx                ← AppProvider (2.551 linhas — God object, ver §11)
+│   ├── mock/products.ts
+│   ├── format.ts  utils.ts  error-capture.ts  error-page.ts
+├── routes/                      ← ver §5
+└── routeTree.gen.ts             ← gerado pelo TanStack Router, NÃO editar
 ```
 
 ---
 
-## 5. USER ROLES
+## 5. ROTAS
 
-Three roles, checked via `profile?.role === 'admin'`:
+### Navegação real (`BottomDock.tsx`) — é isso que o usuário vê
 
-| Role | Access |
+| Rota | Label no dock |
 |---|---|
-| `admin` | Full access. All data. Admin panels. Lightning/reset buttons. |
-| `presentation_admin` | Demo presentation mode. |
-| `regular_user` | Normal user. Sees their own data. |
+| `/dashboard` | Dashboard |
+| `/dashboard/produtos` | Produtos |
+| `/dashboard/grupos` | Grupos de Divulgação |
+| `/dashboard/robo-divulgador` | IA Divulgadora |
+| `/dashboard/video-ia` | Vídeo IA |
+| `/dashboard/conectar-contas` | Integrações |
+| `/dashboard/aulas` | Aulas |
+| `/dashboard/suporte` | Suporte |
+| `/dashboard/configuracoes` | Configurações |
+| `/dashboard/validar-cadastros` | Validar Cadastros — **só admin** |
+| `/dashboard/suporte-admin` | Responder Tickets — **só admin** |
 
-Admin emails: `victor@shopesync.com`, `rikelme@shopsync.com`
+### Existem mas não estão no dock
+- `/dashboard/metricas` — acessível por link interno
+- `/dashboard/impulsionar-vendas` — **não liberado** (ver §1)
+- `/demo/*` — preview sem login
+- `/conta-em-analise` — ainda referenciada em `login.tsx:185` apesar da aprovação instantânea
 
-New feature pattern: **admin sees first**, then released to all via `adminOnly` toggle.
+### Públicas
+`/` → **redireciona para `/ofertas4`** · `/login` · `/register` · `/redefinir-senha` · `/pagamento-bloqueado` · `/ofertas` `/ofertas2` `/ofertas3` `/ofertas4` · `/planos2` `/planos3` `/planosup` · `/mercadolivrecombr`
+
+### Arquivos órfãos (candidatos a remoção)
+- `dashboard.impulsionar-vendas.backup.tsx` — 922 linhas mortas
+- `planos2` / `planos3` / `planosup` — ~270 KB, `planos2` e `planos3` diferem em **12 linhas** (só links de checkout)
 
 ---
 
-## 6. DATABASE (Supabase)
+## 6. PAPÉIS DE USUÁRIO
 
-### Tables
-
-| Table | Purpose |
+| Papel | Acesso |
 |---|---|
-| `profiles` | User profiles + roles |
-| `sales_orders` | **SINGLE SOURCE OF TRUTH** for all sales data |
-| `user_products` | Products users submit for validation |
-| `dashboard_lightning_events` | Lightning bolt events (admin triggers) |
-| `withdrawal_requests` | Withdrawal requests (visual only) |
-| `registration_tokens` | Legacy — no longer active |
-| `approved_emails` | Legacy — no longer active |
+| `admin` | Tudo. Painéis admin, botão raio, reset de vendas. |
+| `presentation_admin` | Modo apresentação (GDM). |
+| `regular_user` | Só os próprios dados. |
 
-### RPCs (Supabase functions)
+E-mails admin: `victor@shopesync.com`, `rikelme@shopsync.com`
 
-- `reset_today_sales` — resets daily sales (admin tool)
-- `upsert_my_product_for_validation` — user submits product
-- `approve_user` — admin approves a user account
-- `cron_auto_approve_pending_accounts` — auto-approve pending accounts
+⚠️ Hoje `isAdmin` é resolvido no client por `isAdminEmail()` (`state.tsx:849`), **sem consultar `user_roles`**. Isso é um problema aberto — ver §11.
+
+Padrão de feature nova: **admin vê primeiro**, depois libera geral via `adminOnly`.
 
 ---
 
-## 7. PAYMENT LINKS (CRITICAL — never lose these)
+## 7. BANCO (Supabase)
 
-| Plan | Method | Link |
+### Tabelas
+
+| Tabela | Para quê |
+|---|---|
+| `profiles` | Perfis + status da conta |
+| `user_roles` | Papéis (fonte correta de permissão) |
+| `sales_orders` | **FONTE ÚNICA DE VERDADE** das vendas |
+| `user_products` | Produtos enviados para validação |
+| `user_marketplace_connections` | Conexões com marketplace |
+| `dashboard_lightning_events` | Eventos do botão raio |
+| `withdrawal_requests` | Saques (visual) |
+| `boost_campaigns` · `boost_simulated_events` | Impulsionar (dormente) |
+| `video_projects` · `video_project_images` · `video_prompt_versions` | Vídeo IA |
+| `support_tickets` · `support_messages` | Suporte |
+| `registration_tokens` · `approved_emails` | Legado, inativos |
+
+### RPCs em uso (19)
+
+**Produtos/conexões:** `upsert_my_product_for_validation` · `validate_user_product` · `validate_user_pending_products` · `validate_all_pending_products` · `validate_marketplace_connection` · `validate_user_pending_connections` · `validate_all_pending_connections` · `reject_marketplace_connection`
+
+**Contas:** `approve_user` · `reject_user` · `cron_auto_approve_pending_accounts`
+
+**Vendas:** `create_robo_sale_order` · `admin_create_demo_sale_order` · `admin_bulk_demo_commission_shopee` · `release_automatic_demo_sales` · `reset_today_sales`
+
+**Boost/saque:** `admin_create_boost_campaign` · `admin_cancel_boost_campaign` · `release_due_boost_events` · `create_withdrawal_request`
+
+### Edge Functions
+`evopay-create-pix` · `evopay-webhook` · `generate-video-chat` · `generate-video-script` · `send-registration`
+
+---
+
+## 8. LINKS DE PAGAMENTO (CRÍTICO — não perder)
+
+### Em produção — `/ofertas4` (é para onde `/` redireciona)
+
+| Plano | Método | Link |
 |---|---|---|
-| Monthly R$145/mo | PIX | https://go.ironpayapp.com.br/knwcyeiala |
-| Monthly R$145/mo | Card | https://go.perfectpay.com.br/PPU38CQC838 |
-| Lifetime R$285 (from R$528) | PIX | https://go.ironpayapp.com.br/jxzfsyhoci |
-| Lifetime R$285 (from R$528) | Card | https://go.perfectpay.com.br/PPU38CQC83E |
+| Mensal | PIX | https://go.ironpayapp.com.br/zbu0e9tvo9 |
+| Mensal | Cartão | https://checkout.applyfy.com.br/checkout/cmrc5aowy0s7y01ol3jfeb4he?offer=Q7TO6PU |
+| Vitalício | PIX | https://go.ironpayapp.com.br/wqqa7uihfe |
+| Vitalício | Cartão | https://checkout.applyfy.com.br/checkout/cmrc5aowy0s7y01ol3jfeb4he?offer=4XWIBWR |
 
-- IronPay API token is in `.env`
-- Offer hashes: `monthly=knwcyeiala`, `lifetime=jxzfsyhoci`
+### Outras landings (hashes diferentes, conferir no arquivo antes de mexer)
+`ofertas` · `ofertas2` · `ofertas3` têm configs próprias em cada arquivo de rota.
+`planos2` / `planos3` / `planosup` usam IronPay + PerfectPay + Wiven.
+
+Hashes IronPay presentes no código: `zbu0e9tvo9` `wqqa7uihfe` `knwcyeiala` `jxzfsyhoci` `paqjh` `a7brsesrse` `bsyspglspg` `k32yu4hx10` `kteiyf8epw` `rnaqezkbld`
+
+**Nunca alterar link de pagamento sem confirmar com o Juam qual landing está no ar.**
 
 ---
 
-## 8. CONTACT
+## 9. IDENTIDADE VISUAL
 
-- **WhatsApp support:** https://wa.me/5534992017453
+- **Cor primária:** `#EE4D2D` (laranja Shopee). Landings usam `#F4541E` → `#FF7A45`.
+- **Fontes:** Inter (corpo), Sora (títulos)
+- **Dashboard:** tema CLARO. Sem fundo preto dentro do dashboard.
+- **Landings (`ofertas*`, `planos*`):** tema escuro (`#0A0A0C`) — única exceção.
+
+---
+
+## 10. REGRAS DE OURO
+
+1. **Fonte única:** todo valor de venda/comissão vem de `data.salesOrders`. Nada hardcoded, nada divergente entre páginas.
+2. **Mobile-first 320px+:** sem scroll horizontal, sem elemento cortado. Empilha no mobile, grid no desktop.
+3. **Nunca escrever "demo/fake/simulado"** perto de valores, comissões, vendas ou cards de pedido. O aviso discreto de demo já existe — não adicionar outro.
+4. **Nenhuma transação real** (exceção documentada no §1).
+5. **Diagnóstico antes do fix.** Investigar e reportar antes de mudar código. Nunca mexer às cegas.
+6. **Uma página por vez.** Nunca mudança grande espalhada por vários arquivos.
+7. **Conferir `git diff --ignore-all-space`** antes de commitar (ver §3).
+
+---
+
+## 11. PENDÊNCIAS (ordem de prioridade)
+
+### 🔴 CRÍTICO — bloqueia lançamento
+
+**1. Senha de admin no bundle publicado**
+`src/lib/state.tsx:8` → `const ADMIN_PASSWORD = "12345678";`
+Confirmado presente em `dist/assets/index-DXWVEmc-.js`, junto com os e-mails de admin.
+Agravante: `state.tsx:1255-1265` faz auto-provisionamento de conta admin usando `password || ADMIN_PASSWORD`.
+
+Correção:
+1. Trocar as senhas reais no Supabase (fora do código)
+2. Deletar `ADMIN_PASSWORD` e o bloco de auto-provisionamento
+3. Fazer `isAdmin` depender só de `user_roles` server-side
+4. Conferir se as policies RLS de admin usam `auth.uid()` + `user_roles`, não lista de e-mail
+
+**2. `.env` versionado no git**
+`.gitignore` tem `.env*`, mas o arquivo foi commitado antes da regra. As chaves são *publishable* (impacto baixo), mas o padrão é ruim e já está no histórico.
+
+**3. Duas policies RLS com `USING (true)`**
+Migrations `20260522211315` e `20260609173538`. Revisar se a exposição é intencional.
+
+### 🟡 IMPORTANTE
+
+**4. Gráfico do dashboard é falso**
+`routes/dashboard.index.tsx:701-702` usa `Math.sin` nos ranges 7d/30d, sem relação com `data.salesOrders`. Viola a Regra de Ouro #1 — os cards mostram um valor e a curva embaixo mostra outro.
+
+**5. `QueryClient` recriado a cada render**
+`routes/__root.tsx:74` → `const queryClient = new QueryClient();` dentro do componente. Zera o cache do React Query em todo re-render do root. Correção de uma linha.
+
+**6. Fonte de verdade dividida**
+`loadUserData()` (`state.tsx:540`) lê do `localStorage`; `fetchAll()` (linhas 1110-1147) faz merge com o Supabase preservando ordens locais (GDM, seed, lightning) que só existem no navegador. Trocar de navegador = perder dados.
+
+**7. Falta `.gitattributes`** (ver §3)
+
+### 🟢 DEPOIS DO LANÇAMENTO
+
+- Quebrar `state.tsx` (2.551 linhas) em módulos: auth / vendas / boost / produtos
+- Consolidar `planos2`/`planos3`/`planosup` no padrão `OfertasLanding` (economiza ~180 KB)
+- Remover `dashboard.impulsionar-vendas.backup.tsx`, `wrangler.jsonc`, `/conta-em-analise`
+- Typecheck leva **mais de 8 minutos** — sintoma dos arquivos de 1.300+ linhas com JSX inline
+- Chunk principal do bundle: 1,1 MB
+- Supabase próprio, popup de grupo de alunos no WhatsApp
+
+---
+
+## 12. FLUXO DE TRABALHO
+
+1. **Diagnóstico SEMPRE antes do fix.** Investigar, reportar o achado, só então mexer.
+2. **Uma página por vez.**
+3. **Antes de commitar:** rodar `git diff --ignore-all-space --stat` e commitar só o que mudou de verdade.
+4. **Push em `main`.**
+5. **`routeTree.gen.ts`** é gerado. Rota nova → regenera com `npm run dev`. Nunca editar na mão.
+6. **Modelo:** Opus para tarefas delicadas (auth, RLS, state.tsx, qualquer coisa que toque em pagamento ou permissão). Sonnet dá conta do resto — ajuste de layout, copy, CSS.
+7. **A sessão roda com `--dangerously-skip-permissions`.** Não há confirmação antes de editar arquivo. Por isso, em tarefa de auth, RLS ou pagamento: **diagnosticar e reportar antes de escrever qualquer linha**. O diagnóstico prévio é a rede de proteção que sobrou no lugar do prompt de permissão.
+8. **Prompts para o Claude Code são escritos em inglês.** Só texto que aparece literalmente no site fica em português, entre aspas, marcado como copy que não deve ser traduzida.
+
+---
+
+## 13. CONTATO
+
+- **Suporte WhatsApp:** https://wa.me/5534992017453
 - **Instagram:** https://www.instagram.com/shope_sync/
 
 ---
 
-## 9. VISUAL IDENTITY
+## 14. HISTÓRICO DE CRISES
 
-- **Primary color:** `#EE4D2D` (Shopee orange)
-- **Font:** Inter
-- **Dashboard theme:** LIGHT — white / `#FFF8F5` backgrounds. Zero black backgrounds inside the dashboard.
-- **Landing /planos:** Dark theme (`#080808`) — the ONLY exception to the light theme.
-
----
-
-## 10. GOLDEN RULES
-
-1. **Single data source:** All sales/commission values across ALL pages must read from `data.salesOrders`. No hardcoded or diverging values.
-2. **Mobile-first 320px+:** Every page and component must work on small screens. No horizontal scroll. No cut-off elements. Stack vertically on mobile, grid on desktop.
-3. **Never show "demo/fake/simulated"** near values, commissions, sales, or order cards. The discrete demo notice already exists — do not add another.
-4. **No real financial transactions** — ever. Implement payment/withdrawal flows as visual/test only.
-5. **Diagnosis before fix:** Always investigate and report before changing any code. Never change things "blind."
-6. **One page at a time:** Never make large sweeping changes across multiple files at once.
-
----
-
-## 11. WORK ALREADY COMPLETED
-
-- Full Shopee-style dashboard with sidebar navigation (`DashboardShell`)
-- Robô Divulgador page (`dashboard.robo-divulgador.tsx`)
-- Conectar Contas page (`dashboard.conectar-contas.tsx`)
-- Grupos page (`dashboard.grupos.tsx`)
-- Impulsionar Vendas full rebuild (`dashboard.impulsionar-vendas.tsx`)
-- `/planos` landing/pricing page (dark theme, payment modal)
-- Lightning button (admin triggers sales events) + Reset Today Sales button
-- **Critical fix:** unified `getCommissionSum` and all financial summary values to read from `data.salesOrders` for ALL users (admin and regular). Previously admins saw different values from regular users — now everyone sees the same real data.
-- Auto-approve users on registration (removed manual approval gate that was blocking everyone)
-- Admin now sees ALL user products including unsynced ones in `validar-cadastros`
-- WhatsApp support button component
-- Demo shell + demo routes for unauthenticated preview
-
----
-
-## 12. PENDING TASKS (priority order)
-
-### IN PROGRESS — 4 Instant Flows
-Make these 4 user flows instant (no pending/waiting states):
-
-1. **Registration:** After signup, user goes directly into the dashboard. No `/conta-em-analise` redirect.
-2. **Shopee Connection:** Clicking "Conectar" completes instantly, no pending/loading state.
-3. **Send Products:** Products submitted by user appear immediately in `meus-produtos`, no admin validation queue.
-4. **Admin Visibility:** User products ALWAYS appear in the admin panel (`validar-cadastros`), even before validation.
-
-**Next step:** Architect DIAGNOSIS of all 4 flows before writing any code.
-
-### OTHER PENDING
-- Dashboard chart is disconnected from real data (currently hardcoded sinusoidal values in `dashboard.index.tsx`)
-- `register()` function in `state.tsx` is dead code (phone number was removed from the form but the function still references it)
-- **Future (post-launch):** WhatsApp student-group popup, automatic sales simulation (R$30–60 every ~3h for non-admins), migration from Lovable/Cloudflare to Vercel + own Supabase project, remove admin password from client bundle, full site rebuild.
-
----
-
-## 13. WORKFLOW RULES FOR CLAUDE CODE
-
-1. **Diagnosis ALWAYS before fix** — investigate every flow before touching code. Report findings first.
-2. **One page at a time** — never big changes everywhere at once.
-3. **Push to `main`** — always end tasks with:
-   ```bash
-   git add .
-   git commit -m "description"
-   git push origin main
-   ```
-4. **Recommended model:** Claude Sonnet
-5. **Route tree:** `src/routeTree.gen.ts` is auto-generated by TanStack Router. If you add a new route file, the tree may need regeneration (`bun run dev` triggers it). Don't edit it manually.
-
----
-
-## 14. CRISIS HISTORY (lessons learned)
-
-| Incident | Root Cause | Fix | Lesson |
+| Incidente | Causa raiz | Correção | Lição |
 |---|---|---|---|
-| Entire site broke, all users blocked | Auth/payment gate defaulted `?? "pending"` which blocked everyone including admins | `git reset --hard` to last good commit + force push to `main` | Never change auth gates without testing every role |
-| Infinite redirect loop on `/login` | Auth state change caused redirect logic to loop | Reverted the problematic auth check | Test redirect logic for every auth state |
-| GitHub disconnected from Lovable | Force push rewrote history, breaking Lovable's sync | Re-connected via Lovable dashboard | Avoid `--force` on `main`; use `git push origin main` (non-force) when possible |
+| Site inteiro caiu, todos bloqueados | Gate de auth/pagamento com `?? "pending"` bloqueou todo mundo, inclusive admins | `git reset --hard` + force push na `main` | Nunca mexer em gate de auth sem testar TODOS os papéis |
+| Loop infinito de redirect no `/login` | Mudança de auth state disparava redirect em loop | Revertido | Testar redirect em todo estado de auth |
+| Lovable desconectou do GitHub | Force push reescreveu o histórico | Reconexão manual | Evitar `--force` na `main` |
 
-**Master lesson: one page at a time. Diagnose first. Always push to `main`.**
+**Lição mestre: uma página por vez. Diagnóstico primeiro. Push na `main`.**
