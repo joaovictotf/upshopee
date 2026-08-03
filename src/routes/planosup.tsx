@@ -984,10 +984,21 @@ function PricingSection() {
     return () => window.removeEventListener('keydown', handler);
   }, []);
 
-  const FEATURES_LIST = [
+  const FEATURES_MENSAL = [
+    'Minerador completo', 'Buscas ilimitadas', 'Todas as ferramentas',
+    'Gerador IA de títulos', 'Gerador IA de ideias',
+    'Gerar Imagem UGC (5 por dia)',
+    'Comunidade VIP', 'Suporte prioritário',
+  ];
+
+  // Marks the monthly tier limit so it reads as a constraint, not a plain benefit.
+  const MENSAL_LIMIT_FEATURE = 'Gerar Imagem UGC (5 por dia)';
+
+  const FEATURES_VITALICIO = [
     'Minerador completo', 'Buscas ilimitadas', 'Todas as ferramentas',
     'Gerador IA de títulos', 'Gerador IA de ideias', 'Criar Persona',
     'Gerar Script com IA', 'Templates de Vídeo', 'Editor de Vídeo',
+    'Gerar Imagem UGC ilimitado',
     'Comunidade VIP', 'Suporte prioritário',
   ];
 
@@ -1018,8 +1029,8 @@ function PricingSection() {
               <span style={{ fontSize: 14, color: '#888888', fontFamily: "'Barlow', sans-serif" }}>/mês</span>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 13, marginBottom: 32 }}>
-              {FEATURES_LIST.map((f) => (
-                <div key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 14, color: '#F2F2F2', fontFamily: "'Barlow', sans-serif" }}><CheckIcon />{f}</div>
+              {FEATURES_MENSAL.map((f) => (
+                <div key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 14, color: f === MENSAL_LIMIT_FEATURE ? '#EE4D2D' : '#F2F2F2', fontWeight: f === MENSAL_LIMIT_FEATURE ? 600 : undefined, fontFamily: "'Barlow', sans-serif" }}><CheckIcon />{f}</div>
               ))}
             </div>
             <button onClick={() => setPaymentModal({ open: true, plan: 'mensal' })}
@@ -1047,7 +1058,7 @@ function PricingSection() {
             </div>
             <div style={{ marginBottom: 16 }}><span style={{ fontSize: 13, fontWeight: 700, color: '#EE4D2D', fontFamily: "'Barlow', sans-serif" }} className="animate-pulse">⚡ Apenas 10 vagas restantes neste preço</span></div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 13, marginBottom: 32 }}>
-              {FEATURES_LIST.map((f) => (
+              {FEATURES_VITALICIO.map((f) => (
                 <div key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 14, color: '#F2F2F2', fontFamily: "'Barlow', sans-serif" }}><CheckIcon />{f}</div>
               ))}
             </div>
