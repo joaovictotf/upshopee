@@ -2,13 +2,26 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { DashboardShell } from "../components/layout/DashboardShell";
 import { products, categories, type Product } from "../lib/mock/products";
-import { ProductCard } from "../components/products/ProductCard";
+import { affiliateProducts } from "../lib/mock/affiliate-products";
+import { ProductCard, catalogOrder, type CatalogItem } from "../components/products/ProductCard";
 import { GenerateListingFlow } from "../components/products/GenerateListingFlow";
 import { Input } from "../components/ui/input";
 import { RolePickerDialog } from "../components/products/RolePickerDialog";
 import { Search, Package } from "lucide-react";
 
 export const Route = createFileRoute("/dashboard/produtos")({ component: Produtos });
+
+const catalog: CatalogItem[] = [
+  ...products.map((product) => ({ kind: "legacy" as const, product })),
+  ...affiliateProducts.map((product) => ({ kind: "affiliate" as const, product })),
+];
+
+const allCategories = [
+  ...categories,
+  ...Array.from(new Set(affiliateProducts.map((p) => p.category))).filter(
+    (c) => !categories.includes(c),
+  ),
+];
 
 function Produtos() {
   const [q, setQ] = useState("");
@@ -18,25 +31,20 @@ function Produtos() {
   const [rolePickProduct, setRolePickProduct] = useState<Product | null>(null);
 
   const list = useMemo(() => {
-    let l = [...products];
-    if (q) l = l.filter((p) => p.name.toLowerCase().includes(q.toLowerCase()));
+    let l = catalog;
+    if (q) l = l.filter((it) => it.product.name.toLowerCase().includes(q.toLowerCase()));
     if (cat !== "Todos") {
-      if (cat === "Mais vendidos") l = l.filter((p) => p.featured);
+      if (cat === "Mais vendidos") l = l.filter((it) => it.kind === "legacy" && it.product.featured);
       else if (["Alta procura", "Boa margem", "Baixa concorrência"].includes(cat))
-        l = l.filter((p) => p.tags.includes(cat));
-      else l = l.filter((p) => p.category === cat);
+        l = l.filter((it) => it.kind === "legacy" && it.product.tags.includes(cat));
+      else l = l.filter((it) => it.product.category === cat);
     }
-    l.sort((a, b) => {
-      const pa = Number(!!a.pinned);
-      const pb = Number(!!b.pinned);
+    return [...l].sort((a, b) => {
+      const pa = Number(a.kind === "legacy" && !!a.product.pinned);
+      const pb = Number(b.kind === "legacy" && !!b.product.pinned);
       if (pa !== pb) return pb - pa;
-      return 0;
+      return catalogOrder(a.product.id) - catalogOrder(b.product.id);
     });
-    for (let i = l.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [l[i], l[j]] = [l[j], l[i]];
-    }
-    return l;
   }, [q, cat]);
 
   return (
@@ -60,7 +68,7 @@ function Produtos() {
 
             {/* Category chips — horizontal scroll on mobile */}
             <div className="flex flex-nowrap gap-1.5 overflow-x-auto pb-1 lg:flex-wrap scrollbar-none">
-              {categories.map((c) => {
+              {allCategories.map((c) => {
                 const active = cat === c;
                 return (
                   <button
@@ -82,11 +90,11 @@ function Produtos() {
 
         {/* ═══ PRODUCT GRID ═══ */}
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 md:gap-3 md:grid-cols-3 xl:grid-cols-4">
-          {list.map((p) => (
+          {list.map((it) => (
             <ProductCard
-              key={p.id}
-              product={p}
-              onSelect={(prod) => setRolePickProduct(prod)}
+              key={it.product.id}
+              item={it}
+              onSelectLegacy={(prod) => setRolePickProduct(prod)}
             />
           ))}
         </div>

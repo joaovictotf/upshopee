@@ -217,8 +217,21 @@ Hashes IronPay presentes no código: `zbu0e9tvo9` `wqqa7uihfe` `knwcyeiala` `jxz
 
 - **Cor primária:** `#EE4D2D` (laranja Shopee). Landings usam `#F4541E` → `#FF7A45`.
 - **Fontes:** Inter (corpo), Sora (títulos)
-- **Dashboard:** tema CLARO. Sem fundo preto dentro do dashboard.
-- **Landings (`ofertas*`, `planos*`):** tema escuro (`#0A0A0C`) — única exceção.
+- **O app tem tema claro E escuro**, alternados pelo botão no `BottomDock` (`hooks/use-theme.tsx`, chave `upshopee-theme` no localStorage). **O foco é o modo escuro** — é onde o produto fica mais bonito. Todo componente novo precisa funcionar nos dois.
+- **Nunca hardcodar cor.** Usar os tokens de `src/styles.css`, que já trocam sozinhos:
+
+| Token | Claro | Escuro |
+|---|---|---|
+| `--bg` | `#F7F7F5` | `#0A0A0C` |
+| `--surface` | `#FFFFFF` | `#141417` |
+| `--surface-2` | `#F2F2F0` | `#1A1A1E` |
+| `--text` | `#17171A` | `#FFFFFF` |
+| `--muted` | `#6E6E76` | `#A0A0A8` |
+| `--border` | `#E8E8E4` | `#26262B` |
+| `--accent` | `#F4541E` (igual nos dois) | |
+
+- **Exceção:** `/dashboard` e `/dashboard/metricas` passam `forceLight` no `DashboardShell` e ficam claras sempre. Todas as outras páginas do dashboard seguem o toggle.
+- **Landings (`ofertas*`, `planos*`):** sempre escuras, CSS próprio.
 
 ---
 
