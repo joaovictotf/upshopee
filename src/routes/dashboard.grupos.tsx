@@ -3,14 +3,42 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { DashboardShell } from "../components/layout/DashboardShell";
 import { groups } from "../lib/mock/groups";
 import { Button } from "../components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
 import { Input } from "../components/ui/input";
-import { ExternalLink, Copy, Clock, Tag, ShieldCheck, Sparkles, Loader2, RefreshCw, ArrowDown, RefreshCcw, CheckCircle2, MessageCircle, Users, X, ChevronDown } from "lucide-react";
+import { Textarea } from "../components/ui/textarea";
+import {
+  ExternalLink,
+  Copy,
+  Clock,
+  Tag,
+  ShieldCheck,
+  Sparkles,
+  Loader2,
+  RefreshCw,
+  ArrowDown,
+  RefreshCcw,
+  CheckCircle2,
+  MessageCircle,
+  Users,
+  X,
+  ChevronDown,
+  Upload,
+  Share2,
+  Download,
+} from "lucide-react";
 import { toast } from "sonner";
 import { brl } from "../lib/format";
 import { useApp } from "../lib/state";
 import { catalogOrder } from "../components/products/ProductCard";
 import { spWindowIndex, msUntilNextSpWindow } from "../lib/timeWindow";
+import { generateCopy, type CopyTone } from "../lib/copy-engine";
+import { products as catalogProducts } from "../lib/mock/products";
 
 export const Route = createFileRoute("/dashboard/grupos")({ component: Grupos });
 
@@ -18,62 +46,38 @@ export const Route = createFileRoute("/dashboard/grupos")({ component: Grupos })
 // see src/lib/timeWindow.ts.
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+// Tone chips. The engine only exports the CopyTone type (not a runtime list),
+// so the array lives here — `satisfies` turns any drift from copy-engine.ts
+// into a compile error.
 const tones = [
-  "Direto", "Oferta urgente", "Simples", "Profissional", "Chamativo",
-  "Grupo de WhatsApp", "Grupo do Facebook",
-] as const;
-type Tone = (typeof tones)[number];
+  "Direto",
+  "Oferta urgente",
+  "Simples",
+  "Profissional",
+  "Chamativo",
+  "Grupo de WhatsApp",
+  "Grupo do Facebook",
+] as const satisfies readonly CopyTone[];
 
-function pick<T>(arr: T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)];
+// Accepts URLs typed without a protocol ("shopee.com.br/x") by defaulting to https.
+function normalizeUrl(raw: string): string | null {
+  const t = raw.trim();
+  if (!t || /\s/.test(t)) return null;
+  const candidate = /^https?:\/\//i.test(t) ? t : `https://${t}`;
+  try {
+    return new URL(candidate).hostname.includes(".") ? candidate : null;
+  } catch {
+    return null;
+  }
 }
 
-// ─── Text generator (unchanged logic) ────────────────────────────────────────
-
-function generatePromoText(opts: { name: string; price?: number; category?: string; tone: Tone }): string {
-  const { name, price, tone } = opts;
-  const priceStr = price && price > 0 ? brl(price) : null;
-  const priceLine = priceStr ? `por apenas ${priceStr}` : "com condições especiais";
-  const cta = pick(["Clique no link e confira agora.", "Garanta o seu antes que acabe.",
-    "Toque no link e aproveite.", "Não perca essa oportunidade.",
-    "Aproveite enquanto está disponível.", "Corre que ainda dá tempo!"]);
-
-  switch (tone) {
-    case "Oferta urgente": {
-      const fire = pick(["🔥", "🚨", "⚡", "⏰"]);
-      const hook = pick(["Oferta por tempo limitado!", "Últimas unidades disponíveis!",
-        "Promoção relâmpago!", "Desconto especial só hoje!"]);
-      const benefit = pick(["Ideal para quem quer aproveitar antes que acabe.",
-        "Estoque limitado, não fique de fora.", "Os primeiros levam, depois acaba.", "Quem ver primeiro, garanta."]);
-      return `${fire} ${hook}\n${name} ${priceLine}.\n${benefit}\n${cta}`;
-    }
-    case "Profissional": {
-      const intro = pick([`Confira ${name}, uma opção prática para quem busca qualidade e bom custo-benefício.`,
-        `Apresentamos ${name}, uma escolha equilibrada entre qualidade e preço.`,
-        `Conheça ${name}, um produto bem avaliado e com excelente acabamento.`]);
-      return `${intro}\n${priceStr ? `Disponível ${priceLine}, com envio rápido.` : "Disponível para compra com condições especiais."}\n${cta}`;
-    }
-    case "Grupo de WhatsApp": {
-      const emoji = pick(["🛍️", "✨", "💥", "🛒"]);
-      return `${emoji} ${name} ${priceLine}!\n${pick(["Olha que achadinho!", "Olha esse preço!", "Corre lá!", "Não perde!"])}\n${cta}`;
-    }
-    case "Grupo do Facebook": {
-      const emoji = pick(["🛒", "✨", "🔥", "💖"]);
-      const intro = pick([`${emoji} Pessoal, achei ${name} ${priceLine} e precisava compartilhar com vocês.`,
-        `${emoji} Olha o que encontrei: ${name} ${priceLine}. Vale muito a pena dar uma olhada.`,
-        `${emoji} Achadinho do dia: ${name} ${priceLine}. Aproveitei e to deixando o link aqui.`]);
-      return `${intro}\n${pick(["Envio rápido e produto bem avaliado.", "Excelente custo-benefício para o dia a dia.", "Quem já comprou aprovou nos comentários."])}\n${cta}`;
-    }
-    case "Chamativo": {
-      const open = pick(["✨ ACHADINHO TOP ✨", "💥 OLHA ESSE PREÇO 💥", "🤩 IMPERDÍVEL 🤩", "🔥 TÁ VOANDO 🔥"]);
-      return `${open}\n${name} ${priceLine}.\n${pick(["Bonito, prático e com bom preço.", "Qualidade que surpreende.", "Tudo o que você precisava em um só produto."])}\n${cta}`;
-    }
-    case "Simples": return `${name} ${priceLine}.\n${cta}`;
-    case "Direto":
-    default: {
-      return `${name} ${priceLine}. ${pick(["Envio rápido, aproveite.", "Disponível agora.", "Confira no link.", "Toque para ver mais."])}\n${cta}`;
-    }
-  }
+// "49,90", "1.234,56", "49.90" and "180" all parse; empty or garbage -> undefined.
+function parsePrice(raw: string): number | undefined {
+  let t = raw.trim().replace(/[R$\s]/g, "");
+  if (!t) return undefined;
+  if (t.includes(",")) t = t.replace(/\./g, "").replace(",", ".");
+  const n = Number(t);
+  return Number.isFinite(n) && n > 0 ? n : undefined;
 }
 
 function parseActiveNow(bestTime: string): boolean {
@@ -90,11 +94,23 @@ function parseActiveNow(bestTime: string): boolean {
 function Grupos() {
   const { data, isAdmin } = useApp();
   const meus = data.meusProdutos ?? [];
-  const [productId, setProductId] = useState<string>(meus[0]?.id ?? "");
-  const [tone, setTone] = useState<Tone>("Oferta urgente");
+  const [productId, setProductId] = useState<string>("");
+  const [tone, setTone] = useState<CopyTone>("Oferta urgente");
   const [text, setText] = useState<string>("");
   const [loading, setLoading] = useState(false);
-  const [filter, setFilter] = useState<"Todos" | "Facebook" | "WhatsApp" | "Achadinhos" | "Promoções" | "Shopee">("Todos");
+  // Manual product form — the catalog dropdown only pre-fills these fields.
+  const [prodName, setProdName] = useState("");
+  const [prodDesc, setProdDesc] = useState("");
+  const [prodLink, setProdLink] = useState("");
+  const [prodPrice, setProdPrice] = useState("");
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  // Last few outputs, passed to the engine as `avoid` so regenerating never repeats.
+  const [recentTexts, setRecentTexts] = useState<string[]>([]);
+  const fileRef = useRef<HTMLInputElement | null>(null);
+  const [filter, setFilter] = useState<
+    "Todos" | "Facebook" | "WhatsApp" | "Achadinhos" | "Promoções" | "Shopee"
+  >("Todos");
   const [search, setSearch] = useState("");
   const groupsRef = useRef<HTMLDivElement | null>(null);
   const [highlightGroups, setHighlightGroups] = useState(false);
@@ -104,9 +120,40 @@ function Grupos() {
   const [generatorCollapsed, setGeneratorCollapsed] = useState(false);
   const [copiedGroupId, setCopiedGroupId] = useState<string | null>(null);
 
-  const selectedProduct = useMemo(
-    () => meus.find((p) => p.id === productId) ?? meus[0],
-    [meus, productId],
+  const normalizedLink = normalizeUrl(prodLink);
+  const linkInvalid = prodLink.trim().length > 0 && !normalizedLink;
+  const canGenerate = prodName.trim().length > 0 && prodDesc.trim().length > 0 && !!normalizedLink;
+
+  // Shortcut: picking a catalog product fills the fields once; everything stays
+  // editable afterwards — nothing re-fills on render.
+  const applyCatalogProduct = (id: string) => {
+    setProductId(id);
+    const p = meus.find((x) => x.id === id);
+    if (!p) return;
+    const cat = catalogProducts.find((cp) => cp.id === p.productId);
+    setProdName(p.name);
+    setProdDesc(p.generatedDescription || cat?.description || "");
+    setProdLink(cat?.sourceUrl ?? "");
+    setProdPrice(p.recommendedPrice > 0 ? p.recommendedPrice.toFixed(2).replace(".", ",") : "");
+  };
+
+  // Revoke the previous preview URL whenever it is replaced or removed, and on unmount.
+  useEffect(() => {
+    return () => {
+      if (photoUrl) URL.revokeObjectURL(photoUrl);
+    };
+  }, [photoUrl]);
+
+  // Web Share with files — only offered when the browser genuinely supports it;
+  // everywhere else the UI shows separate copy/download actions instead.
+  const canWebShare = useMemo(
+    () =>
+      !!photo &&
+      typeof navigator !== "undefined" &&
+      typeof navigator.share === "function" &&
+      typeof navigator.canShare === "function" &&
+      navigator.canShare({ files: [photo] }),
+    [photo],
   );
 
   const [windowIndex, setWindowIndex] = useState(() => spWindowIndex(DAY_MS));
@@ -128,13 +175,50 @@ function Grupos() {
   }, []);
 
   const handleGenerate = () => {
-    if (!selectedProduct) return;
+    if (!canGenerate || !normalizedLink) return;
     setLoading(true);
     const delay = 2000 + Math.floor(Math.random() * 1500);
     setTimeout(() => {
-      setText(generatePromoText({ name: selectedProduct.name, price: selectedProduct.recommendedPrice, category: selectedProduct.category, tone }));
+      const result = generateCopy(
+        {
+          name: prodName.trim(),
+          description: prodDesc.trim(),
+          link: normalizedLink,
+          price: parsePrice(prodPrice),
+          tone,
+        },
+        recentTexts,
+      );
+      setText(result);
+      setRecentTexts((prev) => [result, ...prev].slice(0, 5));
       setLoading(false);
     }, delay);
+  };
+
+  const handleShare = () => {
+    if (!photo) return;
+    // Swallow rejections: the user dismissing the native sheet is not an error.
+    navigator.share({ files: [photo], text }).catch(() => {});
+  };
+
+  const handleDownloadPhoto = () => {
+    if (!photo || !photoUrl) return;
+    const dot = photo.name.lastIndexOf(".");
+    const ext = dot >= 0 ? photo.name.slice(dot) : "";
+    const slug =
+      prodName
+        .trim()
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/\p{M}/gu, "")
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)/g, "") || "produto";
+    const a = document.createElement("a");
+    a.href = photoUrl;
+    a.download = `${slug}${ext}`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
   };
 
   const handleCopy = () => {
@@ -154,8 +238,9 @@ function Grupos() {
     return groups
       .filter((g) => {
         if (!g.url) return false;
-        if (filter === "Facebook" || filter === "WhatsApp") { if (g.platform !== filter) return false; }
-        else if (filter !== "Todos") {
+        if (filter === "Facebook" || filter === "WhatsApp") {
+          if (g.platform !== filter) return false;
+        } else if (filter !== "Todos") {
           const hay = `${g.name} ${g.category} ${g.description}`.toLowerCase();
           if (!hay.includes(filter.toLowerCase())) return false;
         }
@@ -169,18 +254,31 @@ function Grupos() {
       .sort((a, b) => catalogOrder(a.id, windowIndex) - catalogOrder(b.id, windowIndex));
   }, [filter, search, windowIndex]);
 
-  const filters: Array<typeof filter> = ["Todos", "Facebook", "WhatsApp", "Achadinhos", "Promoções", "Shopee"];
+  const filters: Array<typeof filter> = [
+    "Todos",
+    "Facebook",
+    "WhatsApp",
+    "Achadinhos",
+    "Promoções",
+    "Shopee",
+  ];
   const filterIcons: Record<typeof filter, string> = {
-    "Todos": "🌐", "Facebook": "👤", "WhatsApp": "💬",
-    "Achadinhos": "🏷️", "Promoções": "🔥", "Shopee": "🛍️",
+    Todos: "🌐",
+    Facebook: "👤",
+    WhatsApp: "💬",
+    Achadinhos: "🏷️",
+    Promoções: "🔥",
+    Shopee: "🛍️",
   };
 
   const filterCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const f of filters) {
-      if (f === "Todos") { counts[f] = groups.filter((g) => !!g.url).length; }
-      else if (f === "Facebook" || f === "WhatsApp") { counts[f] = groups.filter((g) => g.platform === f && !!g.url).length; }
-      else {
+      if (f === "Todos") {
+        counts[f] = groups.filter((g) => !!g.url).length;
+      } else if (f === "Facebook" || f === "WhatsApp") {
+        counts[f] = groups.filter((g) => g.platform === f && !!g.url).length;
+      } else {
         counts[f] = groups.filter((g) => {
           if (!g.url) return false;
           const hay = `${g.name} ${g.category} ${g.description}`.toLowerCase();
@@ -235,11 +333,13 @@ function Grupos() {
       {/* Desktop: 3-step numbered strip */}
       <div className="mb-6 hidden sm:block">
         <div className="flex items-center justify-center gap-0">
-          {([
-            { n: 1, label: "Gere o texto" },
-            { n: 2, label: "Escolha o grupo" },
-            { n: 3, label: "Copie e publique" },
-          ] as const).map(({ n, label }, i) => {
+          {(
+            [
+              { n: 1, label: "Gere o texto" },
+              { n: 2, label: "Escolha o grupo" },
+              { n: 3, label: "Copie e publique" },
+            ] as const
+          ).map(({ n, label }, i) => {
             const isActive = step === n;
             const isDone = step > n;
             return (
@@ -250,17 +350,23 @@ function Grupos() {
                     isActive
                       ? "grp-active-ring bg-[var(--accent)] text-white scale-110"
                       : isDone
-                      ? "bg-[var(--accent)] text-white"
-                      : "border-2 border-[var(--border)] text-[var(--muted)]"
+                        ? "bg-[var(--accent)] text-white"
+                        : "border-2 border-[var(--border)] text-[var(--muted)]"
                   }`}
-                  style={(isActive || isDone) ? { backgroundImage: "var(--accent-gradient)" } : undefined}
+                  style={
+                    isActive || isDone ? { backgroundImage: "var(--accent-gradient)" } : undefined
+                  }
                 >
                   {isDone ? <CheckCircle2 className="h-5 w-5" /> : n}
                 </div>
                 {/* Label */}
                 <span
                   className={`ml-3 text-sm font-semibold transition-colors duration-500 ${
-                    isActive ? "text-[var(--accent)]" : isDone ? "text-[var(--text)]" : "text-[var(--muted)]"
+                    isActive
+                      ? "text-[var(--accent)]"
+                      : isDone
+                        ? "text-[var(--text)]"
+                        : "text-[var(--muted)]"
                   }`}
                 >
                   {label}
@@ -270,14 +376,18 @@ function Grupos() {
                   <div className="mx-4 h-0.5 w-12 rounded-full bg-[var(--muted-bg)] overflow-hidden">
                     <div
                       className={`h-full rounded-full transition-all duration-700 ${
-                        step > i + 1 ? "bg-[var(--accent)]" : step === i + 1 ? "bg-[var(--accent-soft)]" : ""
+                        step > i + 1
+                          ? "bg-[var(--accent)]"
+                          : step === i + 1
+                            ? "bg-[var(--accent-soft)]"
+                            : ""
                       }`}
                       style={
                         step > i + 1
                           ? { width: "100%", backgroundImage: "var(--accent-gradient)" }
                           : step === i + 1
-                          ? { width: "40%", backgroundColor: "var(--accent-soft)" }
-                          : { width: "0%" }
+                            ? { width: "40%", backgroundColor: "var(--accent-soft)" }
+                            : { width: "0%" }
                       }
                     />
                   </div>
@@ -300,15 +410,31 @@ function Grupos() {
         >
           <Sparkles className="h-4 w-4" />
           Como funciona
-          <ChevronDown className={`h-4 w-4 transition-transform ${stepsExpanded ? "rotate-180" : ""}`} />
+          <ChevronDown
+            className={`h-4 w-4 transition-transform ${stepsExpanded ? "rotate-180" : ""}`}
+          />
         </button>
         {stepsExpanded && (
           <div className="mt-4 space-y-3">
-            {([
-              { n: 1, label: "Gere o texto", desc: "A IA analisa seu produto, preço e tom ideal para criar uma copy pronta para publicar nos grupos." },
-              { n: 2, label: "Escolha o grupo", desc: "Filtre por plataforma, categoria ou pesquise. Encontre os grupos com maior engajamento." },
-              { n: 3, label: "Copie e publique", desc: "Com um clique o texto vai para a área de transferência. Cole no grupo e aguarde os resultados." },
-            ] as const).map(({ n, label, desc }) => {
+            {(
+              [
+                {
+                  n: 1,
+                  label: "Gere o texto",
+                  desc: "A IA analisa seu produto, preço e tom ideal para criar uma copy pronta para publicar nos grupos.",
+                },
+                {
+                  n: 2,
+                  label: "Escolha o grupo",
+                  desc: "Filtre por plataforma, categoria ou pesquise. Encontre os grupos com maior engajamento.",
+                },
+                {
+                  n: 3,
+                  label: "Copie e publique",
+                  desc: "Com um clique o texto vai para a área de transferência. Cole no grupo e aguarde os resultados.",
+                },
+              ] as const
+            ).map(({ n, label, desc }) => {
               const isActive = step === n;
               const isDone = step > n;
               return (
@@ -318,15 +444,19 @@ function Grupos() {
                       isActive
                         ? "grp-active-ring bg-[var(--accent)] text-white"
                         : isDone
-                        ? "bg-[var(--accent)] text-white"
-                        : "border-2 border-[var(--border)] text-[var(--muted)]"
+                          ? "bg-[var(--accent)] text-white"
+                          : "border-2 border-[var(--border)] text-[var(--muted)]"
                     }`}
-                    style={(isActive || isDone) ? { backgroundImage: "var(--accent-gradient)" } : undefined}
+                    style={
+                      isActive || isDone ? { backgroundImage: "var(--accent-gradient)" } : undefined
+                    }
                   >
                     {isDone ? <CheckCircle2 className="h-4 w-4" /> : n}
                   </div>
                   <div>
-                    <span className={`text-sm font-semibold ${isActive ? "text-[var(--accent)]" : isDone ? "text-[var(--text)]" : "text-[var(--muted)]"}`}>
+                    <span
+                      className={`text-sm font-semibold ${isActive ? "text-[var(--accent)]" : isDone ? "text-[var(--text)]" : "text-[var(--muted)]"}`}
+                    >
                       {label}
                     </span>
                     <p className="mt-0.5 text-xs text-[var(--muted)]">{desc}</p>
@@ -352,7 +482,9 @@ function Grupos() {
             >
               <Sparkles className="h-3.5 w-3.5" />
               {generatorCollapsed ? "Mostrar gerador" : "Ocultar gerador"}
-              <ChevronDown className={`h-3.5 w-3.5 transition-transform ${generatorCollapsed ? "" : "rotate-180"}`} />
+              <ChevronDown
+                className={`h-3.5 w-3.5 transition-transform ${generatorCollapsed ? "" : "rotate-180"}`}
+              />
             </button>
           )}
 
@@ -371,45 +503,61 @@ function Grupos() {
                   <Sparkles className="h-4.5 w-4.5 text-[var(--accent)]" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-[var(--text)]">Gerador de texto com IA</h3>
+                  <h3 className="text-base font-bold text-[var(--text)]">
+                    Gerador de texto com IA
+                  </h3>
                   <p className="text-xs text-[var(--muted)]">
-                    Escolha um produto e o tom da oferta
+                    Descreva o produto e escolha o tom da oferta
                   </p>
                 </div>
               </div>
 
-              {meus.length === 0 ? (
-                <div className="relative mt-4 rounded-xl border-2 border-dashed border-[var(--border)] p-8 text-center">
-                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-[var(--accent-soft)]">
-                    <Sparkles className="h-7 w-7 text-[var(--accent)]/50" />
+              <div className="relative space-y-4">
+                {meus.length === 0 && (
+                  <div className="rounded-xl bg-[var(--accent-soft)] px-3.5 py-3 text-xs leading-relaxed text-[var(--muted)]">
+                    Você ainda não possui produtos cadastrados — preencha os campos abaixo para
+                    divulgar qualquer produto, ou{" "}
+                    <a
+                      href="https://affiliate.shopee.com.br/dashboard"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-semibold text-[var(--accent)] hover:underline"
+                    >
+                      cadastre na Shopee Afiliados
+                    </a>
+                    .
                   </div>
-                  <p className="mt-4 text-sm font-medium text-[var(--muted)]">Você ainda não possui produtos para divulgar.</p>
-                  <p className="mt-1 text-xs text-[var(--muted)]">Cadastre produtos na Shopee para começar.</p>
-                  <a href="https://affiliate.shopee.com.br/dashboard" target="_blank" rel="noopener noreferrer" className="mt-4 inline-block">
-                    <Button size="sm" variant="outline" className="rounded-xl border-[var(--border)] bg-[var(--surface)] text-sm font-medium text-[var(--muted)] transition-all hover:border-[var(--accent)]/30 hover:text-[var(--accent)]" style={{ boxShadow: "var(--shadow-card)" }}>
-                      <ExternalLink className="mr-1.5 h-3.5 w-3.5" /> Cadastrar na Shopee Afiliados
-                    </Button>
-                  </a>
-                </div>
-              ) : (
-                <div className="relative space-y-4">
-                  {/* Product selector */}
+                )}
+
+                {/* Catalog shortcut — picking a product pre-fills the manual form below */}
+                {meus.length > 0 && (
                   <div>
                     <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">
-                      Escolha o produto
+                      Usar um dos meus produtos
                     </label>
-                    <Select value={productId} onValueChange={setProductId}>
-                      <SelectTrigger className="h-11 rounded-xl border-[var(--border)] bg-[var(--surface)] text-sm focus-visible:ring-[var(--accent)]/30" style={{ boxShadow: "var(--shadow-card)" }}>
+                    <Select value={productId} onValueChange={applyCatalogProduct}>
+                      <SelectTrigger
+                        className="h-11 rounded-xl border-[var(--border)] bg-[var(--surface)] text-sm focus-visible:ring-[var(--accent)]/30"
+                        style={{ boxShadow: "var(--shadow-card)" }}
+                      >
                         <SelectValue placeholder="Selecione um produto" />
                       </SelectTrigger>
                       <SelectContent>
                         {meus.map((p) => (
                           <SelectItem key={p.id} value={p.id}>
                             <span className="flex items-center gap-2">
-                              {p.image && <img src={p.image} alt="" className="h-5 w-5 rounded object-cover" />}
+                              {p.image && (
+                                <img
+                                  src={p.image}
+                                  alt=""
+                                  className="h-5 w-5 rounded object-cover"
+                                />
+                              )}
                               <span className="truncate max-w-[180px]">{p.name}</span>
                               {p.recommendedPrice > 0 && (
-                                <span className="ml-auto shrink-0 text-[10px] font-medium text-[var(--muted)]">{brl(p.recommendedPrice)}</span>
+                                <span className="ml-auto shrink-0 text-[10px] font-medium text-[var(--muted)]">
+                                  {brl(p.recommendedPrice)}
+                                </span>
                               )}
                             </span>
                           </SelectItem>
@@ -417,101 +565,267 @@ function Grupos() {
                       </SelectContent>
                     </Select>
                   </div>
+                )}
 
-                  {/* Tone picker — horizontal chip group */}
-                  <div>
-                    <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">
-                      Escolha o tom
-                    </label>
-                    <div className="flex flex-wrap gap-1.5">
-                      {tones.map((t) => (
-                        <button
-                          key={t}
-                          type="button"
-                          onClick={() => setTone(t as Tone)}
-                          className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
-                            tone === t
-                              ? "bg-[var(--accent)] text-white"
-                              : "border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:border-[var(--accent)]/30 hover:text-[var(--accent)]"
-                          }`}
-                          style={tone === t ? { backgroundImage: "var(--accent-gradient)" } : { boxShadow: "var(--shadow-card)" }}
-                        >
-                          {t}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                {/* Manual product fields — required: nome, descrição e link */}
+                <div>
+                  <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">
+                    Nome do produto
+                  </label>
+                  <Input
+                    value={prodName}
+                    onChange={(e) => setProdName(e.target.value)}
+                    placeholder="Ex.: Fone Bluetooth TWS"
+                    className="h-11 rounded-xl border-[var(--border)] bg-[var(--surface)] text-sm focus-visible:ring-[var(--accent)]/30"
+                    style={{ boxShadow: "var(--shadow-card)" }}
+                  />
+                </div>
 
-                  {/* Generate CTA */}
-                  <Button
-                    className="h-11 w-full rounded-xl text-sm font-semibold text-white transition-all active:scale-[0.98] disabled:opacity-50"
-                    onClick={handleGenerate}
-                    disabled={loading || !selectedProduct}
-                    style={{
-                      backgroundImage: "var(--accent-gradient)",
-                      boxShadow: "var(--accent-glow)",
-                    }}
-                  >
-                    {loading ? (
-                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Gerando...</>
-                    ) : (
-                      <><Sparkles className="mr-2 h-4 w-4" /> Gerar texto com IA</>
-                    )}
-                  </Button>
+                <div>
+                  <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">
+                    O que ele faz
+                  </label>
+                  <Textarea
+                    value={prodDesc}
+                    onChange={(e) => setProdDesc(e.target.value)}
+                    placeholder="Ex.: cancela ruído, tem 30h de bateria e conexão instantânea"
+                    className="min-h-[76px] resize-y rounded-xl border-[var(--border)] bg-[var(--surface)] text-sm focus-visible:ring-[var(--accent)]/30"
+                    style={{ boxShadow: "var(--shadow-card)" }}
+                  />
+                </div>
 
-                  {/* Loading state */}
-                  {loading && (
-                    <div className="rounded-xl bg-[var(--accent-soft)] p-4 text-center" style={{ boxShadow: "none" }}>
-                      <Loader2 className="mx-auto h-5 w-5 animate-spin text-[var(--accent)]" />
-                      <p className="mt-2 text-xs font-medium text-[var(--text)]">
-                        Inteligência artificial gerando o melhor texto para você divulgar nos grupos...
-                      </p>
-                      <p className="mt-1 text-[11px] text-[var(--muted)]">
-                        Analisando produto, preço, tom da oferta e público ideal...
-                      </p>
-                    </div>
+                <div>
+                  <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">
+                    Link
+                  </label>
+                  <Input
+                    type="url"
+                    inputMode="url"
+                    value={prodLink}
+                    onChange={(e) => setProdLink(e.target.value)}
+                    placeholder="https://shopee.com.br/..."
+                    className={`h-11 rounded-xl bg-[var(--surface)] text-sm ${
+                      linkInvalid
+                        ? "border-destructive focus-visible:ring-destructive/30"
+                        : "border-[var(--border)] focus-visible:ring-[var(--accent)]/30"
+                    }`}
+                    style={{ boxShadow: "var(--shadow-card)" }}
+                  />
+                  {linkInvalid && (
+                    <p className="mt-1 text-[11px] text-destructive">
+                      Link inválido — confira o endereço.
+                    </p>
                   )}
+                </div>
 
-                  {/* Generated text output */}
-                  {!loading && text && (
-                    <div className="space-y-3 rounded-xl border border-[var(--accent)]/20 bg-[var(--accent-soft)] p-4">
-                      <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[var(--accent)]">
-                        <CheckCircle2 className="h-3.5 w-3.5" /> Texto pronto!
+                <div>
+                  <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">
+                    Preço
+                  </label>
+                  <Input
+                    inputMode="decimal"
+                    value={prodPrice}
+                    onChange={(e) => setProdPrice(e.target.value)}
+                    placeholder="Ex.: 49,90 (opcional)"
+                    className="h-11 rounded-xl border-[var(--border)] bg-[var(--surface)] text-sm focus-visible:ring-[var(--accent)]/30"
+                    style={{ boxShadow: "var(--shadow-card)" }}
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">
+                    Foto do produto
+                  </label>
+                  {photoUrl ? (
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-[var(--border)]"
+                        style={{ boxShadow: "var(--shadow-card)" }}
+                      >
+                        <img
+                          src={photoUrl}
+                          alt="Foto do produto"
+                          className="h-full w-full object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPhoto(null);
+                            setPhotoUrl(null);
+                          }}
+                          className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white transition-colors hover:bg-black/80"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
                       </div>
-                      <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3 text-sm leading-relaxed text-[var(--text)] whitespace-pre-line">
-                        {text}
-                      </div>
-                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                      <span className="min-w-0 truncate text-[11px] text-[var(--muted)]">
+                        {photo?.name}
+                      </span>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => fileRef.current?.click()}
+                      className="flex h-20 w-full flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] transition-all hover:border-[var(--accent)]/40 hover:text-[var(--accent)]"
+                    >
+                      <Upload className="h-4 w-4" />
+                      <span className="text-[11px] font-medium">Adicionar foto (opcional)</span>
+                      <span className="text-[10px]">JPG, PNG ou WEBP</span>
+                    </button>
+                  )}
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) {
+                        setPhoto(f);
+                        setPhotoUrl(URL.createObjectURL(f));
+                      }
+                      e.target.value = "";
+                    }}
+                  />
+                </div>
+
+                {/* Tone picker — horizontal chip group */}
+                <div>
+                  <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">
+                    Escolha o tom
+                  </label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {tones.map((t) => (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => setTone(t)}
+                        className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
+                          tone === t
+                            ? "bg-[var(--accent)] text-white"
+                            : "border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:border-[var(--accent)]/30 hover:text-[var(--accent)]"
+                        }`}
+                        style={
+                          tone === t
+                            ? { backgroundImage: "var(--accent-gradient)" }
+                            : { boxShadow: "var(--shadow-card)" }
+                        }
+                      >
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Generate CTA */}
+                <Button
+                  className="h-11 w-full rounded-xl text-sm font-semibold text-white transition-all active:scale-[0.98] disabled:opacity-50"
+                  onClick={handleGenerate}
+                  disabled={loading || !canGenerate}
+                  style={{
+                    backgroundImage: "var(--accent-gradient)",
+                    boxShadow: "var(--accent-glow)",
+                  }}
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Gerando...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="mr-2 h-4 w-4" /> Gerar texto com IA
+                    </>
+                  )}
+                </Button>
+
+                {/* Loading state */}
+                {loading && (
+                  <div
+                    className="rounded-xl bg-[var(--accent-soft)] p-4 text-center"
+                    style={{ boxShadow: "none" }}
+                  >
+                    <Loader2 className="mx-auto h-5 w-5 animate-spin text-[var(--accent)]" />
+                    <p className="mt-2 text-xs font-medium text-[var(--text)]">
+                      Inteligência artificial gerando o melhor texto para você divulgar nos
+                      grupos...
+                    </p>
+                    <p className="mt-1 text-[11px] text-[var(--muted)]">
+                      Analisando produto, preço, tom da oferta e público ideal...
+                    </p>
+                  </div>
+                )}
+
+                {/* Generated text output */}
+                {!loading && text && (
+                  <div className="space-y-3 rounded-xl border border-[var(--accent)]/20 bg-[var(--accent-soft)] p-4">
+                    <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[var(--accent)]">
+                      <CheckCircle2 className="h-3.5 w-3.5" /> Texto pronto!
+                    </div>
+                    <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3 text-sm leading-relaxed text-[var(--text)] whitespace-pre-line">
+                      {text}
+                    </div>
+                    <div
+                      className={`grid grid-cols-1 gap-2 ${photo ? "sm:grid-cols-2" : "sm:grid-cols-3"}`}
+                    >
+                      <Button
+                        size="sm"
+                        onClick={handleCopy}
+                        className="rounded-xl text-xs font-semibold text-white transition-all active:scale-[0.98]"
+                        style={{
+                          backgroundImage: "var(--accent-gradient)",
+                          boxShadow: "var(--accent-glow)",
+                        }}
+                      >
+                        <Copy className="mr-1 h-3 w-3" /> Copiar texto
+                      </Button>
+                      {photo && canWebShare && (
                         <Button
                           size="sm"
-                          onClick={handleCopy}
+                          onClick={handleShare}
                           className="rounded-xl text-xs font-semibold text-white transition-all active:scale-[0.98]"
-                          style={{ backgroundImage: "var(--accent-gradient)", boxShadow: "var(--accent-glow)" }}
+                          style={{
+                            backgroundImage: "var(--accent-gradient)",
+                            boxShadow: "var(--accent-glow)",
+                          }}
                         >
-                          <Copy className="mr-1 h-3 w-3" /> Copiar texto
+                          <Share2 className="mr-1 h-3 w-3" /> Compartilhar
                         </Button>
+                      )}
+                      {photo && !canWebShare && (
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={handleGenerate}
+                          onClick={handleDownloadPhoto}
                           className="rounded-xl border-[var(--border)] bg-[var(--surface)] text-xs font-medium text-[var(--muted)] transition-all hover:border-[var(--accent)]/30 hover:text-[var(--accent)]"
                           style={{ boxShadow: "var(--shadow-card)" }}
                         >
-                          <RefreshCw className="mr-1 h-3 w-3" /> Gerar outro
+                          <Download className="mr-1 h-3 w-3" /> Baixar imagem
                         </Button>
-                        <Button
-                          size="sm"
-                          onClick={handleUseInGroups}
-                          className="rounded-xl text-xs font-semibold text-white transition-all active:scale-[0.98]"
-                          style={{ backgroundImage: "var(--accent-gradient)", boxShadow: "var(--accent-glow)" }}
-                        >
-                          <ArrowDown className="mr-1 h-3 w-3" /> Usar nos grupos
-                        </Button>
-                      </div>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleGenerate}
+                        className="rounded-xl border-[var(--border)] bg-[var(--surface)] text-xs font-medium text-[var(--muted)] transition-all hover:border-[var(--accent)]/30 hover:text-[var(--accent)]"
+                        style={{ boxShadow: "var(--shadow-card)" }}
+                      >
+                        <RefreshCw className="mr-1 h-3 w-3" /> Gerar outro
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={handleUseInGroups}
+                        className="rounded-xl text-xs font-semibold text-white transition-all active:scale-[0.98]"
+                        style={{
+                          backgroundImage: "var(--accent-gradient)",
+                          boxShadow: "var(--accent-glow)",
+                        }}
+                      >
+                        <ArrowDown className="mr-1 h-3 w-3" /> Usar nos grupos
+                      </Button>
                     </div>
-                  )}
-                </div>
-              )}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -520,7 +834,9 @@ function Grupos() {
         <div
           ref={groupsRef}
           className={`min-w-0 rounded-[16px] transition-all duration-500 ${
-            highlightGroups ? "ring-2 ring-[var(--accent)] ring-offset-2 ring-offset-[var(--bg)]" : ""
+            highlightGroups
+              ? "ring-2 ring-[var(--accent)] ring-offset-2 ring-offset-[var(--bg)]"
+              : ""
           }`}
         >
           {/* Filters + Search row */}
@@ -538,13 +854,18 @@ function Grupos() {
                   }`}
                   style={
                     filter === f
-                      ? { backgroundImage: "var(--accent-gradient)", boxShadow: "var(--accent-glow)" }
+                      ? {
+                          backgroundImage: "var(--accent-gradient)",
+                          boxShadow: "var(--accent-glow)",
+                        }
                       : { boxShadow: "var(--shadow-card)" }
                   }
                 >
                   <span className="text-[11px]">{filterIcons[f]}</span>
                   <span>{f}</span>
-                  <span className={`ml-0.5 text-[10px] ${filter === f ? "opacity-80" : "opacity-50"}`}>
+                  <span
+                    className={`ml-0.5 text-[10px] ${filter === f ? "opacity-80" : "opacity-50"}`}
+                  >
                     {filterCounts[f] ?? 0}
                   </span>
                 </button>
@@ -555,7 +876,10 @@ function Grupos() {
             <div className="relative w-full sm:w-[220px] shrink-0">
               <svg
                 className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--muted)]"
-                fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
               >
                 <circle cx="11" cy="11" r="7" />
                 <path d="M21 21l-4.35-4.35" />
@@ -587,17 +911,25 @@ function Grupos() {
                   <Copy className="mr-1 h-3 w-3" /> Copiar texto
                 </Button>
               </div>
-              <p className="mt-1.5 line-clamp-2 whitespace-pre-line text-xs text-[var(--text)]">{text}</p>
+              <p className="mt-1.5 line-clamp-2 whitespace-pre-line text-xs text-[var(--text)]">
+                {text}
+              </p>
             </div>
           )}
 
           {/* Admin updating banner */}
           {!isAdmin && (
             <div className="mb-3 flex items-center gap-3 rounded-xl border border-[var(--accent)]/20 bg-[var(--accent-soft)] px-4 py-3">
-              <RefreshCcw className="h-4 w-4 shrink-0 animate-spin text-[var(--accent)]" style={{ animationDuration: "2s" }} />
+              <RefreshCcw
+                className="h-4 w-4 shrink-0 animate-spin text-[var(--accent)]"
+                style={{ animationDuration: "2s" }}
+              />
               <div>
                 <div className="text-sm font-semibold text-[var(--accent)]">Grupos atualizando</div>
-                <div className="text-xs text-[var(--muted)]">Nossa equipe está verificando e adicionando novos grupos de divulgação. Em breve estarão disponíveis.</div>
+                <div className="text-xs text-[var(--muted)]">
+                  Nossa equipe está verificando e adicionando novos grupos de divulgação. Em breve
+                  estarão disponíveis.
+                </div>
               </div>
             </div>
           )}
@@ -606,7 +938,9 @@ function Grupos() {
           {!infoDismissed && (
             <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-[var(--accent-soft)] px-3 py-1.5 text-[11px] text-[var(--muted)]">
               <ShieldCheck className="h-3 w-3 shrink-0 text-[var(--accent)]/60" />
-              <span>Os links são públicos. Alguns grupos podem exigir aprovação do administrador.</span>
+              <span>
+                Os links são públicos. Alguns grupos podem exigir aprovação do administrador.
+              </span>
               <button
                 onClick={() => setInfoDismissed(true)}
                 className="ml-1 flex h-4 w-4 items-center justify-center rounded-full text-[var(--muted)] hover:bg-[var(--muted-bg)] hover:text-[var(--text)] transition-colors"
@@ -638,7 +972,9 @@ function Grupos() {
                           <PlatformIcon className="h-3.5 w-3.5 text-[var(--accent)]" />
                         </div>
                         {/* Group name */}
-                        <h4 className="text-sm font-bold text-[var(--text)] line-clamp-2 leading-tight">{g.name}</h4>
+                        <h4 className="text-sm font-bold text-[var(--text)] line-clamp-2 leading-tight">
+                          {g.name}
+                        </h4>
                       </div>
                       {/* Platform label */}
                       <div className="mt-1 ml-9 text-[10px] text-[var(--muted)]">{g.platform}</div>
@@ -657,7 +993,9 @@ function Grupos() {
                     </div>
                     <div className="inline-flex items-center gap-1 rounded-full bg-[var(--muted-bg)] px-2 py-0.5">
                       <Clock className="h-3 w-3 text-[var(--muted)]" />
-                      <span className="text-[var(--muted)]">Melhor: <span className="font-medium text-[var(--text)]">{g.bestTime}</span></span>
+                      <span className="text-[var(--muted)]">
+                        Melhor: <span className="font-medium text-[var(--text)]">{g.bestTime}</span>
+                      </span>
                     </div>
                     {parseActiveNow(g.bestTime) && (
                       <span className="inline-flex items-center gap-1 rounded-full bg-[var(--accent-soft)] px-2 py-0.5 text-[10px] font-bold text-[var(--accent)]">
@@ -668,7 +1006,9 @@ function Grupos() {
 
                   {/* Description */}
                   {g.description && (
-                    <p className="mt-2 text-[11px] leading-relaxed text-[var(--muted)] line-clamp-2">{g.description}</p>
+                    <p className="mt-2 text-[11px] leading-relaxed text-[var(--muted)] line-clamp-2">
+                      {g.description}
+                    </p>
                   )}
 
                   {/* Verification note */}
@@ -706,7 +1046,11 @@ function Grupos() {
                         style={{ boxShadow: "var(--shadow-card)" }}
                         disabled
                       >
-                        <RefreshCcw className="mr-1 h-3 w-3 animate-spin" style={{ animationDuration: "2s" }} /> Atualizando...
+                        <RefreshCcw
+                          className="mr-1 h-3 w-3 animate-spin"
+                          style={{ animationDuration: "2s" }}
+                        />{" "}
+                        Atualizando...
                       </Button>
                     )}
                     <Button
@@ -717,7 +1061,10 @@ function Grupos() {
                       style={
                         copiedGroupId === g.id
                           ? { backgroundImage: "var(--accent-gradient)" }
-                          : { backgroundImage: "var(--accent-gradient)", boxShadow: "var(--accent-glow)" }
+                          : {
+                              backgroundImage: "var(--accent-gradient)",
+                              boxShadow: "var(--accent-glow)",
+                            }
                       }
                       onClick={() => {
                         handleCopy();
@@ -728,9 +1075,13 @@ function Grupos() {
                       disabled={!text}
                     >
                       {copiedGroupId === g.id ? (
-                        <><CheckCircle2 className="mr-1 h-3 w-3" /> Copiado!</>
+                        <>
+                          <CheckCircle2 className="mr-1 h-3 w-3" /> Copiado!
+                        </>
                       ) : (
-                        <><Copy className="mr-1 h-3 w-3" /> Copiar texto</>
+                        <>
+                          <Copy className="mr-1 h-3 w-3" /> Copiar texto
+                        </>
                       )}
                     </Button>
                   </div>
@@ -744,8 +1095,12 @@ function Grupos() {
                 <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-[var(--accent-soft)]">
                   <ExternalLink className="h-7 w-7 text-[var(--accent)]/50" />
                 </div>
-                <p className="mt-4 text-sm font-semibold text-[var(--muted)]">Nenhum grupo encontrado</p>
-                <p className="mt-1 text-xs text-[var(--muted)]">Tente ajustar os filtros ou a busca.</p>
+                <p className="mt-4 text-sm font-semibold text-[var(--muted)]">
+                  Nenhum grupo encontrado
+                </p>
+                <p className="mt-1 text-xs text-[var(--muted)]">
+                  Tente ajustar os filtros ou a busca.
+                </p>
               </div>
             )}
           </div>
