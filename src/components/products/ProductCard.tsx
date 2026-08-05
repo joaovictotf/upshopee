@@ -38,9 +38,29 @@ function scoreFor(id: string): number {
 
 const AFFILIATE_BADGES = ["Em alta", "Mais vendido", "Alta conversão", "Tendência", "Oportunidade"];
 
-function badgeFor(item: CatalogItem): string {
-  if (item.kind === "legacy") return item.product.tags[0] ?? item.product.category;
-  return AFFILIATE_BADGES[fnv1a(item.product.id + ":badge") % AFFILIATE_BADGES.length];
+/** Real Shopee sales needed for "Alta procura" on the new batch (n 251-300).
+ *  ≥150 marks the top 15 of the 50 (median is 43) so the badge stays a
+ *  signal, not wallpaper. Only the new products carry a real `sales` count —
+ *  everything else keeps the deterministic pseudo-random badge below. */
+const HIGH_DEMAND_MIN_SALES = 150;
+
+type CardBadge = { label: string; accent: boolean };
+
+function badgesFor(item: CatalogItem): CardBadge[] {
+  if (item.kind === "legacy")
+    return [{ label: item.product.tags[0] ?? item.product.category, accent: false }];
+  if (item.product.isNew) {
+    const badges: CardBadge[] = [{ label: "Produto novo", accent: true }];
+    if ((item.product.sales ?? 0) >= HIGH_DEMAND_MIN_SALES)
+      badges.push({ label: "Alta procura", accent: false });
+    return badges;
+  }
+  return [
+    {
+      label: AFFILIATE_BADGES[fnv1a(item.product.id + ":badge") % AFFILIATE_BADGES.length],
+      accent: false,
+    },
+  ];
 }
 
 const compactViews = new Intl.NumberFormat("pt-BR", {
@@ -65,6 +85,7 @@ export function ProductCard({
   onSelectLegacy: (p: Product) => void;
 }) {
   const { id, name, category, image } = item.product;
+  const isNew = item.kind === "affiliate" && item.product.isNew === true;
   const commission = item.kind === "affiliate" ? item.product.commissionBRL : item.product.estimatedCommission;
   const commissionPct =
     item.kind === "affiliate"
@@ -72,7 +93,17 @@ export function ProductCard({
       : Math.round((item.product.estimatedCommission / item.product.suggestedPrice) * 100);
 
   return (
-    <div className="group flex flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-card)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--accent)]/35 hover:shadow-[var(--shadow-elevated)]">
+    <div
+      data-new-product={isNew ? "true" : undefined}
+      // New products get an accent frame — border + hairline ring around the
+      // whole card. Soft opacities so 50 of them in a 300-card grid read as a
+      // quiet tint, not a wall of orange competing with the CTA button.
+      className={`group flex flex-col overflow-hidden rounded-2xl border bg-[var(--surface)] shadow-[var(--shadow-card)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-elevated)] ${
+        isNew
+          ? "border-[var(--accent)]/40 ring-1 ring-[var(--accent)]/20 hover:border-[var(--accent)]/60"
+          : "border-[var(--border)] hover:border-[var(--accent)]/35"
+      }`}
+    >
       {/* Image */}
       <div className="relative aspect-square overflow-hidden bg-[var(--muted-bg)]">
         <img
@@ -87,9 +118,22 @@ export function ProductCard({
           }}
           className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.04]"
         />
-        <span className="absolute left-2 top-2 max-w-[85%] truncate rounded-full border border-[var(--border)]/70 bg-[var(--surface)]/90 px-2 py-0.5 text-[10px] font-semibold text-[var(--text)] backdrop-blur-sm">
-          {badgeFor(item)}
-        </span>
+        {/* Stacked so "Produto novo" + "Alta procura" never overflow the
+            ~150px-wide card of a 320px two-column grid. */}
+        <div className="absolute left-2 top-2 flex max-w-[85%] flex-col items-start gap-1">
+          {badgesFor(item).map(({ label, accent }) => (
+            <span
+              key={label}
+              className={`max-w-full truncate rounded-full border bg-[var(--surface)]/90 px-2 py-0.5 text-[10px] font-semibold backdrop-blur-sm ${
+                accent
+                  ? "border-[var(--accent)]/50 text-[var(--accent)]"
+                  : "border-[var(--border)]/70 text-[var(--text)]"
+              }`}
+            >
+              {label}
+            </span>
+          ))}
+        </div>
       </div>
 
       {/* Body */}

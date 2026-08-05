@@ -5,6 +5,7 @@ import { products, categories, type Product } from "../lib/mock/products";
 import { affiliateProducts } from "../lib/mock/affiliate-products";
 import { ProductCard, catalogOrder, type CatalogItem } from "../components/products/ProductCard";
 import { GenerateListingFlow } from "../components/products/GenerateListingFlow";
+import { NewProductsAnnouncement } from "../components/products/NewProductsAnnouncement";
 import { Input } from "../components/ui/input";
 import { RolePickerDialog } from "../components/products/RolePickerDialog";
 import { Search, Package } from "lucide-react";
@@ -233,6 +234,9 @@ function Produtos() {
         }}
         onClose={() => setRolePickProduct(null)}
       />
+
+      {/* One-time (localStorage-gated) announcement of the 50 new products */}
+      <NewProductsAnnouncement />
     </DashboardShell>
   );
 }
