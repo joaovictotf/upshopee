@@ -951,7 +951,18 @@ function Grupos() {
           )}
 
           {/* Refresh cadence note */}
-          <p className="mb-3 text-xs text-[var(--muted)]">Grupos atualizam todos os dias</p>
+          <div
+            className="mb-3 flex items-center gap-2.5 rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3"
+            style={{ boxShadow: "var(--shadow-card)" }}
+          >
+            <span className="relative flex h-2 w-2 shrink-0" aria-hidden="true">
+              <span className="absolute inset-0 animate-ping rounded-full bg-[var(--accent)] motion-reduce:animate-none" />
+              <span className="relative block h-2 w-2 rounded-full bg-[var(--accent)]" />
+            </span>
+            <p className="text-xs font-semibold text-[var(--muted)]">
+              Grupos atualizam todos os dias
+            </p>
+          </div>
 
           {/* Groups grid — responsive 3/2/1 columns */}
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">

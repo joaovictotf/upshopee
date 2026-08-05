@@ -43,13 +43,55 @@ function ProdutosCountdown() {
   const m = Math.floor((totalSeconds % 3600) / 60);
   const s = totalSeconds % 60;
 
+  // Pure presentational read of the existing totalSeconds — does not touch the timer.
+  const closingSoon = totalSeconds < 60;
+
   return (
-    <p className="mb-4 text-xs text-[var(--muted)]">
-      Produtos atualizam em{" "}
-      <span className="font-semibold text-[var(--text)]">
-        {h}h {String(m).padStart(2, "0")}m {String(s).padStart(2, "0")}s
+    <div
+      // mt-16: the sticky search/filter bar above renders its "stuck" box
+      // ~64px (its own top-16 offset) lower than the space flow reserves for
+      // it — a pre-existing quirk from the .page-enter wrapper's transform
+      // interacting with position:sticky, not something introduced here.
+      // This clearance keeps the card from being painted over by it.
+      className={`mt-16 mb-5 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl border px-4 py-3 transition-colors duration-500 sm:px-5 ${
+        closingSoon
+          ? "border-[var(--accent)]/40 bg-[var(--accent-soft)]"
+          : "border-[var(--border)] bg-[var(--surface)]"
+      }`}
+      style={{ boxShadow: "var(--shadow-card)" }}
+    >
+      <span className="relative flex h-2 w-2 shrink-0" aria-hidden="true">
+        <span className="absolute inset-0 animate-ping rounded-full bg-[var(--accent)] motion-reduce:animate-none" />
+        <span className="relative block h-2 w-2 rounded-full bg-[var(--accent)]" />
       </span>
-    </p>
+
+      <span className="text-xs font-semibold text-[var(--muted)]">Produtos atualizam em</span>
+
+      <div className="flex items-center gap-1 sm:ml-auto" aria-hidden="true">
+        {[
+          { value: String(h), unit: "h" },
+          { value: String(m).padStart(2, "0"), unit: "m" },
+          { value: String(s).padStart(2, "0"), unit: "s" },
+        ].map(({ value, unit }) => (
+          <span
+            key={unit}
+            className={`flex h-8 min-w-[2.25rem] items-baseline justify-center gap-0.5 rounded-lg px-1.5 text-sm font-bold tabular-nums transition-colors duration-500 ${
+              closingSoon
+                ? "bg-[var(--surface)] text-[var(--accent)]"
+                : "bg-[var(--muted-bg)] text-[var(--text)]"
+            }`}
+          >
+            {value}
+            <span className="text-[10px] font-medium text-[var(--muted)]">{unit}</span>
+          </span>
+        ))}
+      </div>
+
+      {/* Screen readers get the plain sentence; the boxes above are decorative. */}
+      <span className="sr-only">
+        Produtos atualizam em {h}h {String(m).padStart(2, "0")}m {String(s).padStart(2, "0")}s
+      </span>
+    </div>
   );
 }
 
