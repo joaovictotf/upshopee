@@ -239,7 +239,7 @@ Hashes IronPay presentes no código: `zbu0e9tvo9` `wqqa7uihfe` `knwcyeiala` `jxz
 
 1. **Fonte única:** todo valor de venda/comissão vem de `data.salesOrders`. Nada hardcoded, nada divergente entre páginas.
 2. **Mobile-first 320px+:** sem scroll horizontal, sem elemento cortado. Empilha no mobile, grid no desktop.
-3. **Nunca escrever "demo/fake/simulado"** perto de valores, comissões, vendas ou cards de pedido. O aviso discreto de demo já existe — não adicionar outro.
+3. **Aviso de demonstração: um só, no topo do Dashboard.** O banner `DemoPeriodNotice` (`routes/dashboard.index.tsx`) enquadra a tela inteira e é o lugar certo para falar em demonstração. **Nunca escrever "demo/fake/simulado" perto de um valor, comissão, venda ou card de pedido individual** — o aviso fica acima de tudo, nunca ao lado de um número. Existe também a linha discreta em Configurações → Financeiro ("Os valores exibidos podem não representar saldo real disponível para saque."). Esses dois bastam — não adicionar um terceiro.
 4. **Nenhuma transação real** (exceção documentada no §1).
 5. **Diagnóstico antes do fix.** Investigar e reportar antes de mudar código. Nunca mexer às cegas.
 6. **Uma página por vez.** Nunca mudança grande espalhada por vários arquivos.
@@ -248,6 +248,42 @@ Hashes IronPay presentes no código: `zbu0e9tvo9` `wqqa7uihfe` `knwcyeiala` `jxz
 ---
 
 ## 11. PENDÊNCIAS (ordem de prioridade)
+
+### 🔵 EM ANDAMENTO — vendas automáticas religadas (agosto/2026)
+
+As vendas automáticas nunca dispararam de fato: o commit `1200556` passou a
+marcar produto como aprovado só no client, enquanto
+`upsert_my_product_for_validation` continuava gravando `pending_validation` no
+banco — e `release_automatic_demo_sales` exige produto aprovado no banco.
+
+Regras novas do gerador **server-side** (`release_automatic_demo_sales`):
+
+| Regra | Antes | Agora |
+|---|---|---|
+| Teto diário | 4 vendas (contagem) | **R$ 230,00 por valor** |
+| Intervalo entre vendas | 90 min | **60 min** |
+| Comissão por venda | R$ 12–30 | **R$ 30–60** |
+| Espera pós-aprovação | 3 dias | removida |
+
+Detalhes que não podem se perder:
+
+- O teto soma **todas** as linhas de `sales_orders` do dia, **sem filtrar por
+  `source`** — comissões lançadas pelo admin (`source` NULL e
+  `bulk_admin_commission`) aparecem para o usuário, então consomem o mesmo teto.
+- Virada do dia é `date_trunc('day', now() AT TIME ZONE 'America/Sao_Paulo')`.
+  **Nunca `current_date`** — ele vira às 21h de São Paulo e deixaria o total
+  visível chegar a R$ 460.
+- Sobrando entre R$ 30 e R$ 60, a venda sai com exatamente o resto, para o dia
+  fechar em R$ 230,00 e nunca acima. Sobrando menos de R$ 30, não há venda.
+- `pg_advisory_xact_lock(hashtext(user_id::text))` é tomado **antes** da soma,
+  senão duas abas passam pela verificação e as duas inserem.
+- **Ordem de aplicação é requisito de segurança:** a migration cria a função com
+  teto ANTES do `UPDATE` que aprova os produtos existentes. Inverter libera
+  venda sem teto para todas as contas de uma vez.
+- O caminho client-side (`tryAutoSale`) **foi removido** e
+  `create_robo_sale_order` teve o EXECUTE revogado de `authenticated`. Só existe
+  um gerador automático agora, e ele é server-side. Não recriar geração de venda
+  no client — não há como impor teto lá.
 
 ### 🔴 CRÍTICO — bloqueia lançamento
 

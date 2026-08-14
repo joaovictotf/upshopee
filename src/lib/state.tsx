@@ -21,14 +21,14 @@ const ADMIN_PRESENTATION_MODE_KEY = "shopesync_admin_presentation_mode";
 const ADMIN_DEMO_CONN_KEY = "shopesync_admin_demo_connections";
 const VENDAS_HOJE_KEY = (email: string) => `shopesync.vendashoje.${email.toLowerCase()}`;
 const COMMISSION_HIST_KEY = (email: string) => `shopesync.commissionhist.${email.toLowerCase()}`;
-const LAST_AUTO_SALE_KEY = (email: string) => `shopesync.lastautosale.${email.toLowerCase()}`;
 const TODAY_RESET_KEY = (email: string) => `shopesync.todayreset.${email.toLowerCase()}`;
 const ADMIN_BOOST_KEY = "upshopee-admin-boost";
 
-const READY_DELAY_MS = 5 * 60 * 60 * 1000; // 5h após pronto para 1ª venda automática
-const AUTO_SALE_INTERVAL_MS = 5 * 60 * 60 * 1000; // ~5h entre vendas automáticas
-const REGULAR_COMMISSION_POOL = [12.9, 15.4, 18.7, 22.3, 24.9, 27.5, 29.9];
-const ADMIN_COMMISSION_POOL = [30, 45, 60, 85, 110, 150, 200, 250, 300];
+// Automatic sales are generated exclusively server-side by the
+// release_automatic_demo_sales RPC, which enforces the daily value cap and the
+// spacing between sales. The old client-side generator (tryAutoSale + its
+// commission pools and localStorage cooldown) was removed: it had no cap, its
+// cooldown was per-browser, and it called an RPC that accepted any commission.
 
 // GDM / presentation dashboard targets. Today is computed from real orders
 // (so it resets at midnight São Paulo time automatically), while the 7d / 30d
@@ -805,7 +805,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [privacy, setPrivacyState] = useState<boolean>(false);
   const [adminPresentationMode, setAdminPresentationMode] = useState<boolean>(false);
   const [commissionHistory, setCommissionHistory] = useState<CommissionHistory>(emptyHistory());
-  const [lastAutoSaleAt, setLastAutoSaleAt] = useState<number>(0);
   const [authReady, setAuthReady] = useState<boolean>(false);
   const [accounts, setAccounts] = useState<Array<AccountRecord & { email: string }>>([]);
   const [isAdminUser, setIsAdminUser] = useState<boolean>(false);
@@ -881,7 +880,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setData(newUserData());
         setVendasHojeStore({ date: todayKey(), values: { shopee: 0 } });
         setCommissionHistory(emptyHistory());
-        setLastAutoSaleAt(0);
         try { localStorage.removeItem(USER_KEY); } catch {}
         setAuthReady(true);
         return;
@@ -962,10 +960,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setVendasHojeStore(loadVendasHoje(email, admin));
       setCommissionHistory(loadCommissionHistory(email, admin));
       try {
-        const las = localStorage.getItem(LAST_AUTO_SALE_KEY(email));
-        setLastAutoSaleAt(las ? Number(las) || 0 : 0);
-      } catch {}
-      try {
         const tr = Number(localStorage.getItem(TODAY_RESET_KEY(email)) || 0);
         setTodayResetAt(tr > 0 && dateKey(new Date(tr)) === dateKey(new Date()) ? tr : null);
       } catch { setTodayResetAt(null); }
@@ -1010,12 +1004,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (user) persistCommissionHistory(user.email, commissionHistory);
   }, [commissionHistory, user]);
-
-  useEffect(() => {
-    if (user) {
-      try { localStorage.setItem(LAST_AUTO_SALE_KEY(user.email), String(lastAutoSaleAt)); } catch {}
-    }
-  }, [lastAutoSaleAt, user]);
 
   // Near-live payment-block enforcement: poll the current user's
   // approval_status from Supabase so an admin's "Bloquear por falta de
@@ -1185,51 +1173,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // vendasHoje is now derived from server orders — no per-device random growth.
 
-  // Promote "Em configuração" → "Pronto para venda" when estimatedReadyAt passes,
-  // and generate automatic server-side sales for regular users on ready products.
+  // Promote "Em configuração" → "Pronto para venda" once estimatedReadyAt passes.
+  // Sales are NOT generated here — release_automatic_demo_sales (server-side,
+  // capped) is the only automatic sale generator.
   useEffect(() => {
     if (!user) return;
-    const runPromotion = () => {
-      setData((s) => {
-        const next = promoteReadyProducts(s.meusProdutos);
-        return next === s.meusProdutos ? s : { ...s, meusProdutos: next };
-      });
-    };
-    runPromotion();
-
-    const tryAutoSale = async () => {
-      const now = Date.now();
-      const eligibleProducts = data.meusProdutos.filter(
-        (p) => isProductValidatedForSale(p) && p.estimatedReadyAt && (now - p.estimatedReadyAt) >= READY_DELAY_MS && p.marketplaces.length > 0,
-      );
-      if (eligibleProducts.length === 0) return;
-      if (lastAutoSaleAt && (now - lastAutoSaleAt) < AUTO_SALE_INTERVAL_MS) return;
-
-      const product = eligibleProducts[Math.floor(Math.random() * eligibleProducts.length)];
-      const pool = isAdmin ? ADMIN_COMMISSION_POOL : REGULAR_COMMISSION_POOL;
-      const capped = pool[Math.floor(Math.random() * pool.length)];
-
-      // Generate sale server-side via RPC — all devices see the same order.
-      if (product.remoteId) {
-        try {
-          const { error } = await supabase.rpc("create_robo_sale_order", {
-            _product_row_id: product.remoteId,
-            _commission: capped,
-          });
-          if (error) console.warn("[tryAutoSale] RPC error:", error.message);
-        } catch (err) {
-          console.warn("[tryAutoSale] RPC failed:", err);
-        }
-      }
-      setLastAutoSaleAt(now);
-    };
-
-    // Try shortly after mount, then on an interval.
-    const t0 = setTimeout(() => { void tryAutoSale(); }, 4000);
-    const id = setInterval(() => { void tryAutoSale(); }, 60000);
-    return () => { clearTimeout(t0); clearInterval(id); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, isAdmin, data.meusProdutos.length, lastAutoSaleAt]);
+    setData((s) => {
+      const next = promoteReadyProducts(s.meusProdutos);
+      return next === s.meusProdutos ? s : { ...s, meusProdutos: next };
+    });
+  }, [user, data.meusProdutos.length]);
 
   const setSelectedMarketplace = (m: Marketplace) => {
     setSelectedMarketplaceState(m);

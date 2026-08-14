@@ -21,6 +21,7 @@ import {
   ShoppingBag,
   Boxes,
   Package,
+  Info,
 } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMetrics, type RangeKey, type ChartPoint } from "../hooks/use-metrics";
@@ -108,6 +109,26 @@ function DashboardHome() {
 
 // ── Lightning sale helpers ──
 
+// ---------------------------------------------------------------------------
+// DemoPeriodNotice — frames the panel as a whole. Rendered at the very top of
+// /dashboard, above the hero and the metric cards, so it never sits beside an
+// individual commission, value or order card.
+// ---------------------------------------------------------------------------
+const DemoPeriodNotice = memo(function DemoPeriodNotice() {
+  return (
+    <div className="mb-3 flex items-start gap-2.5 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 sm:mb-4 sm:px-4 sm:py-3">
+      <span className="mt-px grid h-6 w-6 shrink-0 place-items-center rounded-lg bg-[var(--accent-soft)]">
+        <Info className="h-3.5 w-3.5 text-[var(--accent)]" />
+      </span>
+      <p className="min-w-0 text-[11px] leading-relaxed text-[var(--muted)] sm:text-xs">
+        <span className="font-medium text-[var(--text)]">Período de demonstração.</span>{" "}
+        Os valores deste painel fazem parte da demonstração da plataforma. Quando sua
+        loja começar a vender, os números passam a refletir seus resultados.
+      </p>
+    </div>
+  );
+});
+
 function NewDashboard() {
   const { privacy } = useApp();
   const [range, setRange] = useState<RangeKey>("today");
@@ -133,6 +154,7 @@ function NewDashboard() {
 
   return (
     <DashboardShell title="Dashboard" subtitle="Painel UpShopee para Shopee" forceLight>
+      <DemoPeriodNotice />
       <NewShopeeHeroPanel valor={m.totalCommission} privacy={privacy} />
       <div className="mt-4 flex flex-col gap-4 lg:grid lg:grid-cols-12 lg:items-stretch">
         <div className="lg:col-span-3 flex flex-col">
