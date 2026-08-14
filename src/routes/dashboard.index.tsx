@@ -23,6 +23,7 @@ import {
   Package,
   Info,
 } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popover";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMetrics, type RangeKey, type ChartPoint } from "../hooks/use-metrics";
 
@@ -110,21 +111,47 @@ function DashboardHome() {
 // ── Lightning sale helpers ──
 
 // ---------------------------------------------------------------------------
-// DemoPeriodNotice — frames the panel as a whole. Rendered at the very top of
-// /dashboard, above the hero and the metric cards, so it never sits beside an
-// individual commission, value or order card.
+// DemoPeriodNotice — quiet affordance, not a banner. Only the info icon shows;
+// the text opens on click (Radix Popover handles click-outside + Escape).
+// Anchored top-left of the content, directly under the shell's "Dashboard"
+// heading and above the metric cards — never beside an individual value.
+//
+// The panel carries `light-scope` on purpose: PopoverContent renders through a
+// Radix Portal into document.body, which sits OUTSIDE the DashboardShell
+// forceLight wrapper. Without it the panel would pick up the global `.dark`
+// tokens from <html> and render dark over this always-light page. The two
+// page-level declarations that class also carries (min-height: 100dvh and the
+// page background) are neutralised inline — `background` still comes from a
+// token, resolved against the light values light-scope declares.
 // ---------------------------------------------------------------------------
 const DemoPeriodNotice = memo(function DemoPeriodNotice() {
   return (
-    <div className="mb-3 flex items-start gap-2.5 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2.5 sm:mb-4 sm:px-4 sm:py-3">
-      <span className="mt-px grid h-6 w-6 shrink-0 place-items-center rounded-lg bg-[var(--accent-soft)]">
-        <Info className="h-3.5 w-3.5 text-[var(--accent)]" />
-      </span>
-      <p className="min-w-0 text-[11px] leading-relaxed text-[var(--muted)] sm:text-xs">
-        <span className="font-medium text-[var(--text)]">Período de demonstração.</span>{" "}
-        Os valores deste painel fazem parte da demonstração da plataforma. Quando sua
-        loja começar a vender, os números passam a refletir seus resultados.
-      </p>
+    <div className="mb-1 flex items-center">
+      <Popover>
+        <PopoverTrigger
+          aria-label="Sobre o período de demonstração"
+          className="-ml-3.5 grid h-11 w-11 shrink-0 place-items-center rounded-full text-[var(--muted)] transition-colors hover:bg-[var(--accent-soft)] hover:text-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)] data-[state=open]:bg-[var(--accent-soft)] data-[state=open]:text-[var(--accent)]"
+        >
+          <Info className="h-4 w-4" />
+        </PopoverTrigger>
+        <PopoverContent
+          align="start"
+          sideOffset={8}
+          collisionPadding={12}
+          className="w-[min(20rem,calc(100vw-2rem))] border-0 bg-transparent p-0 shadow-none"
+        >
+          <div
+            className="light-scope rounded-xl border border-[var(--border)] p-3 shadow-[var(--shadow-elevated)]"
+            style={{ minHeight: 0, background: "var(--surface)" }}
+          >
+            <p className="text-[11px] leading-relaxed text-[var(--muted)] sm:text-xs">
+              <span className="font-medium text-[var(--text)]">Período de demonstração.</span>{" "}
+              Os valores deste painel fazem parte da demonstração da plataforma. Quando sua
+              loja começar a vender, os números passam a refletir seus resultados.
+            </p>
+          </div>
+        </PopoverContent>
+      </Popover>
     </div>
   );
 });
