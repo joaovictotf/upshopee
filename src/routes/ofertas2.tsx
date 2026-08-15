@@ -10,11 +10,11 @@ const CONFIG: LandingConfig = {
   checkouts: {
     mensal: {
       pix: "https://go.ironpayapp.com.br/zbu0e9tvo9?affh=fbws7q9iu5",
-      cartao: "https://checkout.wiven.com.br/checkout/cmqhil5uf00uk01pkrfkcg47g?code=ibzsiib&offer=9FP58KU",
+      cartao: "https://checkout.wiven.com.br/checkout/cmrapl3v50x3h01of62ikqkqv?code=h7jff1l&offer=90DYOXB",
     },
     vitalicio: {
       pix: "https://go.ironpayapp.com.br/wqqa7uihfe?affh=cynvxm3w2g",
-      cartao: "https://checkout.wiven.com.br/checkout/cmqhil5uf00uk01pkrfkcg47g?code=ibzsiib&offer=YO807KG",
+      cartao: "https://checkout.wiven.com.br/checkout/cmrapl3v50x3h01of62ikqkqv?code=h7jff1l&offer=RWEG7U6",
     },
   },
   hasPaymentModal: true,
