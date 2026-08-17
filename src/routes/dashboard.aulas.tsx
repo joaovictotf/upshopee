@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useApp } from "../lib/state";
 import { supabase } from "../integrations/supabase/client";
 import { DashboardShell } from "../components/layout/DashboardShell";
@@ -7,10 +7,21 @@ import {
   Search, Play, Info, Clock, GraduationCap,
   BarChart3, ShoppingBag, MessageCircle,
   Clapperboard, Link2, Star, Sparkles, ChevronDown, X,
-  User, CheckCircle2, Calendar, Trash2,
+  User, CheckCircle2, Calendar, Trash2, QrCode,
 } from "lucide-react";
 import { Input } from "../components/ui/input";
+import { brl } from "../lib/format";
+import { PixQrModal, type PixQrState } from "../components/PixQrModal";
 import { toast } from "sonner";
+
+// Mesma função que o Impulsionar usa. Para a aula só se manda { bookingId } —
+// o valor e o clientReference saem da linha de class_bookings, no servidor.
+const EVOPAY_CREATE_PIX_URL =
+  "https://ndawyrqzqhzbyjdmkdge.supabase.co/functions/v1/evopay-create-pix";
+
+/** Validade de uma reserva pendente. Igual ao expiresIn do PIX em
+ *  evopay-create-pix e à janela anti-spam de create_class_booking. */
+const PENDING_TTL_MS = 30 * 60 * 1000;
 
 export const Route = createFileRoute("/dashboard/aulas")({ component: AulasPage });
 
@@ -47,6 +58,30 @@ const TIME_SLOTS: TimeSlot[] = [
   { time: "22:00", totalSpots: 4 },
 ];
 
+/** Linha de public.class_bookings — a fonte de verdade do agendamento. */
+interface ClassBooking {
+  id: string;
+  professor_id: string;
+  scheduled_date: string;  // YYYY-MM-DD
+  scheduled_time: string;  // bate com TIME_SLOTS
+  amount: number | string; // numeric do Postgres pode vir como string
+  payment_status: "pending" | "paid" | "expired";
+  created_at: string;
+}
+
+/** Preço vindo de public.class_professors. Nunca hardcodado aqui. */
+interface ProfessorPrice {
+  price: number;
+  active: boolean;
+}
+
+/* ─── Agendamento antigo em localStorage — SOMENTE LEITURA ───────────────────
+   Até 17/08/2026 o agendamento vivia só no navegador, sem pagamento e sem
+   registro no banco. Agora quem manda é class_bookings.
+   Estas duas funções sobrevivem apenas para não sumir com o que já estava
+   salvo na máquina de quem agendou antes: a tela mostra o registro antigo,
+   deixa dispensá-lo, e nunca mais escreve nessa chave. `saveBooking` foi
+   removida de propósito — não existe mais caminho de escrita local. */
 interface Booking {
   professorId: string;
   professorName: string;
@@ -64,10 +99,6 @@ function loadBooking(userId: string): Booking | null {
   } catch {
     return null;
   }
-}
-
-function saveBooking(userId: string, booking: Booking) {
-  localStorage.setItem(BOOKING_KEY(userId), JSON.stringify(booking));
 }
 
 function clearBooking(userId: string) {
@@ -520,19 +551,128 @@ function AulasPage() {
   /* ═══ Live Class Booking state ═══ */
   const [selectedProfessor, setSelectedProfessor] = useState<Professor | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null); // YYYY-MM-DD
-  const [booking, setBooking] = useState<Booking | null>(null);
+  const [legacyBooking, setLegacyBooking] = useState<Booking | null>(null);
+  // null = ainda carregando. Map vazio = não deu para saber o preço, e nesse
+  // caso a tela mostra o professor SEM preço em vez de arriscar um errado.
+  const [prices, setPrices] = useState<Map<string, ProfessorPrice> | null>(null);
+  const [bookings, setBookings] = useState<ClassBooking[] | null>(null);
+  const [qrState, setQrState] = useState<PixQrState>({ status: "idle" });
+  // Guarda o QR já gerado para o usuário poder reabrir sem criar outra
+  // cobrança na EvoPay. Some no refresh da página — é memória de sessão.
+  const [pixData, setPixData] = useState<Extract<PixQrState, { status: "success" }> | null>(null);
+  const [payingFor, setPayingFor] = useState<{ name: string; amount: number } | null>(null);
+  // Relógio da tela. Existe só para a reserva pendente poder "envelhecer" sem
+  // depender de uma resposta do servidor.
+  const [nowTick, setNowTick] = useState(() => Date.now());
+
   const earliestDate = useMemo(() => getEarliestBookingDate(), []);
   const availableDates = useMemo(() => {
     const dates = generateAvailableDates(earliestDate, 10);
     return dates.filter(isWithin30Days);
   }, [earliestDate]);
 
-  // On mount, load existing booking
+  // Só 'paid' conta como aula marcada. 'pending' é cobrança em aberto.
+  const paidBooking = useMemo(
+    () => bookings?.find((b) => b.payment_status === "paid") ?? null,
+    [bookings],
+  );
+
+  const rawPending = useMemo(
+    () => bookings?.find((b) => b.payment_status === "pending") ?? null,
+    [bookings],
+  );
+
+  // Uma reserva pendente só segura a tela por 30 minutos — o mesmo expiresIn do
+  // PIX e a mesma janela que create_class_booking usa para recusar uma segunda.
+  // Nada no banco escreve 'expired' hoje, então sem este corte uma cobrança
+  // nunca paga esconderia o formulário para sempre.
+  const pendingBooking = useMemo(() => {
+    if (!rawPending) return null;
+    const age = nowTick - new Date(rawPending.created_at).getTime();
+    return age < PENDING_TTL_MS ? rawPending : null;
+  }, [rawPending, nowTick]);
+
+  /* Preços reais, de class_professors. */
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from("class_professors")
+        .select("id, price, active");
+      if (cancelled) return;
+      if (error || !data) {
+        // Falhou: Map vazio → nenhum preço na tela. Melhor faltar preço do que
+        // mostrar um valor que não é o que o servidor vai cobrar.
+        setPrices(new Map());
+        return;
+      }
+      setPrices(
+        new Map(
+          data.map((r: { id: string; price: number | string; active: boolean }) => [
+            r.id,
+            { price: Number(r.price), active: Boolean(r.active) },
+          ]),
+        ),
+      );
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  /* Agendamentos do banco. */
+  const refreshBookings = useCallback(async () => {
+    if (!currentUserId) { setBookings([]); return; }
+    const { data, error } = await supabase
+      .from("class_bookings")
+      .select("id, professor_id, scheduled_date, scheduled_time, amount, payment_status, created_at")
+      .eq("user_id", currentUserId)
+      .order("created_at", { ascending: false });
+    if (error) return; // mantém o que já estava; erro de rede não apaga a tela
+    setBookings((data ?? []) as ClassBooking[]);
+  }, [currentUserId]);
+
+  useEffect(() => { void refreshBookings(); }, [refreshBookings]);
+
+  /* Agendamento antigo do localStorage — só se não houver nada no banco. */
   useEffect(() => {
     if (!currentUserId) return;
-    const existing = loadBooking(currentUserId);
-    if (existing) setBooking(existing);
+    setLegacyBooking(loadBooking(currentUserId));
   }, [currentUserId]);
+
+  /* Enquanto o pagamento não confirma, pergunta ao banco de tempos em tempos.
+     Quem escreve 'paid' é o evopay-webhook, então a tela não tem como saber
+     antes — e não pode dizer que a aula está marcada enquanto isso. */
+  useEffect(() => {
+    if (!rawPending) return;
+    const createdAt = new Date(rawPending.created_at).getTime();
+    const id = window.setInterval(() => {
+      setNowTick(Date.now());
+      // Passados os 30 min o PIX expirou: uma última atualização do relógio
+      // devolve o formulário para a tela, e aí não há mais o que perguntar.
+      if (Date.now() - createdAt >= PENDING_TTL_MS) {
+        window.clearInterval(id);
+        return;
+      }
+      void refreshBookings();
+    }, 5000);
+    return () => window.clearInterval(id);
+  }, [rawPending?.id, rawPending?.created_at, refreshBookings]);
+
+  /* Avisa só na TRANSIÇÃO para pago — quem já chega com aula marcada não leva
+     um toast a cada visita. `undefined` marca "ainda não carregou". */
+  const lastPaidId = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    if (bookings === null) return;
+    const id = paidBooking?.id ?? null;
+    if (lastPaidId.current === undefined) { lastPaidId.current = id; return; }
+    if (id && id !== lastPaidId.current) {
+      toast.success("Pagamento confirmado!", {
+        description: "Sua aula ao vivo está marcada.",
+      });
+      setQrState({ status: "idle" });
+      setPixData(null);
+    }
+    lastPaidId.current = id;
+  }, [bookings, paidBooking]);
 
   // On mount, check if user already saved store data
   useEffect(() => {
@@ -581,30 +721,129 @@ function AulasPage() {
     setSelectedDate(dateStr);
   }, []);
 
-  const handleBookSlot = useCallback((time: string) => {
-    if (!selectedProfessor || !selectedDate) return;
-    const newBooking: Booking = {
-      professorId: selectedProfessor.id,
-      professorName: selectedProfessor.name,
-      professorColor: selectedProfessor.color,
-      date: selectedDate,
-      time,
-    };
-    saveBooking(userId, newBooking);
-    setBooking(newBooking);
-    setSelectedProfessor(null);
-    setSelectedDate(null);
-    toast.success("✅ Aula agendada com sucesso!", {
-      description: `${selectedProfessor.name} — ${time}. Você receberá o link por WhatsApp.`,
-    });
-  }, [selectedProfessor, selectedDate, userId]);
+  /** Pede a cobrança PIX de uma reserva que JÁ existe no banco.
+   *  O corpo leva só `bookingId`: valor e clientReference saem da linha de
+   *  class_bookings, no servidor. Nada de amount, packName ou referência
+   *  vindos daqui. */
+  const requestPix = useCallback(async (
+    bookingId: string,
+    label: { name: string; amount: number },
+  ) => {
+    setPayingFor(label);
+    setQrState({ status: "loading" });
+    try {
+      const res = await fetch(EVOPAY_CREATE_PIX_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bookingId }),
+      });
+      const payload = await res.json();
+      if (!payload.ok) throw new Error(payload.error || "Erro ao gerar PIX");
 
-  const handleCancelBooking = useCallback(() => {
-    clearBooking(userId);
-    setBooking(null);
-    toast.info("Agendamento cancelado.", {
-      description: "Você pode reagendar quando quiser.",
+      const success: Extract<PixQrState, { status: "success" }> = {
+        status: "success",
+        qrCodeText: payload.qrCodeText,
+        qrCodeUrl: payload.qrCodeUrl,
+        qrCodeBase64: payload.qrCodeBase64,
+        transactionId: payload.transactionId,
+        clientReference: payload.clientReference,
+      };
+      setPixData(success);
+      setQrState(success);
+    } catch (err) {
+      setQrState({
+        status: "error",
+        message: err instanceof Error ? err.message : "Erro desconhecido ao gerar PIX",
+      });
+    }
+  }, []);
+
+  /** Reserva no banco → cobrança PIX → QR na tela.
+   *  O preço NUNCA sai daqui: create_class_booking lê class_professors, e a
+   *  Edge Function lê a linha criada. O client só manda quem, quando e qual
+   *  bookingId. */
+  const handleBookSlot = useCallback(async (time: string) => {
+    if (!selectedProfessor || !selectedDate) return;
+    if (!currentUserId) {
+      toast.error("Faça login para agendar sua aula.");
+      return;
+    }
+
+    const knownPrice = prices?.get(selectedProfessor.id)?.price;
+    // Enquanto carrega, só mostra o preço se ele já for conhecido. Nunca zero.
+    setPayingFor(
+      knownPrice !== undefined ? { name: selectedProfessor.name, amount: knownPrice } : null,
+    );
+    setQrState({ status: "loading" });
+
+    try {
+      // 1. Reserva pendente. A RPC valida o preço e monta o client_reference.
+      const { data, error } = await supabase.rpc("create_class_booking", {
+        _professor_id: selectedProfessor.id,
+        _date: selectedDate,
+        _time: time,
+      });
+      if (error) throw new Error(error.message);
+
+      // RETURNS TABLE → o supabase-js entrega um array de uma linha.
+      const created = (Array.isArray(data) ? data[0] : data) as { id?: string } | null;
+      if (!created?.id) throw new Error("Não foi possível criar o agendamento.");
+
+      // 2. O valor mostrado é o que o banco gravou, não o que a tela supunha.
+      const { data: row } = await supabase
+        .from("class_bookings")
+        .select("amount")
+        .eq("id", created.id)
+        .maybeSingle();
+      const charged = Number(row?.amount);
+      const amountToShow = Number.isFinite(charged) && charged > 0 ? charged : knownPrice;
+
+      // Sem valor confiável não dá para abrir a tela de pagamento: o modal
+      // mostraria R$ 0,00, que é pior do que não mostrar nada. A reserva fica
+      // pendente e o usuário pode tentar de novo.
+      if (amountToShow === undefined) {
+        throw new Error("Não foi possível confirmar o valor da aula. Tente novamente.");
+      }
+      // 3. PIX para a reserva recém-criada.
+      await requestPix(created.id, { name: selectedProfessor.name, amount: amountToShow });
+      setSelectedProfessor(null);
+      setSelectedDate(null);
+    } catch (err) {
+      setQrState({
+        status: "error",
+        message: err instanceof Error ? err.message : "Erro desconhecido ao gerar PIX",
+      });
+    } finally {
+      // Roda mesmo em erro: se a reserva chegou a ser criada, ela existe no
+      // banco e precisa aparecer como pendente — senão o usuário tenta de novo
+      // e esbarra no limite de 30 min sem entender por quê.
+      void refreshBookings();
+    }
+  }, [selectedProfessor, selectedDate, currentUserId, prices, refreshBookings, requestPix]);
+
+  /** Reabre o QR já gerado nesta sessão. Não chama a EvoPay de novo. */
+  const handleReopenPix = useCallback(() => {
+    if (pixData) setQrState(pixData);
+  }, [pixData]);
+
+  /** Gera o PIX de uma reserva pendente que ficou sem QR — por exemplo quando
+   *  a primeira tentativa falhou, ou quando a página foi recarregada e o QR
+   *  da sessão anterior se perdeu. */
+  const handleGeneratePixForPending = useCallback(() => {
+    if (!pendingBooking) return;
+    const prof = PROFESSORS.find((p) => p.id === pendingBooking.professor_id);
+    void requestPix(pendingBooking.id, {
+      name: prof?.name ?? pendingBooking.professor_id,
+      amount: Number(pendingBooking.amount),
     });
+  }, [pendingBooking, requestPix]);
+
+  /** Só dispensa o registro antigo do navegador. Não existe cancelamento de
+   *  reserva paga: isso precisaria de backend, que não existe. */
+  const handleDismissLegacy = useCallback(() => {
+    clearBooking(userId);
+    setLegacyBooking(null);
+    toast.info("Agendamento antigo removido deste navegador.");
   }, [userId]);
 
   const openPhase2 = useCallback(() => {
@@ -703,72 +942,149 @@ function AulasPage() {
             </div>
           </div>
 
-          {booking ? (
-            /* ═══ CONFIRMATION CARD ═══ */
-            <div className="mt-5 rounded-2xl border-2 border-emerald-500/40 bg-emerald-50/60 dark:bg-emerald-500/5 p-5 animate-in fade-in zoom-in-95 duration-300">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-emerald-500">
-                  <CheckCircle2 className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <p className="text-base font-bold text-emerald-700 dark:text-emerald-400">
-                    ✅ Aula Agendada!
-                  </p>
-                  <p className="text-xs text-emerald-600/70 dark:text-emerald-400/60">
-                    Seu agendamento está confirmado
-                  </p>
-                </div>
-              </div>
+          {paidBooking ? (
+            /* ═══ AULA MARCADA — pagamento confirmado pelo webhook ═══ */
+            (() => {
+              const prof = PROFESSORS.find((p) => p.id === paidBooking.professor_id);
+              return (
+                <div className="mt-5 rounded-2xl border-2 border-emerald-500/40 bg-emerald-50/60 dark:bg-emerald-500/5 p-4 sm:p-5 animate-in fade-in zoom-in-95 duration-300">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-emerald-500">
+                      <CheckCircle2 className="h-6 w-6 text-white" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-base font-bold text-emerald-700 dark:text-emerald-400">
+                        Aula marcada!
+                      </p>
+                      <p className="text-xs text-emerald-600/70 dark:text-emerald-400/60">
+                        Pagamento confirmado
+                      </p>
+                    </div>
+                  </div>
 
-              <div className="space-y-2.5 rounded-xl border border-emerald-200 dark:border-emerald-500/15 bg-white/60 dark:bg-white/[0.03] p-4">
-                <div className="flex items-center gap-2.5">
-                  <div
-                    className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-sm font-bold text-white"
-                    style={{ background: booking.professorColor }}
+                  <div className="space-y-2.5 rounded-xl border border-emerald-200 dark:border-emerald-500/15 bg-[var(--surface)]/70 dark:bg-white/[0.03] p-3 sm:p-4">
+                    <div className="flex items-center gap-2.5">
+                      <div
+                        className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-sm font-bold text-white"
+                        style={{ background: prof?.color ?? "var(--accent)" }}
+                      >
+                        {prof?.initial ?? "?"}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-[var(--text)]">
+                          {prof?.name ?? paidBooking.professor_id}
+                        </p>
+                        {prof?.bio && (
+                          <p className="text-[11px] text-[var(--muted)] line-clamp-2">{prof.bio}</p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t border-emerald-200/50 dark:border-emerald-500/10">
+                      <div className="flex items-center gap-1.5">
+                        <Calendar className="h-3.5 w-3.5 shrink-0 text-[var(--muted)]" />
+                        <span className="text-xs text-[var(--text)]">
+                          {formatDateLong(new Date(paidBooking.scheduled_date + "T12:00:00"))}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <Clock className="h-3.5 w-3.5 shrink-0 text-[var(--muted)]" />
+                        <span className="text-xs font-semibold text-[var(--text)]">
+                          {paidBooking.scheduled_time}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs text-[var(--muted)]">Valor pago:</span>
+                        <span className="text-xs font-semibold text-[var(--text)]">
+                          {brl(Number(paidBooking.amount))}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Instrução obrigatória — não traduzir, não inventar link nem número */}
+                  <p className="mt-3 rounded-xl border border-emerald-200 dark:border-emerald-500/15 bg-[var(--surface)]/70 dark:bg-white/[0.03] px-3 py-2.5 text-xs font-medium leading-relaxed text-[var(--text)]">
+                    Aula marcada! Envie o comprovante para o seu professor no WhatsApp.
+                  </p>
+                </div>
+              );
+            })()
+          ) : pendingBooking ? (
+            /* ═══ PAGAMENTO PENDENTE — a aula ainda NÃO está marcada ═══ */
+            (() => {
+              const prof = PROFESSORS.find((p) => p.id === pendingBooking.professor_id);
+              return (
+                <div className="mt-5 rounded-2xl border-2 border-[var(--accent)]/40 bg-[var(--accent-soft)] p-4 sm:p-5">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[var(--accent)]">
+                      <Clock className="h-5 w-5 text-white" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-base font-bold text-[var(--text)]">
+                        Aguardando pagamento
+                      </p>
+                      <p className="text-xs text-[var(--muted)]">
+                        Sua aula será marcada assim que o PIX for confirmado
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3 sm:p-4">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-[var(--text)]">
+                      <span className="font-semibold">{prof?.name ?? pendingBooking.professor_id}</span>
+                      <span className="flex items-center gap-1.5">
+                        <Calendar className="h-3.5 w-3.5 shrink-0 text-[var(--muted)]" />
+                        {formatDateLong(new Date(pendingBooking.scheduled_date + "T12:00:00"))}
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <Clock className="h-3.5 w-3.5 shrink-0 text-[var(--muted)]" />
+                        {pendingBooking.scheduled_time}
+                      </span>
+                      <span className="font-semibold text-[var(--accent)]">
+                        {brl(Number(pendingBooking.amount))}
+                      </span>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={pixData ? handleReopenPix : handleGeneratePixForPending}
+                    disabled={qrState.status === "loading"}
+                    className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--accent)] px-4 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60 sm:w-auto"
                   >
-                    {PROFESSORS.find((p) => p.id === booking.professorId)?.initial ?? "?"}
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-[var(--text)]">{booking.professorName}</p>
-                    <p className="text-[11px] text-[var(--muted)]">
-                      {PROFESSORS.find((p) => p.id === booking.professorId)?.bio ?? ""}
-                    </p>
-                  </div>
+                    <QrCode className="h-4 w-4" />
+                    {pixData ? "Ver código PIX" : "Gerar código PIX"}
+                  </button>
+
+                  <p className="mt-3 text-[11px] leading-relaxed text-[var(--muted)]">
+                    Esta tela se atualiza sozinha quando o pagamento for confirmado.
+                  </p>
                 </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t border-emerald-200/50 dark:border-emerald-500/10">
-                  <div className="flex items-center gap-1.5">
-                    <Calendar className="h-3.5 w-3.5 text-[var(--muted)]" />
-                    <span className="text-xs text-[var(--text)]">
-                      {formatDateLong(new Date(booking.date + "T12:00:00"))}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <Clock className="h-3.5 w-3.5 text-[var(--muted)]" />
-                    <span className="text-xs font-semibold text-[var(--text)]">{booking.time}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs text-[var(--muted)]">Duração:</span>
-                    <span className="text-xs font-semibold text-[var(--text)]">60 minutos</span>
-                  </div>
-                </div>
-              </div>
-
-              <p className="mt-3 text-[11px] text-[var(--muted)] leading-relaxed">
-                Você receberá o link de acesso por WhatsApp no dia da aula.
-              </p>
-
-              <button
-                onClick={handleCancelBooking}
-                className="mt-4 inline-flex items-center gap-2 rounded-full border border-red-200 bg-white px-4 py-2 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors dark:border-red-500/20 dark:bg-red-500/5 dark:text-red-400 dark:hover:bg-red-500/10"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-                Cancelar agendamento
-              </button>
-            </div>
+              );
+            })()
           ) : (
             /* ═══ BOOKING FORM ═══ */
             <div className="mt-5 space-y-5">
+              {/* Registro antigo salvo só neste navegador, de antes do pagamento
+                  existir. Não é agendamento confirmado e não some sozinho. */}
+              {legacyBooking && (
+                <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-3 sm:p-4">
+                  <p className="text-xs font-semibold text-[var(--text)]">
+                    Agendamento antigo encontrado neste navegador
+                  </p>
+                  <p className="mt-1 text-[11px] leading-relaxed text-[var(--muted)]">
+                    {legacyBooking.professorName} — {legacyBooking.time}, {formatDateLong(new Date(legacyBooking.date + "T12:00:00"))}.
+                    Este registro é anterior ao pagamento e não vale como aula marcada. Agende de novo abaixo.
+                  </p>
+                  <button
+                    onClick={handleDismissLegacy}
+                    className="mt-2.5 inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] px-3 py-1.5 text-[11px] font-medium text-[var(--muted)] transition-colors hover:bg-[var(--muted-bg)]"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                    Dispensar
+                  </button>
+                </div>
+              )}
+
               {/* Step 1 — Select Professor */}
               <div>
                 <p className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wider mb-3">
@@ -777,30 +1093,54 @@ function AulasPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {PROFESSORS.map((prof) => {
                     const isSelected = selectedProfessor?.id === prof.id;
+                    // Preço real de class_professors. `undefined` = não deu para
+                    // carregar; o card sai sem preço em vez de com um errado.
+                    const info = prices?.get(prof.id);
+                    const unavailable = info ? !info.active : false;
                     return (
                       <button
                         key={prof.id}
+                        disabled={unavailable}
                         onClick={() => handleSelectProfessor(prof)}
                         className={`group flex items-center gap-3 rounded-2xl border p-4 text-left transition-all duration-200 active:scale-[0.98] ${
-                          isSelected
+                          unavailable
+                            ? "border-[var(--border)] bg-[var(--surface-2)] opacity-60 cursor-not-allowed"
+                            : isSelected
                             ? "border-[var(--accent)] bg-[var(--accent)]/5 shadow-sm"
                             : "border-[var(--border)] bg-[var(--surface)] hover:border-[var(--accent)]/40 hover:-translate-y-0.5 hover:shadow-md"
                         }`}
                       >
                         <div
-                          className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-sm font-bold text-white transition-transform duration-200 group-hover:scale-110"
+                          className={`grid h-10 w-10 shrink-0 place-items-center rounded-full text-sm font-bold text-white transition-transform duration-200 ${unavailable ? "" : "group-hover:scale-110"}`}
                           style={{ background: prof.color }}
                         >
                           {prof.initial}
                         </div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-semibold text-[var(--text)]">{prof.name}</p>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-baseline justify-between gap-2">
+                            <p className="truncate text-sm font-semibold text-[var(--text)]">{prof.name}</p>
+                            {info && !unavailable && (
+                              <span className="shrink-0 text-sm font-bold text-[var(--accent)]">
+                                {brl(info.price)}
+                              </span>
+                            )}
+                          </div>
                           <p className="text-[11px] text-[var(--muted)] line-clamp-2">{prof.bio}</p>
+                          {unavailable && (
+                            <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">
+                              Indisponível
+                            </p>
+                          )}
                         </div>
                       </button>
                     );
                   })}
                 </div>
+                {prices !== null && prices.size === 0 && (
+                  <p className="mt-2 text-[11px] text-[var(--muted)]">
+                    Não foi possível carregar os valores agora. O preço aparece na hora de pagar.
+                  </p>
+                )}
               </div>
 
               {/* Step 2 — Date Picker */}
@@ -854,27 +1194,28 @@ function AulasPage() {
                 const selDate = new Date(selectedDate + "T12:00:00");
                 const isBeforeEarliest = selDate < earliestDate;
                 // For dates exactly at earliest or later, all slots available
+                const isBusy = qrState.status === "loading";
                 return (
                   <div className="animate-in fade-in slide-in-from-top-2 duration-200">
                     <p className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wider mb-3">
-                      3. Escolha o horário
+                      3. Escolha o horário e pague
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       {TIME_SLOTS.map((slot) => {
-                        const isAvailable = !isBeforeEarliest && slot.totalSpots > 0;
+                        const isAvailable = !isBeforeEarliest && slot.totalSpots > 0 && !isBusy;
                         return (
                           <button
                             key={slot.time}
                             disabled={!isAvailable}
-                            onClick={() => isAvailable && handleBookSlot(slot.time)}
+                            onClick={() => isAvailable && void handleBookSlot(slot.time)}
                             className={`group flex flex-col items-center rounded-2xl border p-4 text-center transition-all duration-200 ${
                               isAvailable
                                 ? "border-[var(--border)] bg-[var(--surface)] hover:border-[var(--accent)]/50 hover:-translate-y-0.5 hover:shadow-md cursor-pointer active:scale-[0.97]"
-                                : "border-gray-200 bg-gray-50/50 cursor-not-allowed opacity-60 dark:border-gray-700 dark:bg-gray-800/30"
+                                : "border-[var(--border)] bg-[var(--surface-2)] cursor-not-allowed opacity-60"
                             }`}
                           >
-                            <Clock className={`h-5 w-5 mb-1.5 ${isAvailable ? "text-[var(--accent)]" : "text-gray-300 dark:text-gray-600"}`} />
-                            <span className={`text-lg font-bold ${isAvailable ? "text-[var(--text)]" : "text-gray-300 dark:text-gray-600 line-through"}`}>
+                            <Clock className={`h-5 w-5 mb-1.5 ${isAvailable ? "text-[var(--accent)]" : "text-[var(--muted)]"}`} />
+                            <span className={`text-lg font-bold ${isAvailable ? "text-[var(--text)]" : "text-[var(--muted)] line-through"}`}>
                               {slot.time}
                             </span>
                             {isAvailable ? (
@@ -882,14 +1223,18 @@ function AulasPage() {
                                 {slot.totalSpots} {slot.totalSpots === 1 ? "vaga" : "vagas"} disponíveis
                               </span>
                             ) : (
-                              <span className="inline-block rounded-full bg-gray-200 px-2 py-0.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider mt-0.5 dark:bg-gray-700 dark:text-gray-500">
-                                Esgotado
+                              <span className="inline-block rounded-full bg-[var(--muted-bg)] px-2 py-0.5 text-[10px] font-semibold text-[var(--muted)] uppercase tracking-wider mt-0.5">
+                                {isBusy ? "Aguarde" : "Esgotado"}
                               </span>
                             )}
                           </button>
                         );
                       })}
                     </div>
+                    <p className="mt-3 text-[11px] leading-relaxed text-[var(--muted)]">
+                      Ao escolher o horário, geramos um PIX. A aula só é marcada depois que o
+                      pagamento é confirmado.
+                    </p>
                   </div>
                 );
               })()}
@@ -1218,6 +1563,23 @@ function AulasPage() {
             </div>
           )}
         </div>
+      )}
+
+      {/* ═══ PIX da aula ao vivo — mesmo modal do Impulsionar ═══ */}
+      {qrState.status !== "idle" && (
+        <PixQrModal
+          qrState={qrState}
+          item={payingFor}
+          itemLabel="Aula com"
+          footerNote={
+            <>
+              Assim que o pagamento for confirmado, sua aula aparece como{" "}
+              <strong>marcada</strong> nesta página.
+            </>
+          }
+          onClose={() => setQrState({ status: "idle" })}
+          onRetry={() => setQrState({ status: "idle" })}
+        />
       )}
     </DashboardShell>
   );

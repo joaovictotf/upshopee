@@ -143,6 +143,77 @@ export type Database = {
           },
         ]
       }
+      class_bookings: {
+        Row: {
+          amount: number
+          client_reference: string | null
+          created_at: string
+          evopay_tx_id: string | null
+          id: string
+          paid_at: string | null
+          payment_status: string
+          professor_id: string
+          scheduled_date: string
+          scheduled_time: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          client_reference?: string | null
+          created_at?: string
+          evopay_tx_id?: string | null
+          id?: string
+          paid_at?: string | null
+          payment_status?: string
+          professor_id: string
+          scheduled_date: string
+          scheduled_time: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          client_reference?: string | null
+          created_at?: string
+          evopay_tx_id?: string | null
+          id?: string
+          paid_at?: string | null
+          payment_status?: string
+          professor_id?: string
+          scheduled_date?: string
+          scheduled_time?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_bookings_professor_id_fkey"
+            columns: ["professor_id"]
+            isOneToOne: false
+            referencedRelation: "class_professors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      class_professors: {
+        Row: {
+          active: boolean
+          id: string
+          name: string
+          price: number
+        }
+        Insert: {
+          active?: boolean
+          id: string
+          name: string
+          price: number
+        }
+        Update: {
+          active?: boolean
+          id?: string
+          name?: string
+          price?: number
+        }
+        Relationships: []
+      }
       dashboard_lightning_events: {
         Row: {
           amount: number
@@ -323,6 +394,68 @@ export type Database = {
         }
         Relationships: []
       }
+      support_messages: {
+        Row: {
+          created_at: string
+          id: string
+          is_admin: boolean
+          message: string
+          ticket_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_admin?: boolean
+          message: string
+          ticket_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_admin?: boolean
+          message?: string
+          ticket_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_messages_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_tickets: {
+        Row: {
+          created_at: string
+          id: string
+          status: string
+          subject: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          status?: string
+          subject: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          status?: string
+          subject?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_marketplace_connections: {
         Row: {
           id: string
@@ -443,6 +576,178 @@ export type Database = {
         }
         Relationships: []
       }
+      video_project_images: {
+        Row: {
+          created_at: string
+          file_name: string | null
+          file_size: number | null
+          id: string
+          is_primary: boolean | null
+          mime_type: string | null
+          project_id: string
+          sort_order: number | null
+          storage_path: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          file_name?: string | null
+          file_size?: number | null
+          id?: string
+          is_primary?: boolean | null
+          mime_type?: string | null
+          project_id: string
+          sort_order?: number | null
+          storage_path: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          file_name?: string | null
+          file_size?: number | null
+          id?: string
+          is_primary?: boolean | null
+          mime_type?: string | null
+          project_id?: string
+          sort_order?: number | null
+          storage_path?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_project_images_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "video_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      video_projects: {
+        Row: {
+          benefits: string | null
+          caption: string | null
+          completed_at: string | null
+          created_at: string
+          cta: string | null
+          differentiators: string | null
+          duration: string | null
+          final_prompt: string | null
+          has_music: boolean | null
+          has_text: boolean | null
+          hashtags: string | null
+          hook: string | null
+          id: string
+          idea_title: string | null
+          problem_solved: string | null
+          product_name: string | null
+          product_url: string | null
+          screen_texts: string | null
+          script: string | null
+          status: string
+          style: string | null
+          target_audience: string | null
+          updated_at: string
+          user_id: string
+          voice_type: string | null
+          voiceover: string | null
+        }
+        Insert: {
+          benefits?: string | null
+          caption?: string | null
+          completed_at?: string | null
+          created_at?: string
+          cta?: string | null
+          differentiators?: string | null
+          duration?: string | null
+          final_prompt?: string | null
+          has_music?: boolean | null
+          has_text?: boolean | null
+          hashtags?: string | null
+          hook?: string | null
+          id?: string
+          idea_title?: string | null
+          problem_solved?: string | null
+          product_name?: string | null
+          product_url?: string | null
+          screen_texts?: string | null
+          script?: string | null
+          status?: string
+          style?: string | null
+          target_audience?: string | null
+          updated_at?: string
+          user_id: string
+          voice_type?: string | null
+          voiceover?: string | null
+        }
+        Update: {
+          benefits?: string | null
+          caption?: string | null
+          completed_at?: string | null
+          created_at?: string
+          cta?: string | null
+          differentiators?: string | null
+          duration?: string | null
+          final_prompt?: string | null
+          has_music?: boolean | null
+          has_text?: boolean | null
+          hashtags?: string | null
+          hook?: string | null
+          id?: string
+          idea_title?: string | null
+          problem_solved?: string | null
+          product_name?: string | null
+          product_url?: string | null
+          screen_texts?: string | null
+          script?: string | null
+          status?: string
+          style?: string | null
+          target_audience?: string | null
+          updated_at?: string
+          user_id?: string
+          voice_type?: string | null
+          voiceover?: string | null
+        }
+        Relationships: []
+      }
+      video_prompt_versions: {
+        Row: {
+          created_at: string
+          id: string
+          project_id: string
+          prompt: string | null
+          script: string | null
+          style: string | null
+          version_number: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          project_id: string
+          prompt?: string | null
+          script?: string | null
+          style?: string | null
+          version_number: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          project_id?: string
+          prompt?: string | null
+          script?: string | null
+          style?: string | null
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_prompt_versions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "video_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       withdrawal_requests: {
         Row: {
           created_at: string
@@ -524,6 +829,17 @@ export type Database = {
       approve_all_pending_accounts: { Args: never; Returns: number }
       approve_user: { Args: { _user_id: string }; Returns: undefined }
       block_user_payment: { Args: { _user_id: string }; Returns: undefined }
+      confirm_class_booking: {
+        Args: { _client_reference: string; _tx_id: string }
+        Returns: boolean
+      }
+      create_class_booking: {
+        Args: { _date: string; _professor_id: string; _time: string }
+        Returns: {
+          client_reference: string
+          id: string
+        }[]
+      }
       create_robo_sale_order: {
         Args: { _commission: number; _product_row_id: string }
         Returns: string
@@ -617,6 +933,10 @@ export type Database = {
       validate_user_product: {
         Args: { _product_id: string }
         Returns: undefined
+      }
+      webhook_activate_boost_pack: {
+        Args: { _pack_id: string; _user_id: string }
+        Returns: Json
       }
     }
     Enums: {
