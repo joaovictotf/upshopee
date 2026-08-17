@@ -156,7 +156,8 @@ function ImpulsionarVendasPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          amount: selectedPack.price,
+          // Sem `amount` de propósito: quem define o preço é a Edge Function,
+          // pelo packName. O cliente não escolhe quanto paga.
           packName: selectedPack.id,
           userId: currentUserId,
           userEmail: user.email ?? "",

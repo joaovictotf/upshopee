@@ -32,6 +32,25 @@ const PACK_PRICES: Record<string, number> = {
   maximo: 400,
 };
 
+// ─── FORMATO DE userId ──────────────────────────────────────────────────────
+// Esta função roda com verify_jwt: false, então body.userId chega sem nenhuma
+// garantia — qualquer um pode mandar qualquer coisa.
+//
+// Um userId malformado não é só lixo no banco: ele muda a contagem de hífens
+// do clientReference. O evopay-webhook faz split("-") e exige exatamente 9
+// partes; quando não bate, ele DESCARTA o pagamento e devolve 200 para a
+// EvoPay. Ou seja: o cliente paga, não recebe nada, e não há retry. Por isso a
+// validação acontece ANTES da chamada à EvoPay — nenhuma cobrança é criada.
+//
+// v4 estrito: 8-4-4-4-12, com o dígito de versão '4' e a variante [89ab].
+// Conferido contra a produção em 17/08/2026: 511 de 511 linhas em auth.users
+// são v4, então nenhum cliente legítimo é barrado por esta regra.
+//
+// As âncoras ^ e $ são a parte que protege o contrato de 9 partes: com elas a
+// string tem exatamente 4 hífens e nenhum caractere extra. Um userId com hífen
+// a mais, a menos, ou com espaço/sufixo colado não passa.
+const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 interface CreatePixRequest {
   // NÃO EXISTE CAMPO `amount` AQUI, DE PROPÓSITO. O preço sai de PACK_PRICES,
   // indexado por packName. Não readicione — um valor vindo do cliente é
@@ -64,6 +83,15 @@ serve(async (req: Request) => {
     if (!body.packName || !body.userEmail || !body.userId) {
       return new Response(
         JSON.stringify({ ok: false, error: "packName, userEmail, and userId are required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // --- 1a. userId tem que ser UUID v4 ---
+    if (typeof body.userId !== "string" || !UUID_V4.test(body.userId)) {
+      console.error("Invalid userId rejected:", body.userId);
+      return new Response(
+        JSON.stringify({ ok: false, error: "invalid userId" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }

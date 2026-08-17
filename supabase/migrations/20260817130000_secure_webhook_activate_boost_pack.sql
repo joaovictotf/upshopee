@@ -28,11 +28,36 @@
 --      descuido, ou por um CREATE OR REPLACE que alguém rode sem REVOKE), a
 --      função ainda se recusa a executar. É a rede de proteção.
 --
--- O QUE NÃO MUDOU: o corpo é cópia literal da 20260625000002. Mesma
--- configuração de packs, mesmo cancelamento de campanha ativa, mesmo INSERT,
--- mesmo laço de eventos, mesmo fallback de "usuário sem produtos", mesmo
--- retorno. A ÚNICA linha nova é o bloco de guarda logo depois do BEGIN.
--- O fluxo Impulsionar que funcionou de verdade em 25/06/2026 continua igual.
+-- ═══════════════════════════════════════════════════════════════════════════
+-- CORREÇÃO DE DADO JUNTO: _pack_value estava abaixo do valor cobrado
+-- ═══════════════════════════════════════════════════════════════════════════
+-- Além da segurança, esta migration corrige duas linhas de _pack_value que
+-- gravavam MENOS do que o cliente realmente paga:
+--
+--     pack         cobrado (UI)   gravava       agora grava
+--     inicio       R$  40,00      24            40
+--     aceleracao   R$  64,90      50            64.9
+--     escala       R$ 150,00      150           150   (já batia)
+--     maximo       R$ 400,00      400           400   (já batia)
+--
+-- O valor cobrado é o de PACKS em src/routes/dashboard.impulsionar-vendas.tsx,
+-- que agora também é a tabela de preços de evopay-create-pix. Com os números
+-- antigos, boost_campaigns.pack_value subnotificava a receita de dois dos
+-- quatro packs, e qualquer relatório somando essa coluna saía errado.
+--
+-- ATENÇÃO: isto corrige o que será GRAVADO daqui para frente. As linhas já
+-- existentes em boost_campaigns continuam com o valor antigo — inclusive a
+-- única venda real, de 25/06/2026, que foi 'escala' e portanto já estava certa.
+-- Nenhum UPDATE retroativo é feito aqui de propósito: mexer em linha de
+-- campanha paga é decisão do Juam, não efeito colateral de uma migration.
+--
+-- O QUE MAIS NÃO MUDOU: fora a guarda e essas duas constantes, o corpo é cópia
+-- literal da 20260625000002 — mesmo cancelamento de campanha ativa, mesmos
+-- INSERTs, mesmo laço de eventos, mesmo fallback de "usuário sem produtos",
+-- mesmo retorno. Nenhuma faixa de comissão foi tocada (_min_comm/_max_comm/
+-- _fixed_comm seguem iguais), então o comportamento visível da campanha é o
+-- mesmo. O fluxo Impulsionar que funcionou de verdade em 25/06/2026 continua
+-- igual.
 
 
 -- ═══════════════════════════════════════════════════════════════════════════
@@ -65,7 +90,8 @@ DECLARE
   _comm numeric;
   _prod public.user_products%rowtype;
 BEGIN
-  -- ── GUARDA (única adição em relação à 20260625000002) ────────────────────
+  -- ── GUARDA (única ADIÇÃO ao corpo da 20260625000002; a outra diferença é
+  --    a correção de _pack_value no CASE abaixo, explicada no cabeçalho) ────
   -- Quem pode chamar:
   --   • o webhook, que usa a service key — nesse contexto não há JWT de
   --     usuário e auth.uid() é NULL;
@@ -86,11 +112,11 @@ BEGIN
   -- Pack configuration (same as admin_create_boost_campaign)
   CASE _pack_id
     WHEN 'inicio' THEN
-      _pack_name := 'Pack Início'; _pack_value := 24;
+      _pack_name := 'Pack Início'; _pack_value := 40;   -- era 24; cobrado R$ 40,00
       _total_sales := 3;
       _min_comm := 24; _max_comm := 50; _fixed_comm := NULL;
     WHEN 'aceleracao' THEN
-      _pack_name := 'Pack Aceleração'; _pack_value := 50;
+      _pack_name := 'Pack Aceleração'; _pack_value := 64.9;  -- era 50; cobrado R$ 64,90
       _total_sales := 4 + floor(random() * 5)::int; -- 4..8
       _min_comm := 45; _max_comm := 70; _fixed_comm := NULL;
     WHEN 'escala' THEN
