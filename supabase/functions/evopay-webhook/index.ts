@@ -56,12 +56,22 @@ serve(async (req: Request) => {
       );
     }
 
-    // Format: shopesync-impulsionar-{uuid}-{packName}-{timestamp}
+    // Format: shopesync-{purpose}-{uuid}-{...}-{timestamp}
     // UUID has 5 dash-separated groups: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
     // So the full string has 1 + 1 + 5 + 1 + 1 = 9 dash-separated parts
+    //
+    // DOIS propósitos usam este webhook, e os dois têm exatamente 9 partes:
+    //   shopesync-impulsionar-<uuid>-<packName>-<timestamp>     boost pack
+    //   shopesync-aula-<uuid>-<professor_id>-<epoch_ms>         aula ao vivo
+    //
+    // A checagem de 9 partes NÃO mudou. A única diferença é que o segmento de
+    // propósito agora aceita 'aula' além de 'impulsionar'; antes, um pagamento
+    // de aula caía no rejeite abaixo e era descartado em silêncio (com 200).
+    // Qualquer outro valor continua sendo rejeitado exatamente como antes.
     const parts = body.clientReference.split("-");
 
-    if (parts.length !== 9 || parts[0] !== "shopesync" || parts[1] !== "impulsionar") {
+    if (parts.length !== 9 || parts[0] !== "shopesync" ||
+        (parts[1] !== "impulsionar" && parts[1] !== "aula")) {
       console.error("Invalid clientReference format:", body.clientReference,
         `parts=${parts.length}`);
       return new Response(
@@ -70,14 +80,9 @@ serve(async (req: Request) => {
       );
     }
 
-    // Reconstruct UUID from parts[2..6]
-    const userId = parts.slice(2, 7).join("-");
-    const packName = parts[7];
-    const timestamp = parts[8];
-
-    console.log("Parsed clientReference:", { userId, packName, timestamp });
-
     // --- 3. Create Supabase client with service_role ---
+    // Subiu para antes do roteamento: os dois propósitos precisam do client.
+    // As linhas em si são as mesmas de sempre.
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
@@ -92,6 +97,80 @@ serve(async (req: Request) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // AULA AO VIVO
+    // ═══════════════════════════════════════════════════════════════════════
+    // A referência INTEIRA é a chave de busca — confirm_class_booking procura
+    // por client_reference. Nada é remontado a partir das partes, então o
+    // professor_id em parts[3] não precisa ser interpretado aqui.
+    //
+    // confirm_class_booking é idempotente de propósito: se a EvoPay entregar o
+    // mesmo webhook duas vezes, a segunda encontra 'paid', devolve true e não
+    // reescreve paid_at.
+    if (parts[1] === "aula") {
+      const txId = body.transactionId || body.id || null;
+
+      console.log("Aula payment received:", {
+        clientReference: body.clientReference,
+        txId,
+      });
+
+      const { data, error } = await supabase.rpc("confirm_class_booking", {
+        _client_reference: body.clientReference,
+        _tx_id: txId,
+      });
+
+      if (error) {
+        console.error("RPC error confirming class booking:", error);
+        return new Response(
+          JSON.stringify({
+            received: true,
+            error: "failed to confirm booking",
+            detail: error.message,
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }
+
+      // A RPC devolve false quando não existe reserva com esta referência.
+      // Continua 200: a EvoPay não deve reprocessar uma referência que não é
+      // nossa. Mesma postura de todos os outros caminhos desta função.
+      if (data !== true) {
+        console.error("Booking not confirmed:", body.clientReference, data);
+        return new Response(
+          JSON.stringify({
+            received: true,
+            error: "booking not confirmed",
+            detail: data,
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }
+
+      console.log("Class booking confirmed:", body.clientReference);
+      return new Response(
+        JSON.stringify({
+          received: true,
+          action: "class_booking_confirmed",
+          clientReference: body.clientReference,
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // IMPULSIONAR — CÓDIGO DE PRODUÇÃO, NÃO ALTERAR
+    // ═══════════════════════════════════════════════════════════════════════
+    // Um pagamento real passou por aqui em 25/06/2026. Daqui até o fim da
+    // função nada mudou, nem o texto nem a indentação.
+
+    // Reconstruct UUID from parts[2..6]
+    const userId = parts.slice(2, 7).join("-");
+    const packName = parts[7];
+    const timestamp = parts[8];
+
+    console.log("Parsed clientReference:", { userId, packName, timestamp });
 
     // --- 4. Call the webhook_activate_boost_pack RPC ---
     const { data, error } = await supabase.rpc("webhook_activate_boost_pack", {
