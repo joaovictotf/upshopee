@@ -2,6 +2,8 @@
 // EvoPay PIX creation endpoint — called by the frontend when a user clicks "Comprar".
 // Reads EVOPAY_TOKEN from Deno.env (Supabase secret) — NEVER hardcoded.
 // Returns QR code data so the frontend can display it.
+//
+// O VALOR COBRADO É DEFINIDO AQUI, NUNCA PELO CLIENTE. Ver PACK_PRICES abaixo.
 
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
@@ -10,8 +12,30 @@ const EVOPAY_BASE = "https://api.evopay.cash/v1/pix";
 const SUPABASE_FUNCTIONS_BASE =
   "https://ndawyrqzqhzbyjdmkdge.supabase.co/functions/v1";
 
+// ─── PREÇOS DOS PACKS — FONTE DE VERDADE DO SERVIDOR ────────────────────────
+// Até 17/08/2026 esta função usava `body.amount`, ou seja, o valor vinha do
+// navegador. O evopay-webhook ativa o pack pelo NOME e nunca compara com o
+// valor pago — então bastava editar a requisição para pagar R$ 1,00 e receber
+// o Pack Máximo (R$ 400,00). A função ainda roda com verify_jwt: false, então
+// a requisição nem precisa de login.
+//
+// Agora o preço é procurado aqui, pelo id do pack. Não existe caminho em que o
+// cliente influencie o valor.
+//
+// Estes quatro ids e valores espelham PACKS em
+// src/routes/dashboard.impulsionar-vendas.tsx. Mudou preço na UI, MUDE AQUI
+// TAMBÉM: a UI decide o que o usuário vê, este objeto decide o que ele paga.
+const PACK_PRICES: Record<string, number> = {
+  inicio: 40,
+  aceleracao: 64.9,
+  escala: 150,
+  maximo: 400,
+};
+
 interface CreatePixRequest {
-  amount: number;
+  // NÃO EXISTE CAMPO `amount` AQUI, DE PROPÓSITO. O preço sai de PACK_PRICES,
+  // indexado por packName. Não readicione — um valor vindo do cliente é
+  // exatamente o buraco do "R$ 1,00 e leva o Pack Máximo".
   packName: string;
   userEmail: string;
   userId: string;
@@ -37,16 +61,27 @@ serve(async (req: Request) => {
     // --- 1. Validate input ---
     const body: CreatePixRequest = await req.json();
 
-    if (!body.amount || typeof body.amount !== "number" || body.amount <= 0) {
+    if (!body.packName || !body.userEmail || !body.userId) {
       return new Response(
-        JSON.stringify({ ok: false, error: "amount is required and must be > 0" }),
+        JSON.stringify({ ok: false, error: "packName, userEmail, and userId are required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    if (!body.packName || !body.userEmail || !body.userId) {
+    // --- 1b. Preço pelo servidor ---
+    // hasOwnProperty em vez de acesso direto: `PACK_PRICES["toString"]`
+    // devolveria uma função herdada de Object.prototype, e um pack inventado
+    // chegaria adiante como valor não numérico.
+    const amount = Object.prototype.hasOwnProperty.call(PACK_PRICES, body.packName)
+      ? PACK_PRICES[body.packName]
+      : undefined;
+
+    // Pack desconhecido morre aqui: a EvoPay não chega a ser chamada, então
+    // nenhuma cobrança órfã é criada.
+    if (typeof amount !== "number") {
+      console.error("Unknown packName rejected:", body.packName);
       return new Response(
-        JSON.stringify({ ok: false, error: "packName, userEmail, and userId are required" }),
+        JSON.stringify({ ok: false, error: "unknown pack" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
@@ -62,19 +97,25 @@ serve(async (req: Request) => {
     }
 
     // --- 3. Build EvoPay request ---
+    // FORMATO DO clientReference — NÃO ALTERAR.
+    // O evopay-webhook faz split("-") e exige exatamente 9 partes:
+    //   'shopesync'(1) + 'impulsionar'(1) + uuid(5) + packName(1) + timestamp(1)
+    // Mudar o prefixo ou acrescentar um segmento quebra o Impulsionar em
+    // produção — o webhook descarta o pagamento devolvendo 200, sem retry.
+    // Os quatro ids de PACK_PRICES não têm hífen, então a contagem se mantém.
     const timestamp = Date.now();
     const clientReference =
       `shopesync-impulsionar-${body.userId}-${body.packName}-${timestamp}`;
 
     const evopayBody = {
-      amount: body.amount,
+      amount,
       callbackUrl: `${SUPABASE_FUNCTIONS_BASE}/evopay-webhook`,
       clientReference,
       expiresIn: 1800, // 30 minutes
     };
 
     console.log("Creating PIX via EvoPay:", {
-      amount: body.amount,
+      amount,
       clientReference,
       packName: body.packName,
       userId: body.userId,
