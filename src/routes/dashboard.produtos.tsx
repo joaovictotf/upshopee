@@ -1,17 +1,41 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { DashboardShell } from "../components/layout/DashboardShell";
 import { products, categories, type Product } from "../lib/mock/products";
-import { affiliateProducts } from "../lib/mock/affiliate-products";
+import { affiliateProducts, type AffiliateProduct } from "../lib/mock/affiliate-products";
 import { ProductCard, catalogOrder, type CatalogItem } from "../components/products/ProductCard";
+import { MyProductCard } from "../components/products/MyProductCard";
 import { GenerateListingFlow } from "../components/products/GenerateListingFlow";
 import { NewProductsAnnouncement } from "../components/products/NewProductsAnnouncement";
 import { Input } from "../components/ui/input";
 import { RolePickerDialog } from "../components/products/RolePickerDialog";
 import { Search, Package } from "lucide-react";
 import { spWindowIndex, msUntilNextSpWindow } from "../lib/timeWindow";
+import { supabase } from "../integrations/supabase/client";
+import { useApp } from "../lib/state";
 
 export const Route = createFileRoute("/dashboard/produtos")({ component: Produtos });
+
+/** Resolve o `product_n` gravado no banco de volta para o produto do catálogo.
+ *  O banco guarda só o número — nome, preço e imagem vivem no bundle. */
+const affiliateByN = new Map<number, AffiliateProduct>(
+  affiliateProducts.map((p) => [p.n, p]),
+);
+
+type MyProductRow = {
+  product_n: number;
+  last_clicked_at: string;
+  click_count: number;
+};
+
+type SubTab = "catalogo" | "meus";
+
+/** Sub-abas da própria página. NÃO viram item do dock: o dock já tem 10 itens
+ *  e estoura a largura em 320px. */
+const SUB_TABS: Array<{ id: SubTab; label: string }> = [
+  { id: "catalogo", label: "Catálogo" },
+  { id: "meus", label: "Meus produtos" },
+];
 
 const catalog: CatalogItem[] = [
   ...products.map((product) => ({ kind: "legacy" as const, product })),
@@ -97,12 +121,89 @@ function ProdutosCountdown() {
 }
 
 function Produtos() {
+  const { currentUserId } = useApp();
+  const [tab, setTab] = useState<SubTab>("catalogo");
   const [q, setQ] = useState("");
   const [cat, setCat] = useState("Todos");
   const [selected, setSelected] = useState<Product | null>(null);
   const [open, setOpen] = useState(false);
   const [rolePickProduct, setRolePickProduct] = useState<Product | null>(null);
   const [windowIndex, setWindowIndex] = useState(() => spWindowIndex(WINDOW_MS));
+  // null = ainda carregando. A busca roda na montagem, não na troca de aba,
+  // porque a contagem no rótulo tem que aparecer sem o usuário trocar de aba.
+  const [mine, setMine] = useState<MyProductRow[] | null>(null);
+
+  useEffect(() => {
+    if (!currentUserId) {
+      setMine([]);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const { data, error } = (await (supabase
+          .from("user_affiliate_products" as never)
+          .select("product_n, last_clicked_at, click_count")
+          // O filtro por user_id é obrigatório mesmo com RLS: a policy de admin
+          // permite SELECT em tudo, e sem isto a lista do admin viria com as
+          // linhas dos outros usuários misturadas.
+          .eq("user_id", currentUserId)
+          .order("last_clicked_at", { ascending: false }) as unknown)) as {
+          data: MyProductRow[] | null;
+          error: { message: string } | null;
+        };
+        if (cancelled) return;
+        if (error) {
+          console.warn("[meus-produtos] falha ao carregar:", error.message);
+          setMine([]);
+          return;
+        }
+        setMine(data ?? []);
+      } catch (err) {
+        if (!cancelled) {
+          console.warn("[meus-produtos] falha ao carregar:", err);
+          setMine([]);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [currentUserId]);
+
+  /** Reflete o clique em "Afiliar na Shopee" na hora, sem esperar o servidor —
+   *  a RPC do card já está a caminho e é idempotente. */
+  const handleAffiliated = useCallback((product: AffiliateProduct) => {
+    setMine((prev) => {
+      if (!prev) return prev;
+      const previous = prev.find((row) => row.product_n === product.n);
+      const rest = prev.filter((row) => row.product_n !== product.n);
+      const now = new Date().toISOString();
+      return [
+        {
+          product_n: product.n,
+          last_clicked_at: now,
+          click_count: (previous?.click_count ?? 0) + 1,
+        },
+        ...rest,
+      ];
+    });
+  }, []);
+
+  const handleRemoved = useCallback((productN: number) => {
+    setMine((prev) => (prev ? prev.filter((row) => row.product_n !== productN) : prev));
+  }, []);
+
+  // Linhas do banco → produtos do catálogo, na ordem que veio (clique mais
+  // recente primeiro). Um `n` que não existe mais no catálogo é descartado em
+  // silêncio: o catálogo é regerado por script e pode encolher.
+  const myProducts = useMemo(
+    () =>
+      (mine ?? [])
+        .map((row) => affiliateByN.get(row.product_n))
+        .filter((p): p is AffiliateProduct => !!p),
+    [mine],
+  );
 
   // Fires once per 6h window, right at the boundary, rather than polling —
   // negligible cost, and it only touches state when the window actually rolls.
@@ -141,6 +242,85 @@ function Produtos() {
       title="Produtos"
     >
       <div className="page-enter">
+        {/* ═══ SUB-ABAS ═══ */}
+        <div className="flex pt-4">
+          <div className="flex w-full items-center gap-1 rounded-full border border-[var(--border)] bg-[var(--surface)] p-1 sm:w-auto">
+            {SUB_TABS.map(({ id, label }) => {
+              const active = tab === id;
+              return (
+                <button
+                  key={id}
+                  onClick={() => setTab(id)}
+                  className={`flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-3 py-2 text-xs font-semibold transition-all duration-200 sm:flex-none sm:px-5 sm:text-sm ${
+                    active
+                      ? "bg-[var(--accent)] text-white"
+                      : "text-[var(--muted)] hover:text-[var(--text)]"
+                  }`}
+                >
+                  {label}
+                  {/* A contagem no rótulo existe para o usuário saber que tem
+                      coisa lá dentro sem precisar trocar de aba. */}
+                  {id === "meus" && mine !== null && mine.length > 0 && (
+                    <span
+                      className={`inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full px-1.5 text-[10px] font-bold tabular-nums ${
+                        active ? "bg-white/25 text-white" : "bg-[var(--muted-bg)] text-[var(--text)]"
+                      }`}
+                    >
+                      {mine.length}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ═══ MEUS PRODUTOS ═══ */}
+        {tab === "meus" &&
+          (mine === null ? (
+            <p className="py-20 text-center text-xs text-[var(--muted)]">
+              Carregando seus produtos...
+            </p>
+          ) : myProducts.length === 0 ? (
+            <div className="mt-16 flex flex-col items-center justify-center px-2 text-center">
+              <div className="mb-4 grid h-16 w-16 place-items-center rounded-full bg-[var(--muted-bg)]">
+                <Package className="h-8 w-8 text-[var(--muted)]" />
+              </div>
+              <p
+                className="text-sm font-semibold text-[var(--text)]"
+                style={{ fontFamily: "'Sora', sans-serif" }}
+              >
+                Você ainda não afiliou nenhum produto
+              </p>
+              <p className="mt-1 max-w-sm text-xs leading-relaxed text-[var(--muted)]">
+                Quando você clicar em "Afiliar na Shopee" em um produto do catálogo, ele aparece
+                aqui — com as vendas dele na Shopee e o gerador de conteúdo prontos para usar.
+              </p>
+              <button onClick={() => setTab("catalogo")} className="btn-ghost mt-4 text-xs">
+                Ir para o catálogo
+              </button>
+            </div>
+          ) : (
+            <div className="pt-4">
+              <p className="mb-3 text-xs text-[var(--muted)]">
+                {myProducts.length === 1
+                  ? "1 produto afiliado"
+                  : `${myProducts.length} produtos afiliados`}{" "}
+                · o mais recente primeiro
+              </p>
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {myProducts.map((product) => (
+                  <MyProductCard key={product.id} product={product} onRemoved={handleRemoved} />
+                ))}
+              </div>
+            </div>
+          ))}
+
+        {/* ═══ CATÁLOGO ═══
+            Escondido em vez de desmontado: trocar de aba não pode perder a
+            busca, o filtro e a posição do scroll, e remontar 302 cards a cada
+            ida e volta é caro no celular. */}
+        <div className={tab === "catalogo" ? undefined : "hidden"}>
         {/* ═══ SEARCH + FILTERS ═══ */}
         <div className="sticky top-16 z-10 -mx-4 bg-[var(--bg)]/80 px-4 pb-4 pt-4 backdrop-blur md:-mx-8 md:px-8">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -187,6 +367,7 @@ function Produtos() {
               key={it.product.id}
               item={it}
               onSelectLegacy={(prod) => setRolePickProduct(prod)}
+              onAffiliated={handleAffiliated}
             />
           ))}
         </div>
@@ -210,6 +391,7 @@ function Produtos() {
             </button>
           </div>
         )}
+        </div>
       </div>
 
       <GenerateListingFlow

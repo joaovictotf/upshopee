@@ -2,6 +2,7 @@ import { Eye, ShoppingBag, Star, ExternalLink } from "lucide-react";
 import type { Product } from "../../lib/mock/products";
 import type { AffiliateProduct } from "../../lib/mock/affiliate-products";
 import { brl } from "../../lib/format";
+import { supabase } from "../../integrations/supabase/client";
 
 export type CatalogItem =
   | { kind: "legacy"; product: Product }
@@ -77,12 +78,39 @@ const pctFmt = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 });
 
 const SORA = { fontFamily: "'Sora', sans-serif" } as const;
 
+/** Registra o clique em "Afiliar na Shopee" para a aba "Meus produtos".
+ *
+ *  DISPARA E ESQUECE, DE PROPÓSITO — não retorna promessa e não recebe await.
+ *  O clique tem um trabalho só: abrir a Shopee. Qualquer espera antes do
+ *  window.open joga a abertura para fora do gesto do usuário e o bloqueador de
+ *  pop-up mata o redirect. Falha aqui é silenciosa: sem sessão, sem rede ou com
+ *  a RPC fora do ar, o usuário perde a linha na lista — nunca o produto.
+ *
+ *  O try/catch síncrono é necessário: `supabase` é um Proxy preguiçoso que
+ *  lança na primeira propriedade lida se faltar variável de ambiente. */
+function recordAffiliateClick(productN: number): void {
+  try {
+    void supabase
+      .rpc("record_affiliate_click" as never, { _product_n: productN } as never)
+      .then(
+        () => {},
+        () => {},
+      );
+  } catch {
+    /* silencioso por definição */
+  }
+}
+
 export function ProductCard({
   item,
   onSelectLegacy,
+  onAffiliated,
 }: {
   item: CatalogItem;
   onSelectLegacy: (p: Product) => void;
+  /** Chamado depois de abrir a Shopee, para a lista "Meus produtos" já
+   *  refletir o produto sem esperar o servidor. Só para produtos de afiliado. */
+  onAffiliated?: (product: AffiliateProduct) => void;
 }) {
   const { id, name, category, image } = item.product;
   const isNew = item.kind === "affiliate" && item.product.isNew === true;
@@ -180,7 +208,13 @@ export function ProductCard({
             inside the ~114px-wide button of a 320px two-column grid. */}
         {item.kind === "affiliate" ? (
           <button
-            onClick={() => window.open(item.product.shopeeUrl, "_blank", "noopener,noreferrer")}
+            onClick={() => {
+              // 1º o redirect, dentro do gesto do usuário. 2º o registro.
+              // Inverter a ordem quebra a abertura em metade dos navegadores.
+              window.open(item.product.shopeeUrl, "_blank", "noopener,noreferrer");
+              recordAffiliateClick(item.product.n);
+              onAffiliated?.(item.product);
+            }}
             className="mt-3 flex h-10 w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-[var(--accent)] px-2 text-xs font-semibold text-white transition-all hover:bg-[var(--accent-2)] active:scale-[0.98] sm:text-sm"
           >
             <ExternalLink className="hidden h-3.5 w-3.5 sm:block" />
