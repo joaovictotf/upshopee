@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { DashboardShell } from "../components/layout/DashboardShell";
+import { DateAnnouncement } from "../components/DateAnnouncement";
 import { useApp, getProductImage } from "../lib/state";
 import { brl, num } from "../lib/format";
 import {
@@ -181,6 +182,7 @@ function NewDashboard() {
 
   return (
     <DashboardShell title="Dashboard" subtitle="Painel UpShopee para Shopee" forceLight>
+      <DateAnnouncement />
       <DemoPeriodNotice />
       <NewShopeeHeroPanel valor={m.totalCommission} privacy={privacy} />
       <div className="mt-4 flex flex-col gap-4 lg:grid lg:grid-cols-12 lg:items-stretch">
