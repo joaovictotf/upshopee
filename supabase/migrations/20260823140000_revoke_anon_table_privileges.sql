@@ -1,0 +1,129 @@
+-- ═══════════════════════════════════════════════════════════════════════════
+-- Segurança: tira do papel `anon` todo privilégio de tabela no schema public
+-- Migration: 20260823140000_revoke_anon_table_privileges
+-- ═══════════════════════════════════════════════════════════════════════════
+--
+-- O QUE ESTAVA ERRADO
+--
+-- O Supabase roda, na criação do projeto:
+--     ALTER DEFAULT PRIVILEGES IN SCHEMA public
+--       GRANT ALL ON TABLES TO anon, authenticated, service_role;
+--
+-- "ALL" em tabela é `arwdDxtm`: INSERT, SELECT, UPDATE, DELETE, TRUNCATE,
+-- REFERENCES, TRIGGER e MAINTAIN. Ou seja, TODA tabela criada no schema public
+-- nasce com INSERT/UPDATE/DELETE/TRUNCATE para o papel `anon` — o papel que o
+-- PostgREST usa para requisição SEM login. Conferido no banco de produção em
+-- 23/08/2026: 15 das 18 tabelas davam TRUNCATE para `anon`.
+--
+-- Nada disso era explorável hoje: `anon` é NOLOGIN (não abre conexão direta),
+-- o PostgREST não tem verbo TRUNCATE (o `Allow` real é GET, HEAD, POST,
+-- OPTIONS) e as 21 funções que `anon` pode executar são todas SECURITY DEFINER.
+-- O que sobrava era uma camada só — a RLS — segurando tudo.
+--
+-- E uma camada só já quase falhou uma vez: `registration_tokens` tem a policy
+-- "Anyone can select tokens for validation" com USING (true) para o papel
+-- `public`. Quem impede a leitura anônima ali NÃO é a policy, é o GRANT — o
+-- REVOKE SELECT da migration 20260609174813. Sem aquele REVOKE, a tabela
+-- estaria aberta. Esta migration generaliza aquela proteção para todas.
+--
+-- POR QUE SÓ `anon`
+--
+-- São 557 usuários reais em produção. `authenticated` é o papel de TODOS eles:
+-- mexer nele é mexer no acesso de todo mundo ao mesmo tempo. `anon` não tem
+-- nenhum caminho de leitura ou escrita de tabela no produto (levantamento
+-- abaixo), então tirar tudo dele é a mudança de maior ganho e menor risco.
+-- `authenticated` e `service_role` ficam EXATAMENTE como estão.
+--
+-- LEVANTAMENTO QUE AUTORIZOU ISTO (feito antes de escrever este arquivo)
+--
+-- Toda rota pública — /, /ofertas, /ofertas2, /ofertas3, /ofertas4, /ofertas5,
+-- /planos2, /planos3, /planosup, /mercadolivrecombr, /login, /register,
+-- /redefinir-senha, /pagamento-bloqueado — foi lida em busca de
+-- supabase.from(...) e supabase.rpc(...):
+--
+--   • As 10 landings e /login, /pagamento-bloqueado: ZERO referência a
+--     supabase. Os componentes que elas usam (OfertasLanding, VslVideo,
+--     ofertas5/, ui/*) também não têm nenhuma.
+--   • /register e /redefinir-senha usam SOMENTE supabase.auth.* (signUp,
+--     signOut, updateUser). Isso é o GoTrue, serviço separado do PostgREST,
+--     no schema `auth`. Privilégio de tabela no schema public não o alcança.
+--   • O AppProvider (src/lib/state.tsx) embrulha todas as rotas, inclusive as
+--     públicas — mas nenhum dos seus 22 useEffect chega numa tabela sem
+--     sessão. O único que roda sem guarda (L859) é o bootstrap de auth, e o
+--     seu caminho "sem sessão" (hydrate(null)) retorna ANTES do primeiro
+--     .from(). Todos os outros começam com if (!user), if (!currentUserId)
+--     ou if (!isAdmin).
+--
+-- Conclusão: nenhum caminho anônimo lê ou escreve tabela. Nada a perder.
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- 1. As tabelas que JÁ EXISTEM
+-- ═══════════════════════════════════════════════════════════════════════════
+-- Alcança as 18 tabelas do schema public, todas de dono `postgres` (conferido:
+-- não há view, matview nem foreign table em public, então "ALL TABLES" aqui
+-- são exatamente essas 18).
+--
+-- Isto é um comando de momento: vale para o que existe QUANDO roda. Sozinho,
+-- ele não protege a tabela que alguém criar amanhã — é para isso que existe o
+-- bloco 2, e é por não existir um bloco 2 que chegamos até aqui.
+
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM anon;
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- 2. As tabelas que AINDA NÃO EXISTEM
+-- ═══════════════════════════════════════════════════════════════════════════
+-- Esta linha vale tanto quanto a de cima. Sem ela, a próxima migration que
+-- fizer CREATE TABLE recria o problema inteiro, calada — foi exatamente assim
+-- que 15 tabelas ficaram com TRUNCATE para `anon` sem ninguém ter escrito um
+-- GRANT em lugar nenhum.
+--
+-- ESCOPO, para não haver ilusão: ALTER DEFAULT PRIVILEGES sem FOR ROLE aplica
+-- ao papel que está rodando o comando. As migrations rodam como `postgres`,
+-- então isto derruba a entrada de default ACL de `postgres` em public — que é
+-- a que rege tudo que este repositório cria.
+--
+-- Existe uma SEGUNDA entrada, de dono `supabase_admin`, que continua
+-- concedendo ALL para anon. Ela NÃO é alterável daqui: `postgres` não é membro
+-- de `supabase_admin`, então um ALTER DEFAULT PRIVILEGES FOR ROLE
+-- supabase_admin falharia. Ela só rege objetos criados PELO supabase_admin,
+-- isto é, o tooling interno da plataforma — nada que saia deste repositório.
+-- Fica registrado como limite conhecido, não como esquecimento.
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON TABLES FROM anon;
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- 3. O QUE ESTE ARQUIVO NÃO FAZ — de propósito
+-- ═══════════════════════════════════════════════════════════════════════════
+--
+-- • NÃO mexe em `authenticated`. É o papel dos 557 usuários reais. Ele segue
+--   com TRUNCATE em 17 tabelas, o que continua errado — mas é uma decisão
+--   separada, com risco próprio, e não entra de carona numa migration de
+--   `anon`.
+--
+-- • NÃO mexe em `service_role`. É a chave de servidor (Edge Functions,
+--   webhooks). Tirar privilégio dele quebra evopay-webhook e companhia.
+--
+-- • NÃO mexe em NENHUMA policy de RLS, incluindo a USING (true) de
+--   `registration_tokens`. Aquela policy é insegura no papel, mas hoje o que
+--   a segura é justamente o GRANT — remover a policy é outra conversa, e
+--   remover a proteção de GRANT deixando a policy seria pior do que não fazer
+--   nada. As duas coisas juntas, nunca; nenhuma delas aqui.
+--
+-- • NÃO mexe em EXECUTE de função. REVOKE de privilégio de TABELA não toca em
+--   privilégio de FUNÇÃO — são catálogos diferentes (relacl vs proacl). As 21
+--   funções que `anon` executa hoje continuam executáveis exatamente como
+--   antes, e continuam funcionando: todas as 21 são SECURITY DEFINER com dono
+--   `postgres`, ou seja, rodam com o privilégio do DONO e não com o de quem
+--   chamou. `record_lightning_click`, `lookup_registration_token`,
+--   `has_lightning_access` e as demais não enxergam esta migration.
+--   (Não existe `record_referral_click` no projeto — os nomes reais são
+--   `record_lightning_click` e `record_affiliate_click`.)
+--
+-- • NÃO mexe no schema `storage`. Ele tem a MESMA default ACL frouxa, e o
+--   upload de imagem do Vídeo IA (supabase.storage.from("video-project-images"))
+--   depende dele. Fora do escopo, e mexer ali sem o mesmo levantamento seria
+--   repetir o erro que esta migration corrige.
+--
+-- • NÃO mexe em SEQUENCES. `anon` mantém rwU nas sequences de public. Sem
+--   INSERT em tabela nenhuma, uma sequence não leva a lugar nenhum — some o
+--   valor de um contador, no máximo. Fica anotado como resto, não como risco.
