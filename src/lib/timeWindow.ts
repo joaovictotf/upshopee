@@ -35,3 +35,30 @@ export function msUntilNextSpWindow(windowMs: number, at?: number): number {
   const now = spEquivalentNow(at);
   return (windowMs - (now % windowMs)) % windowMs;
 }
+
+/**
+ * Today's calendar date in America/Sao_Paulo as `YYYY-MM-DD`.
+ *
+ * Same reason the rest of this module exists: `new Date().toISOString()` and
+ * `toLocaleDateString()` both answer in the *visitor's* timezone, so a browser
+ * in Tokyo or Lisbon would call it a different day than São Paulo does. The
+ * /painel date selector and the `record_date` column of the panel tables are
+ * both SP calendar dates, so the "today" they compare against has to be too.
+ *
+ * Built from formatToParts instead of a locale that happens to print
+ * ISO order (en-CA), so the output does not depend on the ICU data shipped
+ * with the browser.
+ */
+const SP_DATE_PARTS = new Intl.DateTimeFormat("en-US", {
+  timeZone: SP_TZ,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+export function spDateKey(at: number = Date.now()): string {
+  const parts = SP_DATE_PARTS.formatToParts(new Date(at));
+  const get = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((p) => p.type === type)?.value ?? "";
+  return `${get("year")}-${get("month")}-${get("day")}`;
+}

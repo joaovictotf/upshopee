@@ -238,6 +238,129 @@ export type Database = {
         }
         Relationships: []
       }
+      panel_daily_records: {
+        Row: {
+          clicks: number
+          estimated_commission: number
+          items_sold: number
+          new_buyers: number
+          order_value: number
+          orders: number
+          pct_overrides: Json | null
+          record_date: string
+          social_clicks: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          clicks?: number
+          estimated_commission?: number
+          items_sold?: number
+          new_buyers?: number
+          order_value?: number
+          orders?: number
+          pct_overrides?: Json | null
+          record_date: string
+          social_clicks?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          clicks?: number
+          estimated_commission?: number
+          items_sold?: number
+          new_buyers?: number
+          order_value?: number
+          orders?: number
+          pct_overrides?: Json | null
+          record_date?: string
+          social_clicks?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      panel_product_stats: {
+        Row: {
+          commission_per_sale: number
+          items_sold: number
+          product_n: number
+          record_date: string
+        }
+        Insert: {
+          commission_per_sale?: number
+          items_sold?: number
+          product_n: number
+          record_date: string
+        }
+        Update: {
+          commission_per_sale?: number
+          items_sold?: number
+          product_n?: number
+          record_date?: string
+        }
+        Relationships: []
+      }
+      panel_sale_events: {
+        Row: {
+          applied_at: string
+          idempotency_key: string
+          record_date: string
+          scenario_id: number
+        }
+        Insert: {
+          applied_at?: string
+          idempotency_key: string
+          record_date: string
+          scenario_id: number
+        }
+        Update: {
+          applied_at?: string
+          idempotency_key?: string
+          record_date?: string
+          scenario_id?: number
+        }
+        Relationships: []
+      }
+      panel_sale_scenarios: {
+        Row: {
+          active: boolean
+          clicks_add: number
+          commission_per_unit: number
+          id: number
+          new_buyers_add: number
+          position: number
+          product_n: number
+          quantity: number
+          social_clicks_add: number
+          unit_order_value: number
+        }
+        Insert: {
+          active?: boolean
+          clicks_add?: number
+          commission_per_unit?: number
+          id?: number
+          new_buyers_add?: number
+          position: number
+          product_n: number
+          quantity?: number
+          social_clicks_add?: number
+          unit_order_value?: number
+        }
+        Update: {
+          active?: boolean
+          clicks_add?: number
+          commission_per_unit?: number
+          id?: number
+          new_buyers_add?: number
+          position?: number
+          product_n?: number
+          quantity?: number
+          social_clicks_add?: number
+          unit_order_value?: number
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           approval_status: Database["public"]["Enums"]["approval_status"]
@@ -882,6 +1005,10 @@ export type Database = {
           status: string
           token: string
         }[]
+      }
+      panel_apply_demo_sale: {
+        Args: { _idempotency_key: string; _record_date: string }
+        Returns: Json
       }
       record_lightning_click: { Args: { _amount: number }; Returns: number }
       reject_marketplace_connection: {
