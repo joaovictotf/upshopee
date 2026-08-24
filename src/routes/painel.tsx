@@ -48,6 +48,12 @@ import { useApp } from "../lib/state";
 import { supabase } from "../integrations/supabase/client";
 import { affiliateProducts, type AffiliateProduct } from "../lib/mock/affiliate-products";
 import { spDateKey } from "../lib/timeWindow";
+import {
+  PainelEditor,
+  type PanelMetrics,
+  type PanelPctOverrides,
+  type PanelProductRow,
+} from "../components/painel/PainelEditor";
 import type { Json, Tables } from "../integrations/supabase/types";
 
 /* ══════════════════════════════════════════════════════════════
@@ -245,22 +251,6 @@ const EDITABLE_KEYS = [
 ] as const;
 type EditableKey = (typeof EDITABLE_KEYS)[number];
 
-const EDITOR_LABEL: Record<EditableKey, string> = {
-  ...METRIC_LABEL,
-  social_clicks: "Cliques de redes sociais",
-};
-
-/** Colunas `integer` no banco. Mandar 1,5 para uma delas é erro do
- *  Postgres, não arredondamento silencioso — por isso a validação
- *  recusa antes de enviar. As duas de fora são `numeric`. */
-const INTEGER_METRICS: ReadonlySet<EditableKey> = new Set<EditableKey>([
-  "clicks",
-  "orders",
-  "items_sold",
-  "new_buyers",
-  "social_clicks",
-]);
-
 /**
  * Chaves aceitas em `panel_daily_records.pct_overrides`.
  *
@@ -335,31 +325,6 @@ const metricValueFmt = (key: MetricKey, v: number) =>
  *  regra da referência (inteiro sai sem casas). */
 const money2Fmt = (v: number) =>
   safe(v).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-/**
- * Lê um número digitado por um brasileiro. "1.234,50", "1234,5" e
- * "1234.5" chegam todos ao mesmo lugar; havendo vírgula, o ponto é
- * separador de milhar e some.
- *
- * Ambiguidade conhecida e aceita: "1.234" SEM vírgula vira 1,234 — não
- * dá para saber se o ponto é milhar ou decimal. Por isso os campos de
- * dinheiro do editor mostram, embaixo, o valor já interpretado: o admin
- * vê "R$ 1,23" antes de salvar e corrige na hora.
- *
- * `null` = não é número. Quem decide se pode ser negativo é a validação,
- * não esta função — porcentagem manual negativa é justamente o caso de
- * uso principal do override.
- */
-function parseBRNumber(raw: string): number | null {
-  const text = raw.trim();
-  if (!text) return null;
-  const normalized = text.includes(",")
-    ? text.replace(/\./g, "").replace(",", ".")
-    : text;
-  if (!/^-?(\d+(\.\d*)?|\.\d+)$/.test(normalized)) return null;
-  const n = Number(normalized);
-  return Number.isFinite(n) ? n + 0 : null;
-}
 
 type PctTone = "negative" | "neutral" | "positive";
 
@@ -523,582 +488,6 @@ function ProductsPanel({ rows }: { rows: TopRow[] }) {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   EDITOR DO ADMIN
-   ══════════════════════════════════════════════════════════════
-   Painel lateral, DENTRO do /painel — não é rota nova nem segunda
-   página de administração (§7 dos requisitos). Abre pelo "⋯" do
-   cabeçalho, que já existia na composição aprovada e não fazia nada;
-   nenhum pixel novo foi acrescentado à tela por baixo.
-
-   Grava direto em panel_daily_records e panel_product_stats, que é o
-   caminho previsto pela migration — a RLS já limita a admin. O
-   catálogo NÃO é copiado: nas tabelas ficam só product_n, items_sold
-   e commission_per_sale.
-   ══════════════════════════════════════════════════════════════ */
-
-type MetricDraft = Record<EditableKey, string>;
-type ProductDraft = { uid: string; productN: number; itemsSold: string; commissionPerSale: string };
-type DraftErrors = {
-  values: Partial<Record<EditableKey, string>>;
-  pcts: Partial<Record<EditableKey, string>>;
-  products: Record<string, string>;
-};
-
-const NO_ERRORS: DraftErrors = { values: {}, pcts: {}, products: {} };
-
-const buildDraft = (fill: (key: EditableKey) => string): MetricDraft =>
-  Object.fromEntries(EDITABLE_KEYS.map((key) => [key, fill(key)])) as MetricDraft;
-
-/** Números do dia → texto de formulário. Inteiro sai cru; dinheiro sai
- *  em formato brasileiro, que é como o admin espera reler e reescrever. */
-const seedValues = (row: DailyRow | null): MetricDraft =>
-  buildDraft((key) => {
-    const n = safe(row?.[key] ?? 0);
-    return INTEGER_METRICS.has(key) ? String(Math.round(n)) : money2Fmt(n);
-  });
-
-/** Campo vazio = automático. Ausência de chave em pct_overrides e campo
- *  em branco são a MESMA coisa, dos dois lados. */
-const seedPcts = (row: DailyRow | null): MetricDraft =>
-  buildDraft((key) => {
-    const override = readOverride(row?.pct_overrides, key);
-    return override === null ? "" : String(override);
-  });
-
-const seedProducts = (rows: ProductStatRow[]): ProductDraft[] =>
-  rows
-    .slice()
-    .sort((a, b) => b.items_sold - a.items_sold || a.product_n - b.product_n)
-    .map((row) => ({
-      uid: `n-${row.product_n}`,
-      productN: row.product_n,
-      itemsSold: String(Math.round(safe(row.items_sold))),
-      commissionPerSale: money2Fmt(safe(row.commission_per_sale)),
-    }));
-
-/** Assinatura do formulário. Comparada contra a foto tirada no momento
- *  em que a data foi carregada — é isso que responde "tem alteração não
- *  salva?" sem precisar de um flag por campo. */
-const draftSignature = (values: MetricDraft, pcts: MetricDraft, products: ProductDraft[]) =>
-  JSON.stringify([
-    values,
-    pcts,
-    products.map((p) => [p.productN, p.itemsSold.trim(), p.commissionPerSale.trim()]),
-  ]);
-
-/** Busca sem acento e sem caixa: "acucareiro" acha "Açucareiro". */
-const foldText = (s: string) =>
-  s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-
-const FOLDED_CATALOG = affiliateProducts.map((p) => ({
-  product: p,
-  haystack: foldText(`${p.name} ${p.category}`),
-}));
-
-function EditorDrawer({
-  initialDate,
-  maxDate,
-  updatedBy,
-  onClose,
-  onSaved,
-}: {
-  initialDate: string;
-  maxDate: string;
-  updatedBy: string | null;
-  onClose: () => void;
-  onSaved: (date: string) => void;
-}) {
-  const [date, setDate] = useState(initialDate);
-  const [loading, setLoading] = useState(true);
-  const [values, setValues] = useState<MetricDraft>(() => seedValues(null));
-  const [pcts, setPcts] = useState<MetricDraft>(() => seedPcts(null));
-  const [products, setProducts] = useState<ProductDraft[]>([]);
-  const [errors, setErrors] = useState<DraftErrors>(NO_ERRORS);
-  const [query, setQuery] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [status, setStatus] = useState<{ tone: "ok" | "bad" | "busy"; text: string } | null>(null);
-  /* Confirmação de descarte: vira uma barra no rodapé em vez de um
-     segundo modal por cima do primeiro. */
-  const [pendingExit, setPendingExit] = useState<null | { to: string | null }>(null);
-
-  const baseline = useRef("");
-  const loadId = useRef(0);
-
-  const dirty = !loading && draftSignature(values, pcts, products) !== baseline.current;
-
-  /* Carrega SEMPRE do banco ao abrir e a cada troca de data: outro
-     dispositivo autorizado pode ter gravado depois que esta tela abriu. */
-  useEffect(() => {
-    const id = ++loadId.current;
-    setLoading(true);
-    setStatus(null);
-    setErrors(NO_ERRORS);
-    (async () => {
-      const [dailyRes, statsRes] = await Promise.all([
-        supabase.from("panel_daily_records").select("*").eq("record_date", date).limit(1),
-        supabase.from("panel_product_stats").select("*").eq("record_date", date),
-      ]);
-      if (id !== loadId.current) return;
-
-      if (dailyRes.error || statsRes.error) {
-        console.error("[painel] editor: falha ao carregar", dailyRes.error ?? statsRes.error);
-        setStatus({ tone: "bad", text: "Não foi possível carregar esta data." });
-        setLoading(false);
-        return;
-      }
-
-      const row = dailyRes.data?.[0] ?? null;
-      const nextValues = seedValues(row);
-      const nextPcts = seedPcts(row);
-      const nextProducts = seedProducts(statsRes.data ?? []);
-      baseline.current = draftSignature(nextValues, nextPcts, nextProducts);
-      setValues(nextValues);
-      setPcts(nextPcts);
-      setProducts(nextProducts);
-      setLoading(false);
-    })();
-  }, [date]);
-
-  /* Aviso do navegador se o admin recarregar ou fechar a aba com
-     alteração pendente. O aviso do Cancelar/Esc é a barra do rodapé. */
-  useEffect(() => {
-    if (!dirty) return;
-    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
-    window.addEventListener("beforeunload", warn);
-    return () => window.removeEventListener("beforeunload", warn);
-  }, [dirty]);
-
-  const requestExit = useCallback(
-    (to: string | null) => {
-      if (saving) return;
-      if (dirty) {
-        setPendingExit({ to });
-        return;
-      }
-      if (to === null) onClose();
-      else setDate(to);
-    },
-    [dirty, saving, onClose],
-  );
-
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") requestExit(null);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [requestExit]);
-
-  const setValue = (key: EditableKey, next: string) => {
-    setValues((prev) => ({ ...prev, [key]: next }));
-    setStatus(null);
-  };
-  const setPct = (key: EditableKey, next: string) => {
-    setPcts((prev) => ({ ...prev, [key]: next }));
-    setStatus(null);
-  };
-  const setProduct = (uid: string, patch: Partial<ProductDraft>) => {
-    setProducts((prev) => prev.map((row) => (row.uid === uid ? { ...row, ...patch } : row)));
-    setStatus(null);
-  };
-
-  const results = useMemo(() => {
-    const q = foldText(query.trim());
-    if (!q) return [];
-    const taken = new Set(products.map((p) => p.productN));
-    const asNumber = Number(q);
-    return FOLDED_CATALOG.filter(
-      ({ product, haystack }) =>
-        !taken.has(product.n) &&
-        (haystack.includes(q) || (Number.isInteger(asNumber) && product.n === asNumber)),
-    )
-      .slice(0, 8)
-      .map((entry) => entry.product);
-  }, [query, products]);
-
-  const addProduct = (product: AffiliateProduct) => {
-    setProducts((prev) => [
-      ...prev,
-      { uid: `n-${product.n}`, productN: product.n, itemsSold: "0", commissionPerSale: "0,00" },
-    ]);
-    setQuery("");
-    setStatus(null);
-  };
-
-  /* Validação. Devolve os erros por campo E o payload já convertido,
-     para não parsear duas vezes e arriscar divergir. */
-  const validate = () => {
-    const next: DraftErrors = { values: {}, pcts: {}, products: {} };
-    const numbers = {} as Record<EditableKey, number>;
-
-    for (const key of EDITABLE_KEYS) {
-      const raw = values[key];
-      if (!raw.trim()) {
-        next.values[key] = "Informe um valor.";
-        continue;
-      }
-      const parsed = parseBRNumber(raw);
-      if (parsed === null) next.values[key] = "Número inválido.";
-      else if (parsed < 0) next.values[key] = "Não pode ser negativo.";
-      else if (INTEGER_METRICS.has(key) && !Number.isInteger(parsed))
-        next.values[key] = "Use um número inteiro.";
-      else numbers[key] = parsed;
-    }
-
-    const overrides: Record<string, number> = {};
-    for (const key of EDITABLE_KEYS) {
-      const raw = pcts[key];
-      if (!raw.trim()) continue; // vazio = automático
-      const parsed = parseBRNumber(raw);
-      if (parsed === null) next.pcts[key] = "Porcentagem inválida.";
-      else overrides[key] = parsed;
-    }
-
-    const seen = new Set<number>();
-    const productRows: {
-      record_date: string;
-      product_n: number;
-      items_sold: number;
-      commission_per_sale: number;
-    }[] = [];
-    for (const row of products) {
-      if (seen.has(row.productN)) {
-        next.products[row.uid] = "Produto repetido.";
-        continue;
-      }
-      seen.add(row.productN);
-      const items = parseBRNumber(row.itemsSold);
-      const perSale = parseBRNumber(row.commissionPerSale);
-      if (items === null || perSale === null) next.products[row.uid] = "Número inválido.";
-      else if (items < 0 || perSale < 0) next.products[row.uid] = "Não pode ser negativo.";
-      else if (!Number.isInteger(items)) next.products[row.uid] = "Itens vendidos precisa ser inteiro.";
-      else
-        productRows.push({
-          record_date: date,
-          product_n: row.productN,
-          items_sold: items,
-          commission_per_sale: perSale,
-        });
-    }
-
-    const clean =
-      Object.keys(next.values).length === 0 &&
-      Object.keys(next.pcts).length === 0 &&
-      Object.keys(next.products).length === 0;
-
-    return { errors: next, clean, numbers, overrides, productRows };
-  };
-
-  const save = async () => {
-    const { errors: found, clean, numbers, overrides, productRows } = validate();
-    setErrors(found);
-    if (!clean) {
-      setStatus({ tone: "bad", text: "Corrija os campos destacados." });
-      return;
-    }
-
-    setSaving(true);
-    setStatus({ tone: "busy", text: "Salvando..." });
-
-    const { error: dailyError } = await supabase.from("panel_daily_records").upsert(
-      {
-        record_date: date,
-        clicks: numbers.clicks,
-        orders: numbers.orders,
-        estimated_commission: numbers.estimated_commission,
-        items_sold: numbers.items_sold,
-        order_value: numbers.order_value,
-        new_buyers: numbers.new_buyers,
-        social_clicks: numbers.social_clicks,
-        // Objeto vazio vira NULL: "nenhum override" tem uma
-        // representação só, e todos os cards voltam ao automático.
-        pct_overrides: Object.keys(overrides).length ? (overrides as Json) : null,
-        // Instante absoluto, não data de calendário — toISOString é o
-        // certo para timestamptz e não depende do fuso de ninguém.
-        updated_at: new Date().toISOString(),
-        updated_by: updatedBy,
-      },
-      { onConflict: "record_date" },
-    );
-
-    if (dailyError) {
-      console.error("[painel] editor: falha ao salvar métricas", dailyError);
-      setSaving(false);
-      setStatus({ tone: "bad", text: `Não foi possível salvar as métricas. ${dailyError.message}` });
-      return;
-    }
-
-    if (productRows.length) {
-      const { error } = await supabase
-        .from("panel_product_stats")
-        .upsert(productRows, { onConflict: "record_date,product_n" });
-      if (error) {
-        console.error("[painel] editor: falha ao salvar produtos", error);
-        setSaving(false);
-        onSaved(date);
-        setStatus({ tone: "bad", text: `Métricas salvas, mas os produtos não. ${error.message}` });
-        return;
-      }
-    }
-
-    // Grava primeiro, apaga depois: nenhuma janela em que uma linha que
-    // vai continuar existindo esteja ausente da tabela.
-    const keep = productRows.map((row) => row.product_n);
-    let removal = supabase.from("panel_product_stats").delete().eq("record_date", date);
-    if (keep.length) removal = removal.not("product_n", "in", `(${keep.join(",")})`);
-    const { error: removalError } = await removal;
-
-    setSaving(false);
-    onSaved(date);
-
-    if (removalError) {
-      console.error("[painel] editor: falha ao remover produtos", removalError);
-      setStatus({
-        tone: "bad",
-        text: `Salvo, mas não deu para remover os produtos tirados. ${removalError.message}`,
-      });
-      return;
-    }
-
-    baseline.current = draftSignature(values, pcts, products);
-    setErrors(NO_ERRORS);
-    setStatus({ tone: "ok", text: "Alterações salvas." });
-  };
-
-  const disabled = saving || loading;
-
-  return (
-    <>
-      <div className="pnl-scrim" onClick={() => requestExit(null)} aria-hidden="true" />
-      <aside className="pnl-editor" role="dialog" aria-modal="true" aria-label="Editar dados do painel">
-        <div className="pnl-editor-head">
-          <h2>Editar dados do painel</h2>
-          <p>Números de demonstração. Nada aqui vira saldo, comissão real ou saque.</p>
-          <button
-            type="button"
-            className="pnl-close"
-            onClick={() => requestExit(null)}
-            aria-label="Fechar editor"
-            disabled={saving}
-          >
-            ×
-          </button>
-          <div className="pnl-date">
-            <label htmlFor="pnl-edit-date">Data</label>
-            <input
-              id="pnl-edit-date"
-              type="date"
-              value={date}
-              max={maxDate}
-              disabled={disabled}
-              onChange={(event) => {
-                const next = event.currentTarget.value;
-                if (next) requestExit(next);
-              }}
-            />
-            <span>{toBR(date)}</span>
-          </div>
-        </div>
-
-        <div className="pnl-editor-body">
-          {loading ? (
-            <p className="pnl-loading">Carregando...</p>
-          ) : (
-            <>
-              <section className="pnl-section">
-                <h3>Métricas</h3>
-                <p className="pnl-note">
-                  Porcentagem em branco é automática — o card calcula sozinho contra o dia
-                  anterior. Preencher força o valor; apagar devolve ao automático.
-                </p>
-                <div className="pnl-field pnl-field-head">
-                  <span>Métrica</span>
-                  <span>Valor</span>
-                  <span>% manual</span>
-                </div>
-                {EDITABLE_KEYS.map((key) => {
-                  const isMoney = MONEY_METRICS.has(key as MetricKey);
-                  const valueError = errors.values[key];
-                  const pctError = errors.pcts[key];
-                  const parsed = parseBRNumber(values[key]);
-                  return (
-                    <div className="pnl-field" key={key}>
-                      <label htmlFor={`pnl-v-${key}`}>{EDITOR_LABEL[key]}</label>
-                      <div className="pnl-cell">
-                        <input
-                          id={`pnl-v-${key}`}
-                          className={valueError ? "pnl-input invalid" : "pnl-input"}
-                          value={values[key]}
-                          inputMode="decimal"
-                          disabled={disabled}
-                          onChange={(event) => setValue(key, event.currentTarget.value)}
-                        />
-                        {valueError ? (
-                          <small className="pnl-err">{valueError}</small>
-                        ) : isMoney && parsed !== null ? (
-                          <small className="pnl-hint">R$ {money2Fmt(parsed)}</small>
-                        ) : null}
-                      </div>
-                      <div className="pnl-cell">
-                        <input
-                          className={pctError ? "pnl-input invalid" : "pnl-input"}
-                          value={pcts[key]}
-                          placeholder="auto"
-                          inputMode="decimal"
-                          aria-label={`Porcentagem manual de ${EDITOR_LABEL[key]}`}
-                          disabled={disabled}
-                          onChange={(event) => setPct(key, event.currentTarget.value)}
-                        />
-                        {pctError ? (
-                          <small className="pnl-err">{pctError}</small>
-                        ) : key === "social_clicks" ? (
-                          <small className="pnl-hint">sem card no painel</small>
-                        ) : null}
-                      </div>
-                    </div>
-                  );
-                })}
-              </section>
-
-              <section className="pnl-section">
-                <h3>Top 5 produtos</h3>
-                <p className="pnl-note">
-                  Nome, imagem e preço continuam vindo do catálogo da UpShopee — aqui ficam só o
-                  produto, os itens vendidos e a comissão por venda. O painel ordena por itens
-                  vendidos{products.length > 5 ? " e mostra apenas os cinco primeiros." : "."}
-                </p>
-
-                {products.length === 0 ? (
-                  <p className="pnl-empty">Nenhum produto nesta data. Busque abaixo para incluir.</p>
-                ) : (
-                  <div className="pnl-product pnl-field-head">
-                    <span />
-                    <span>Produto</span>
-                    <span>Itens</span>
-                    <span>Comissão/venda</span>
-                    <span />
-                  </div>
-                )}
-
-                {products.map((row) => {
-                  const product = productByN.get(row.productN);
-                  const error = errors.products[row.uid];
-                  return (
-                    <div className="pnl-product" key={row.uid}>
-                      {product ? (
-                        <img src={product.image} alt="" width={30} height={30} loading="lazy" />
-                      ) : (
-                        <span className="pnl-noimg" aria-hidden="true" />
-                      )}
-                      <span className="pnl-product-name" title={product?.name}>
-                        {product?.name ?? `Produto #${row.productN}`}
-                      </span>
-                      <input
-                        className={error ? "pnl-input invalid" : "pnl-input"}
-                        value={row.itemsSold}
-                        inputMode="numeric"
-                        aria-label="Itens vendidos"
-                        disabled={disabled}
-                        onChange={(event) => setProduct(row.uid, { itemsSold: event.currentTarget.value })}
-                      />
-                      <input
-                        className={error ? "pnl-input invalid" : "pnl-input"}
-                        value={row.commissionPerSale}
-                        inputMode="decimal"
-                        aria-label="Comissão por venda"
-                        disabled={disabled}
-                        onChange={(event) =>
-                          setProduct(row.uid, { commissionPerSale: event.currentTarget.value })
-                        }
-                      />
-                      <button
-                        type="button"
-                        className="pnl-remove"
-                        aria-label={`Remover ${product?.name ?? `produto ${row.productN}`}`}
-                        disabled={disabled}
-                        onClick={() => {
-                          setProducts((prev) => prev.filter((item) => item.uid !== row.uid));
-                          setStatus(null);
-                        }}
-                      >
-                        ×
-                      </button>
-                      {error ? <small className="pnl-err pnl-product-err">{error}</small> : null}
-                    </div>
-                  );
-                })}
-
-                <div className="pnl-search">
-                  <input
-                    className="pnl-input"
-                    value={query}
-                    placeholder="Buscar produto no catálogo..."
-                    aria-label="Buscar produto no catálogo"
-                    disabled={disabled}
-                    onChange={(event) => setQuery(event.currentTarget.value)}
-                  />
-                  {query.trim() && results.length === 0 ? (
-                    <p className="pnl-empty">Nenhum produto encontrado.</p>
-                  ) : null}
-                  {results.map((product) => (
-                    <button
-                      type="button"
-                      className="pnl-result"
-                      key={product.n}
-                      disabled={disabled}
-                      onClick={() => addProduct(product)}
-                    >
-                      <img src={product.image} alt="" width={26} height={26} loading="lazy" />
-                      <span>{product.name}</span>
-                      <b>#{product.n}</b>
-                    </button>
-                  ))}
-                </div>
-              </section>
-            </>
-          )}
-        </div>
-
-        <div className="pnl-editor-foot">
-          {pendingExit ? (
-            <>
-              <span className="pnl-status bad">Descartar as alterações não salvas?</span>
-              <button type="button" className="pnl-btn" onClick={() => setPendingExit(null)}>
-                Continuar editando
-              </button>
-              <button
-                type="button"
-                className="pnl-btn danger"
-                onClick={() => {
-                  const to = pendingExit.to;
-                  setPendingExit(null);
-                  if (to === null) onClose();
-                  else setDate(to);
-                }}
-              >
-                Descartar
-              </button>
-            </>
-          ) : (
-            <>
-              <span className={status ? `pnl-status ${status.tone}` : "pnl-status"}>
-                {status?.text ?? (dirty ? "Alterações não salvas." : "")}
-              </span>
-              <button type="button" className="pnl-btn" onClick={() => requestExit(null)} disabled={saving}>
-                Cancelar
-              </button>
-              <button type="button" className="pnl-btn primary" onClick={save} disabled={disabled}>
-                {saving ? "Salvando..." : "Salvar"}
-              </button>
-            </>
-          )}
-        </div>
-      </aside>
-    </>
-  );
-}
-
-/* ══════════════════════════════════════════════════════════════
    PÁGINA
    ══════════════════════════════════════════════════════════════ */
 
@@ -1113,6 +502,10 @@ function PainelPage() {
   const [stats, setStats] = useState<ProductStatRow[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [editorOpen, setEditorOpen] = useState(false);
+  /* A página é dona da persistência — o editor é um componente puro
+     e não fala com o Supabase. Estes dois descem como prop. */
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   /* `currentUserId` é o id da sessão do Supabase — o mesmo auth.uid()
      que as policies checam. Vai para updated_by; não há trigger
@@ -1204,7 +597,7 @@ function PainelPage() {
      gravada e relê. `setSelectedDate` sozinho não bastaria — gravar a
      data que já estava selecionada não muda o estado e o efeito não
      dispararia. */
-  const handleSaved = useCallback(
+  const repaintAfterSave = useCallback(
     (date: string) => {
       setStaticState(false);
       setSelectedDate(date);
@@ -1219,6 +612,94 @@ function PainelPage() {
      a data da referência. Aí o editor abre em HOJE (São Paulo), que é a
      data que o admin realmente quer criar — não a do print. */
   const editorDate = selectedDate ?? maxDate;
+
+  const handleSave = useCallback(
+    async (next: {
+      metrics: PanelMetrics;
+      pctOverrides: PanelPctOverrides;
+      products: PanelProductRow[];
+    }) => {
+      const date = editorDate;
+      setSaving(true);
+      setSaveError(null);
+
+      /* CONTRATO DO null: o componente devolve as sete chaves, cada uma
+         com número ou `null`. `null` significa AUTOMÁTICO, e automático
+         é CHAVE AUSENTE do jsonb — nunca um zero gravado. Escrever 0
+         aqui trocaria "calcule a variação" por "mostre 0%", que é outro
+         número na tela e não levantaria erro em lugar nenhum. */
+      const overrides: Record<string, number> = {};
+      for (const key of EDITABLE_KEYS) {
+        const value = next.pctOverrides[key];
+        if (typeof value === "number" && Number.isFinite(value)) overrides[key] = value;
+      }
+
+      const { error: dailyError } = await supabase.from("panel_daily_records").upsert(
+        {
+          record_date: date,
+          clicks: next.metrics.clicks,
+          orders: next.metrics.orders,
+          estimated_commission: next.metrics.estimated_commission,
+          items_sold: next.metrics.items_sold,
+          order_value: next.metrics.order_value,
+          new_buyers: next.metrics.new_buyers,
+          social_clicks: next.metrics.social_clicks,
+          pct_overrides: Object.keys(overrides).length ? (overrides as Json) : null,
+          // Instante absoluto, não data de calendário — toISOString é o
+          // certo para timestamptz e não depende do fuso de ninguém.
+          updated_at: new Date().toISOString(),
+          updated_by: currentUserId,
+        },
+        { onConflict: "record_date" },
+      );
+
+      if (dailyError) {
+        console.error("[painel] falha ao salvar métricas", dailyError);
+        setSaveError(`Não foi possível salvar as métricas. ${dailyError.message}`);
+        setSaving(false);
+        return;
+      }
+
+      if (next.products.length) {
+        const { error } = await supabase.from("panel_product_stats").upsert(
+          next.products.map((row) => ({
+            record_date: date,
+            product_n: row.product_n,
+            items_sold: row.items_sold,
+            commission_per_sale: row.commission_per_sale,
+          })),
+          { onConflict: "record_date,product_n" },
+        );
+        if (error) {
+          console.error("[painel] falha ao salvar produtos", error);
+          setSaveError(`Métricas salvas, mas os produtos não. ${error.message}`);
+          setSaving(false);
+          repaintAfterSave(date);
+          return;
+        }
+      }
+
+      // Grava primeiro, apaga depois: nenhuma janela em que uma linha que
+      // vai continuar existindo esteja ausente da tabela.
+      const keep = next.products.map((row) => row.product_n);
+      let removal = supabase.from("panel_product_stats").delete().eq("record_date", date);
+      if (keep.length) removal = removal.not("product_n", "in", `(${keep.join(",")})`);
+      const { error: removalError } = await removal;
+
+      if (removalError) {
+        console.error("[painel] falha ao remover produtos", removalError);
+        setSaveError(
+          `Salvo, mas não deu para remover os produtos tirados. ${removalError.message}`,
+        );
+      }
+
+      /* `saving` cai para false no mesmo lote em que `saveError` é
+         definido: é assim que o componente distingue sucesso de falha. */
+      setSaving(false);
+      repaintAfterSave(date);
+    },
+    [editorDate, currentUserId, repaintAfterSave],
+  );
 
   /* Data sem registro mostra zeros — o layout é o mesmo, só os números
      mudam (§5 dos requisitos). */
@@ -1240,11 +721,53 @@ function PainelPage() {
   const socialClicks = staticState ? STATIC_SOCIAL_CLICKS : intFmt(safe(daily?.social_clicks ?? 0));
   const top5 = staticState ? [] : buildTop5(stats);
 
+  /* ── Props do editor ──────────────────────────────────────────
+     O componente é PURO: não busca nada. Estes três derivam do que a
+     página já leu do banco. Data sem registro vira zeros — o mesmo que
+     a tela mostra. */
+  const editorMetrics: PanelMetrics = useMemo(
+    () => ({
+      clicks: safe(daily?.clicks ?? 0),
+      orders: safe(daily?.orders ?? 0),
+      estimated_commission: safe(daily?.estimated_commission ?? 0),
+      items_sold: safe(daily?.items_sold ?? 0),
+      order_value: safe(daily?.order_value ?? 0),
+      new_buyers: safe(daily?.new_buyers ?? 0),
+      social_clicks: safe(daily?.social_clicks ?? 0),
+    }),
+    [daily],
+  );
+
+  /* readOverride devolve `number` ou `null` — exatamente o contrato do
+     componente. `null` é automático, nunca zero. */
+  const editorPct: PanelPctOverrides = useMemo(() => {
+    const out: PanelPctOverrides = {};
+    for (const key of EDITABLE_KEYS) out[key] = readOverride(daily?.pct_overrides, key);
+    return out;
+  }, [daily]);
+
+  /* Só os três campos que o banco guarda. Nome, imagem, URL e preço
+     continuam vindo do catálogo — nada disso é copiado para cá. */
+  const editorProducts: PanelProductRow[] = useMemo(
+    () =>
+      stats.map((row) => ({
+        product_n: row.product_n,
+        items_sold: safe(row.items_sold),
+        commission_per_sale: safe(row.commission_per_sale),
+      })),
+    [stats],
+  );
+
   return (
     <div className="pnlx">
       <style>{CSS}</style>
 
-      <Header onEdit={() => setEditorOpen(true)} />
+      <Header
+        onEdit={() => {
+          setSaveError(null);
+          setEditorOpen(true);
+        }}
+      />
       <Sidebar />
       <main className="content">
         <section className="date-panel">
@@ -1309,16 +832,30 @@ function PainelPage() {
       </main>
 
       {/* Overlay: o painel embaixo mantém layout, cards e Top 5 intactos.
-          `key` força um formulário novo a cada abertura, para não
-          reaproveitar rascunho de uma sessão anterior de edição. */}
+
+          MONTA AO ABRIR, não fica montado com `open` false. O componente
+          semeia o rascunho na inicialização preguiçosa do estado, que só
+          roda na montagem — deixá-lo montado desde o carregamento da
+          página semearia com `products` ainda vazio, e a lista de
+          produtos apareceria vazia no primeiro quadro do editor.
+
+          SEM `key` variável e SEM `metrics`/`products` em dependência de
+          efeito: esses objetos têm identidade nova a cada render daqui, e
+          remontar apagaria o que o admin está digitando. */}
       {editorOpen ? (
-        <EditorDrawer
-          key={editorDate}
-          initialDate={editorDate}
-          maxDate={maxDate}
-          updatedBy={currentUserId}
-          onClose={() => setEditorOpen(false)}
-          onSaved={handleSaved}
+        <PainelEditor
+          open
+          recordDate={editorDate}
+          metrics={editorMetrics}
+          pctOverrides={editorPct}
+          products={editorProducts}
+          saving={saving}
+          error={saveError}
+          onSave={handleSave}
+          onClose={() => {
+            setEditorOpen(false);
+            setSaveError(null);
+          }}
         />
       ) : null}
     </div>
@@ -1512,79 +1049,12 @@ const CSS = `
 .pnlx .product-name{ min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 
-/* ── Editor do admin ───────────────────────────────────────────
-   Overlay. Nada aqui toca a composição aprovada: as regras novas ou
-   têm classe própria (.pnl-*) ou qualificam um elemento que só existe
-   dentro do editor. Tudo continua escopado em .pnlx. */
-
-/* O "⋯" virou <button>. Estas quatro linhas desfazem o que o UA e o
-   preflight do Tailwind fazem com button; largura, altura e cor
-   continuam vindo de .pnlx .utility, que não é tocada aqui. */
+/* O "..." do cabeçalho virou <button> para abrir o editor. Estas
+   propriedades desfazem o que o UA e o preflight do Tailwind fazem com
+   button; largura, altura e cor continuam vindo de .pnlx .utility, que
+   não é tocada aqui. O resto do CSS do editor mora dentro do próprio
+   componente, em src/components/painel/PainelEditor.tsx. */
 .pnlx button.utility{ appearance: none; -webkit-appearance: none; background: none; border: 0; margin: 0; padding: 0; font: inherit; cursor: pointer; }
-
-.pnlx .pnl-scrim{ position: fixed; z-index: 55; inset: 0; background: rgba(17,17,17,.42); }
-.pnlx .pnl-editor{ position: fixed; z-index: 56; top: 0; right: 0; bottom: 0; width: 560px; max-width: 100vw; display: flex; flex-direction: column; background: #fff; box-shadow: -8px 0 28px rgba(0,0,0,.2); }
-
-.pnlx .pnl-editor-head{ position: relative; flex: 0 0 auto; padding: 18px 22px 15px; border-bottom: 1px solid #ededed; }
-.pnlx .pnl-editor-head h2{ margin: 0 0 4px; font-family: inherit; font-size: 17px; line-height: 22px; letter-spacing: normal; font-weight: 600; color: #262626; }
-.pnlx .pnl-editor-head p{ margin: 0; font-size: 12px; line-height: 16px; color: #8b8b8b; }
-.pnlx .pnl-close{ position: absolute; top: 12px; right: 14px; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 4px; background: none; color: #8b8b8b; font: inherit; font-size: 22px; line-height: 1; cursor: pointer; }
-.pnlx .pnl-close:hover{ background: #f4f4f4; color: #444; }
-.pnlx .pnl-date{ display: flex; align-items: center; gap: 10px; margin-top: 13px; font-size: 13px; color: #555; }
-.pnlx .pnl-date label{ font-weight: 600; color: #666; }
-.pnlx .pnl-date input{ height: 32px; border: 1px solid #dedede; border-radius: 4px; padding: 0 9px; font: inherit; font-size: 13px; color: #333; background: #fff; }
-.pnlx .pnl-date input:focus{ outline: none; border-color: var(--orange); }
-.pnlx .pnl-date span{ color: #999; }
-
-.pnlx .pnl-editor-body{ flex: 1 1 auto; overflow-y: auto; padding: 6px 22px 20px; }
-.pnlx .pnl-loading{ margin: 40px 0; text-align: center; color: #999; font-size: 13px; }
-
-.pnlx .pnl-section{ margin-top: 20px; }
-.pnlx .pnl-section h3{ margin: 0 0 5px; font-family: inherit; font-size: 14px; line-height: 19px; letter-spacing: normal; font-weight: 600; color: #333; }
-.pnlx .pnl-note{ margin: 0 0 13px; font-size: 12px; line-height: 17px; color: #8b8b8b; }
-.pnlx .pnl-empty{ margin: 0 0 10px; padding: 12px; border: 1px dashed #e2e2e2; border-radius: 4px; color: #999; font-size: 12px; text-align: center; }
-
-.pnlx .pnl-field{ display: grid; grid-template-columns: 1fr 118px 118px; gap: 10px; align-items: start; margin-bottom: 9px; }
-.pnlx .pnl-field > label{ padding-top: 8px; font-size: 13px; color: #4d4d4d; }
-.pnlx .pnl-field-head{ margin-bottom: 7px; color: #8b8b8b; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
-.pnlx .pnl-cell{ display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-
-.pnlx .pnl-input{ width: 100%; height: 32px; border: 1px solid #dedede; border-radius: 4px; padding: 0 9px; background: #fff; color: #333; font: inherit; font-size: 13px; }
-.pnlx .pnl-input:focus{ outline: none; border-color: var(--orange); }
-.pnlx .pnl-input:disabled{ background: #f7f7f7; color: #999; }
-.pnlx .pnl-input.invalid{ border-color: #ff3e55; background: #fff7f8; }
-.pnlx .pnl-input::placeholder{ color: #bbb; }
-.pnlx .pnl-hint{ color: #a0a0a0; font-size: 11px; line-height: 14px; }
-.pnlx .pnl-err{ color: #ff3e55; font-size: 11px; line-height: 14px; }
-
-.pnlx .pnl-product{ display: grid; grid-template-columns: 30px 1fr 68px 92px 26px; gap: 8px; align-items: center; margin-bottom: 8px; }
-.pnlx .pnl-product img{ width: 30px; height: 30px; border-radius: 3px; object-fit: cover; background: #f3f3f3; }
-.pnlx .pnl-noimg{ width: 30px; height: 30px; border-radius: 3px; background: #f0f0f0; }
-.pnlx .pnl-product-name{ min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: #4d4d4d; }
-.pnlx .pnl-product-err{ grid-column: 2 / -1; }
-.pnlx .pnl-remove{ width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; border: 1px solid #e4e4e4; border-radius: 4px; background: #fff; color: #999; font: inherit; font-size: 16px; line-height: 1; cursor: pointer; }
-.pnlx .pnl-remove:hover{ border-color: #ff3e55; color: #ff3e55; }
-
-.pnlx .pnl-search{ margin-top: 12px; }
-.pnlx .pnl-result{ width: 100%; display: grid; grid-template-columns: 26px 1fr auto; gap: 9px; align-items: center; margin-top: 6px; padding: 6px 9px; border: 1px solid #ededed; border-radius: 4px; background: #fff; font: inherit; font-size: 12px; color: #4d4d4d; text-align: left; cursor: pointer; }
-.pnlx .pnl-result:hover{ border-color: var(--orange); background: #fff8f5; }
-.pnlx .pnl-result img{ width: 26px; height: 26px; border-radius: 3px; object-fit: cover; background: #f3f3f3; }
-.pnlx .pnl-result span{ min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pnlx .pnl-result b{ color: #a0a0a0; font-weight: 600; }
-
-.pnlx .pnl-editor-foot{ flex: 0 0 auto; display: flex; align-items: center; gap: 9px; padding: 13px 22px; border-top: 1px solid #ededed; background: #fcfcfc; }
-.pnlx .pnl-status{ margin-right: auto; font-size: 12px; line-height: 16px; color: #8b8b8b; }
-.pnlx .pnl-status.ok{ color: #059669; }
-.pnlx .pnl-status.bad{ color: #ff3e55; }
-.pnlx .pnl-status.busy{ color: #8b8b8b; }
-.pnlx .pnl-btn{ height: 36px; padding: 0 17px; border: 1px solid #dedede; border-radius: 4px; background: #fff; color: #444; font: inherit; font-size: 13px; font-weight: 600; white-space: nowrap; cursor: pointer; }
-.pnlx .pnl-btn:hover{ border-color: #c4c4c4; }
-.pnlx .pnl-btn.primary{ border-color: var(--orange); background: var(--orange); color: #fff; }
-.pnlx .pnl-btn.primary:hover{ border-color: #d9431f; background: #d9431f; }
-.pnlx .pnl-btn.danger{ border-color: #ff3e55; background: #ff3e55; color: #fff; }
-.pnlx .pnl-btn:disabled{ opacity: .55; cursor: default; }
-.pnlx .pnl-btn:disabled:hover{ border-color: #dedede; }
-.pnlx .pnl-btn.primary:disabled:hover{ border-color: var(--orange); background: var(--orange); }
 
 @media (max-width: 1180px){
   .pnlx .header-action.language{ margin-right: 20px; }
