@@ -61,7 +61,7 @@
   ═══════════════════════════════════════════════════════════════
 */
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 import { useApp } from "../lib/state";
 import { affiliateProducts, type AffiliateProduct } from "../lib/mock/affiliate-products";
@@ -183,14 +183,94 @@ function Sidebar() {
   );
 }
 
-function Header({ onSale }: { onSale: () => void }) {
+/**
+ * Nome do cabeçalho. Duplo clique no texto vira <input>; Enter e blur
+ * confirmam, Escape cancela e volta ao valor anterior. Mesmo formato de
+ * DashboardShell.tsx (`onDoubleClick` troca span por input, foco via
+ * `ref` num `setTimeout` curto) — só que aqui não há checagem de admin
+ * porque a rota inteira já é admin-only.
+ *
+ * O rascunho (`draft`) é local: o pai só fica sabendo do nome quando ele
+ * é CONFIRMADO. `canceledRef` existe porque o Escape desmonta o input
+ * (tira o foco) e isso pode disparar `onBlur` por cima do próprio
+ * cancelamento — a flag garante que esse blur tardio não commite o
+ * rascunho por engano, não importa a ordem em que os eventos cheguem.
+ */
+function EditableUserName({ value, onCommit }: { value: string; onCommit: (next: string) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const canceledRef = useRef(false);
+
+  const startEdit = () => {
+    canceledRef.current = false;
+    setDraft(value);
+    setEditing(true);
+    setTimeout(() => inputRef.current?.focus(), 10);
+  };
+
+  const commit = () => {
+    if (canceledRef.current) {
+      canceledRef.current = false;
+      return;
+    }
+    setEditing(false);
+    const trimmed = draft.trim();
+    if (trimmed && trimmed !== value) onCommit(trimmed);
+  };
+
+  const cancel = () => {
+    canceledRef.current = true;
+    setEditing(false);
+  };
+
+  if (editing) {
+    return (
+      <input
+        ref={inputRef}
+        className="user-name"
+        aria-label="Nome de exibição"
+        value={draft}
+        onChange={(event) => setDraft(event.currentTarget.value)}
+        onBlur={commit}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            commit();
+          } else if (event.key === "Escape") {
+            event.preventDefault();
+            cancel();
+          }
+        }}
+      />
+    );
+  }
+  return (
+    <span className="user-name" onDoubleClick={startEdit}>
+      {value}
+    </span>
+  );
+}
+
+function Header({
+  userName,
+  onUserNameCommit,
+  onSale,
+}: {
+  userName: string;
+  onUserNameCommit: (next: string) => void;
+  onSale: () => void;
+}) {
   return (
     <header className="top-header">
       <div className="brand-area"><BrandMark /></div>
       <div className="breadcrumb"><span>Página Inicial</span><b>/</b><strong>Painel de controle</strong></div>
       <div className="header-actions">
         <div className="header-action language"><Icon name="globe" size={18} /><span>Português</span><Chevron down /></div>
-        <div className="header-action user"><span>João Victor</span><Chevron down /></div>
+        <div className="header-action user">
+          <EditableUserName value={userName} onCommit={onUserNameCommit} />
+          <Chevron down />
+        </div>
         <div className="vertical-line" />
         <div className="utility globe-clock"><Icon name="globe" size={18} /><span className="tiny-clock" /></div>
         {/* SININHO — o único controle da página. Um clique = uma venda
@@ -230,6 +310,11 @@ function Header({ onSale }: { onSale: () => void }) {
 const STORE_KEY = "upshopee_painel_demo_v1";
 const STORE_VERSION = 1;
 
+/** Nome mostrado no cabeçalho de um aparelho novo. Editável com duplo
+ *  clique (ver EditableUserName) e, como o resto do arquivo local, NÃO
+ *  é por data — trocar a data não troca quem está sendo mostrado. */
+const DEFAULT_USER_NAME = "Renan";
+
 /** Uma linha do Top 5. `commission` é a comissão ACUMULADA do produto
  *  naquela data — não a de uma venda solta. */
 type PanelProduct = {
@@ -251,9 +336,12 @@ type PanelDay = {
 };
 
 /** O arquivo local inteiro. `days` é indexado por "AAAA-MM-DD": trocou
- *  a data, trocaram os números — venda de um dia nunca vaza para outro. */
+ *  a data, trocaram os números — venda de um dia nunca vaza para outro.
+ *  `userName` fica FORA de `days` de propósito: é o nome do cabeçalho,
+ *  não uma métrica do dia, e sobrevive a qualquer troca de data. */
 type PanelStore = {
   v: number;
+  userName: string;
   days: Record<string, PanelDay>;
 };
 
@@ -422,6 +510,7 @@ function seedStore(): PanelStore {
   const today = spDateKey();
   return {
     v: STORE_VERSION,
+    userName: DEFAULT_USER_NAME,
     days: {
       [today]: { ...emptyDay(), clicks: SEED_CLICKS_TODAY, social_clicks: SEED_CLICKS_TODAY },
       [prevDay(today)]: {
@@ -442,14 +531,21 @@ function loadStore(): PanelStore {
   }
 
   const days: Record<string, PanelDay> = {};
+  // `null` = nada válido no arquivo; o nome vira DEFAULT_USER_NAME mais
+  // abaixo. Distinto de "" para não confundir "não gravado" com "vazio".
+  let userName: string | null = null;
   if (raw) {
     try {
       const parsed = JSON.parse(raw) as unknown;
-      const bag =
-        parsed && typeof parsed === "object" ? (parsed as { days?: unknown }).days : null;
-      if (bag && typeof bag === "object" && !Array.isArray(bag)) {
-        for (const [date, value] of Object.entries(bag as Record<string, unknown>)) {
-          if (DATE_RE.test(date)) days[date] = normalizeDay(value);
+      if (parsed && typeof parsed === "object") {
+        const bag = parsed as { days?: unknown; userName?: unknown };
+        if (bag.days && typeof bag.days === "object" && !Array.isArray(bag.days)) {
+          for (const [date, value] of Object.entries(bag.days as Record<string, unknown>)) {
+            if (DATE_RE.test(date)) days[date] = normalizeDay(value);
+          }
+        }
+        if (typeof bag.userName === "string" && bag.userName.trim()) {
+          userName = bag.userName.trim();
         }
       }
     } catch {
@@ -457,7 +553,15 @@ function loadStore(): PanelStore {
     }
   }
 
-  return Object.keys(days).length ? { v: STORE_VERSION, days } : seedStore();
+  // Sem nenhum dia válido o arquivo é tratado como novo e a semente de
+  // vendas entra — mas um nome válido lido do JSON quebrado/parcial
+  // ainda assim sobrevive: o nome não é dado de venda, não faz sentido
+  // apagá-lo só porque `days` deu errado.
+  if (!Object.keys(days).length) {
+    const seed = seedStore();
+    return userName ? { ...seed, userName } : seed;
+  }
+  return { v: STORE_VERSION, userName: userName ?? DEFAULT_USER_NAME, days };
 }
 
 function saveStore(store: PanelStore): void {
@@ -628,7 +732,9 @@ function applySale(store: PanelStore, date: string): PanelStore {
     products,
   };
 
-  return { v: STORE_VERSION, days: { ...store.days, [date]: next } };
+  // Espalha o `store` inteiro (preserva `userName`) e só troca `days`:
+  // uma venda nunca pode apagar o nome do cabeçalho.
+  return { ...store, days: { ...store.days, [date]: next } };
 }
 
 /* ── Top 5 ─────────────────────────────────────────────────────
@@ -762,6 +868,12 @@ function PainelPage() {
     setSelectedDate(value);
   }, []);
 
+  /* Confirmado (Enter ou blur) no EditableUserName. Não depende da data
+     selecionada — troca de data nunca troca esse valor. */
+  const onUserNameCommit = useCallback((next: string) => {
+    setStore((current) => (current.userName === next ? current : { ...current, userName: next }));
+  }, []);
+
   /* Data sem venda nenhuma mostra zeros — o layout é o mesmo, só os
      números mudam. */
   const cards = METRIC_KEYS.map((key) => {
@@ -781,7 +893,7 @@ function PainelPage() {
     <div className="pnlx">
       <style>{CSS}</style>
 
-      <Header onSale={handleSale} />
+      <Header userName={store.userName} onUserNameCommit={onUserNameCommit} onSale={handleSale} />
       <Sidebar />
       <main className="content">
         <section className="date-panel">
@@ -941,6 +1053,12 @@ const CSS = `
 .pnlx .header-action{ display: flex; align-items: center; gap: 8px; height: 100%; color: #3f3f3f; white-space: nowrap; }
 .pnlx .header-action.language{ margin-right: 35px; }
 .pnlx .header-action.user{ margin-right: 25px; gap: 10px; }
+/* Largura FIXA para o span e o input ocuparem o mesmo espaço: editar o
+   nome nunca empurra o chevron, a linha vertical ou os ícones à direita,
+   não importa o que for digitado. Nome comprido corta com reticências
+   em vez de esticar o cabeçalho. */
+.pnlx .header-action.user .user-name{ display: inline-block; width: 96px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; }
+.pnlx .header-action.user input.user-name{ border: 0; background: transparent; padding: 0; margin: 0; font: inherit; color: inherit; outline: none; }
 .pnlx .vertical-line{ width: 1px; height: 31px; background: #ececec; margin-right: 11px; }
 .pnlx .utility{ position: relative; width: 48px; height: 56px; display: flex; align-items: center; justify-content: center; color: #4b4b4b; }
 .pnlx .utility.more{ gap: 3px; width: 45px; }
