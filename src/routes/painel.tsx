@@ -1,6 +1,6 @@
 /*
   ═══════════════════════════════════════════════════════════════
-  UPSHOPEE — /painel  (somente leitura)
+  UPSHOPEE — /painel  (demonstração local, por aparelho)
   ═══════════════════════════════════════════════════════════════
   Port fiel da composição aprovada
   (UpShopee_Painel_Demo_Claude_v2_24-08-2026/source/painel-page-approved.tsx)
@@ -27,34 +27,45 @@
    · os itens do menu lateral continuam `<div>`, como no aprovado: são
      ILUSTRATIVOS, não navegam e não mexem na URL;
 
-   · o sininho renderiza igual à referência e NÃO FAZ NADA nesta passada.
-     A RPC panel_apply_demo_sale existe no banco e não é chamada aqui.
+   · o "⋯" do cabeçalho continua sendo só desenho — faz parte do clone
+     da Shopee e não abre nada. NÃO EXISTE editor no /painel: nenhum
+     campo, nenhuma gaveta, nenhum formulário, nenhum modal. Nada nesta
+     página aceita valor digitado;
+
+   · o sininho é o ÚNICO controle da tela. Um clique = UMA venda
+     completa na data selecionada (ver "VENDA SIMULADA" mais abaixo).
+
+  ── DADOS: localStorage, POR APARELHO ──────────────────────────
+  Os números moram em localStorage, na chave `upshopee_painel_demo_v1`,
+  guardados POR DATA. Isso é intencional e é o oposto do que valia
+  antes: cada aparelho tem os SEUS números e eles nunca conversam — o
+  iPad do dono pode marcar R$ 6.000 enquanto o computador dele marca
+  R$ 3.000, e está certo assim.
+
+  Por isso NADA aqui fala com o Supabase. As tabelas
+  `panel_daily_records` e `panel_product_stats` e a RPC
+  `panel_apply_demo_sale` continuam no banco, dormentes e sem uso —
+  NÃO APAGAR.
+
+  Sem localStorage (aba anônima, storage bloqueado por política) a
+  página abre e funciona igual; só não sobrevive ao reload. Leitura e
+  escrita são protegidas e o estado vive em memória.
 
   ROTA ADMIN-ONLY. Mesmo gate de src/routes/dashboard.tsx (authReady →
-  user → papel). As quatro tabelas panel_* também são admin-only na RLS,
-  por public.has_role(auth.uid(), 'admin') — o gate do client é
-  conveniência de navegação, a trava de verdade é o banco.
+  user → papel). Só os DADOS saíram do banco; a rota não.
 
   NÚMEROS DE DEMONSTRAÇÃO. Nada aqui é saldo, comissão real ou saque
-  (Regra de Ouro §1 do CLAUDE.md). O catálogo de produtos é o real
-  (src/lib/mock/affiliate-products.ts) — nome e imagem vêm de lá por `n`,
-  nunca duplicados no banco.
+  (Regra de Ouro §1 do CLAUDE.md). O catálogo é o real
+  (src/lib/mock/affiliate-products.ts) — nome, imagem, preço e
+  porcentagem de comissão vêm de lá, nunca duplicados em outro lugar.
   ═══════════════════════════════════════════════════════════════
 */
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 
 import { useApp } from "../lib/state";
-import { supabase } from "../integrations/supabase/client";
 import { affiliateProducts, type AffiliateProduct } from "../lib/mock/affiliate-products";
 import { spDateKey } from "../lib/timeWindow";
-import {
-  PainelEditor,
-  type PanelMetrics,
-  type PanelPctOverrides,
-  type PanelProductRow,
-} from "../components/painel/PainelEditor";
-import type { Json, Tables } from "../integrations/supabase/types";
 
 /* ══════════════════════════════════════════════════════════════
    ÍCONES / PEÇAS VISUAIS — cópia literal do aprovado
@@ -172,7 +183,7 @@ function Sidebar() {
   );
 }
 
-function Header({ onEdit }: { onEdit: () => void }) {
+function Header({ onSale }: { onSale: () => void }) {
   return (
     <header className="top-header">
       <div className="brand-area"><BrandMark /></div>
@@ -182,21 +193,27 @@ function Header({ onEdit }: { onEdit: () => void }) {
         <div className="header-action user"><span>João Victor</span><Chevron down /></div>
         <div className="vertical-line" />
         <div className="utility globe-clock"><Icon name="globe" size={18} /><span className="tiny-clock" /></div>
-        {/* Sininho: idêntico à referência e INERTE nesta passada.
-            A simulação de venda (panel_apply_demo_sale) entra depois. */}
-        <div className="utility"><Icon name="bell" size={18} /></div>
-        {/* O "⋯" já estava na composição aprovada e não fazia nada.
-            Virou o gatilho do editor: nenhum controle novo foi somado
-            à tela, e o que o admin vê continua idêntico à referência. */}
+        {/* SININHO — o único controle da página. Um clique = uma venda
+            completa na data que está na tela. Não abre menu, não abre
+            editor, não navega.
+
+            É <button> só por causa do teclado e do leitor de tela:
+            `.pnlx button.utility` desfaz o estilo de botão do UA e do
+            preflight do Tailwind, então ele desenha exatamente como o
+            <div> da composição aprovada, no mesmo lugar e do mesmo
+            tamanho. Sem `title`: um tooltip aparecendo no meio de uma
+            apresentação ao vivo entregaria o truque. */}
         <button
           type="button"
-          className="utility more"
-          onClick={onEdit}
-          title="Editar dados do painel"
-          aria-label="Editar dados do painel"
+          className="utility"
+          onClick={onSale}
+          aria-label="Notificações"
         >
-          <i /><i /><i />
+          <Icon name="bell" size={18} />
         </button>
+        {/* O "⋯" faz parte do clone da Shopee e não faz nada — o mesmo
+            <div> inerte do aprovado. */}
+        <div className="utility more"><i /><i /><i /></div>
         <div className="help-button">Central de Ajuda</div>
       </div>
     </header>
@@ -204,11 +221,41 @@ function Header({ onEdit }: { onEdit: () => void }) {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   DADOS
+   DADOS — localStorage, por aparelho
    ══════════════════════════════════════════════════════════════ */
 
-type DailyRow = Tables<"panel_daily_records">;
-type ProductStatRow = Tables<"panel_product_stats">;
+/** Chave versionada e com namespace próprio: não colide com nenhuma
+ *  outra do UpShopee (`upshopee-theme`, `shopsync:*`) e um dia pode
+ *  ganhar um `_v2` sem ler dado velho por engano. */
+const STORE_KEY = "upshopee_painel_demo_v1";
+const STORE_VERSION = 1;
+
+/** Uma linha do Top 5. `commission` é a comissão ACUMULADA do produto
+ *  naquela data — não a de uma venda solta. */
+type PanelProduct = {
+  id: string;
+  units: number;
+  commission: number;
+};
+
+/** Um dia inteiro do painel: as sete métricas mais os produtos. */
+type PanelDay = {
+  clicks: number;
+  orders: number;
+  estimated_commission: number;
+  items_sold: number;
+  order_value: number;
+  new_buyers: number;
+  social_clicks: number;
+  products: PanelProduct[];
+};
+
+/** O arquivo local inteiro. `days` é indexado por "AAAA-MM-DD": trocou
+ *  a data, trocaram os números — venda de um dia nunca vaza para outro. */
+type PanelStore = {
+  v: number;
+  days: Record<string, PanelDay>;
+};
 
 /** As seis métricas com card. `social_clicks` não tem card — aparece em
  *  "Detalhes de cliques" e por isso não entra aqui. */
@@ -237,44 +284,12 @@ const MONEY_METRICS: ReadonlySet<MetricKey> = new Set<MetricKey>([
   "order_value",
 ]);
 
-/* ── Editor ────────────────────────────────────────────────────
-   O editor mexe nas SETE métricas — as seis com card mais
-   `social_clicks`, que aparece em "Detalhes de cliques". */
-const EDITABLE_KEYS = [
-  "clicks",
-  "orders",
-  "estimated_commission",
-  "items_sold",
-  "order_value",
-  "new_buyers",
-  "social_clicks",
-] as const;
-type EditableKey = (typeof EDITABLE_KEYS)[number];
-
-/**
- * Chaves aceitas em `panel_daily_records.pct_overrides`.
- *
- * O CANÔNICO é o nome da coluna (`estimated_commission`) — é o que o
- * editor do admin vai gravar, e casa com o resto do banco. Os aliases
- * em camelCase existem porque MODELO_DADOS_EXEMPLO.json do pacote usa
- * essa grafia: se alguém semear uma linha copiando o modelo à mão, a
- * porcentagem aparece em vez de virar silenciosamente automática.
- */
-const PCT_ALIASES: Record<EditableKey, string[]> = {
-  clicks: ["clicks"],
-  orders: ["orders"],
-  estimated_commission: ["estimated_commission", "estimatedCommissionBRL"],
-  items_sold: ["items_sold", "itemsSold"],
-  order_value: ["order_value", "orderValueBRL"],
-  new_buyers: ["new_buyers", "newBuyers"],
-  social_clicks: ["social_clicks", "socialClicks"],
-};
-
 /* ── Datas ─────────────────────────────────────────────────────
-   record_date é `date` no Postgres e chega como "AAAA-MM-DD". O
-   estado guarda essa string crua o tempo todo: é o mesmo formato do
-   <input type="date">, então nunca existe um objeto Date por perto
-   para o fuso do visitante estragar. */
+   A data é uma string "AAAA-MM-DD" o tempo todo: é a chave do arquivo
+   local e é o mesmo formato do <input type="date">, então nunca existe
+   um objeto Date por perto para o fuso do visitante estragar. */
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 function toBR(iso: string): string {
   const [y, m, d] = iso.split("-");
@@ -306,6 +321,11 @@ function safe(v: unknown): number {
   return Number.isFinite(n) ? n + 0 : 0;
 }
 
+/** Dinheiro sempre em centavos exatos. Toda soma de real passa por
+ *  aqui, e é isso que faz a coluna "Comissão est. (R$)" do Top 5 fechar
+ *  com o card até o último centavo, sem sobra de ponto flutuante. */
+const round2 = (v: number) => Math.round(safe(v) * 100) / 100;
+
 const intFmt = (v: number) => Math.round(safe(v)).toLocaleString("pt-BR");
 
 /** Dinheiro: inteiro sai sem casas ("0", como na referência), quebrado
@@ -326,42 +346,176 @@ const metricValueFmt = (key: MetricKey, v: number) =>
 const money2Fmt = (v: number) =>
   safe(v).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-type PctTone = "negative" | "neutral" | "positive";
+/* ── Arquivo local ─────────────────────────────────────────────
+   Ler, sanear, semear e gravar. Nada aqui lança: localStorage pode não
+   existir (aba anônima, storage bloqueado por política) e o que está
+   gravado pode ter sido mexido à mão. Nos dois casos a página abre. */
+
+/** Cinco vagas no Top 5 — e é o mesmo número que limita quantos
+ *  produtos distintos um dia pode ter (ver pickProduct). É isso que
+ *  mantém a soma das unidades do Top 5 igual a "Itens vendidos" e a
+ *  soma das comissões igual a "Comissão est. (R$)": nenhuma venda cai
+ *  fora da tabela. */
+const TOP_SLOTS = 5;
+
+function emptyDay(): PanelDay {
+  return {
+    clicks: 0,
+    orders: 0,
+    estimated_commission: 0,
+    items_sold: 0,
+    order_value: 0,
+    new_buyers: 0,
+    social_clicks: 0,
+    products: [],
+  };
+}
+
+/** Lê um dia cru sem confiar em nada: chave faltando, texto no lugar de
+ *  número, negativo, NaN — tudo vira zero. É o que garante que arquivo
+ *  adulterado à mão não derrube a rota nem imprima NaN num card. */
+function normalizeDay(raw: unknown): PanelDay {
+  const bag = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  const count = (v: unknown) => Math.max(0, Math.round(safe(v)));
+  const money = (v: unknown) => Math.max(0, round2(safe(v)));
+
+  const rows: PanelProduct[] = [];
+  const seen = new Set<string>();
+  const list = Array.isArray(bag.products) ? bag.products : [];
+  for (const item of list) {
+    const row = (item && typeof item === "object" ? item : {}) as Record<string, unknown>;
+    const id = typeof row.id === "string" ? row.id : "";
+    // Agregação é POR ID: o mesmo id duas vezes viraria linha duplicada
+    // no Top 5, e isso não pode acontecer.
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    rows.push({ id, units: count(row.units), commission: money(row.commission) });
+  }
+
+  return {
+    clicks: count(bag.clicks),
+    orders: count(bag.orders),
+    estimated_commission: money(bag.estimated_commission),
+    items_sold: count(bag.items_sold),
+    order_value: money(bag.order_value),
+    new_buyers: count(bag.new_buyers),
+    social_clicks: count(bag.social_clicks),
+    // O gerador nunca cria um sexto produto. O corte só existe para
+    // arquivo adulterado à mão não estourar a tabela.
+    products: rows.slice(0, TOP_SLOTS),
+  };
+}
+
+/* Semente do primeiro uso. Aparelho novo — nada gravado ainda — abre
+   EXATAMENTE na composição aprovada: 3 em "Cliques" com "-92,86%", "0%"
+   nos outros cinco cards, 3 em "Redes sociais" e o Top 5 todo com "--".
+
+   A porcentagem não está escrita à mão em lugar nenhum: ela CAI do
+   cálculo. 42 cliques no dia anterior contra 3 hoje dá
+   (3 − 42) / 42 × 100 = −92,857…% → "-92,86%". É o mesmo caminho que
+   toda variação da tela percorre, então não existe número de
+   demonstração privilegiado passando por fora da conta. */
+const SEED_CLICKS_TODAY = 3;
+const SEED_CLICKS_PREVIOUS = 42;
+
+function seedStore(): PanelStore {
+  const today = spDateKey();
+  return {
+    v: STORE_VERSION,
+    days: {
+      [today]: { ...emptyDay(), clicks: SEED_CLICKS_TODAY, social_clicks: SEED_CLICKS_TODAY },
+      [prevDay(today)]: {
+        ...emptyDay(),
+        clicks: SEED_CLICKS_PREVIOUS,
+        social_clicks: SEED_CLICKS_PREVIOUS,
+      },
+    },
+  };
+}
+
+function loadStore(): PanelStore {
+  let raw: string | null = null;
+  try {
+    raw = localStorage.getItem(STORE_KEY);
+  } catch {
+    /* Storage bloqueado: segue em memória, com a semente. */
+  }
+
+  const days: Record<string, PanelDay> = {};
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw) as unknown;
+      const bag =
+        parsed && typeof parsed === "object" ? (parsed as { days?: unknown }).days : null;
+      if (bag && typeof bag === "object" && !Array.isArray(bag)) {
+        for (const [date, value] of Object.entries(bag as Record<string, unknown>)) {
+          if (DATE_RE.test(date)) days[date] = normalizeDay(value);
+        }
+      }
+    } catch {
+      /* JSON quebrado: começa limpo em vez de derrubar a rota. */
+    }
+  }
+
+  return Object.keys(days).length ? { v: STORE_VERSION, days } : seedStore();
+}
+
+function saveStore(store: PanelStore): void {
+  try {
+    localStorage.setItem(STORE_KEY, JSON.stringify(store));
+  } catch {
+    /* Sem storage ou sem espaço: o painel continua funcionando em
+       memória até o reload. Não é motivo para avisar nada na tela. */
+  }
+}
 
 /**
- * Variação contra a data anterior. Data anterior inexistente conta como
- * ZERO — é a mesma coisa que uma data gravada com tudo zerado, e faz a
- * tela zerada abrir com "0%" cinza, exatamente o estado aprovado.
+ * A data anterior do MESMO arquivo local: a mais recente que existir
+ * antes da selecionada. "AAAA-MM-DD" ordena por texto na mesma ordem em
+ * que ordena no calendário, então comparar string basta.
  *
- * `null` = variação indefinida: o anterior é zero e o atual não é, ou
- * seja divisão por zero. Vira "--" cinza — honesto, e nunca
- * Infinity/NaN na tela (§4 dos requisitos).
+ * Nenhuma data anterior gravada conta como um dia zerado — a tela abre
+ * com "0%" em vez de inventar variação.
  */
-function autoPct(current: number, previous: DailyRow | null, key: MetricKey): number | null {
+function previousDayOf(store: PanelStore, date: string): PanelDay | null {
+  let best: string | null = null;
+  for (const key of Object.keys(store.days)) {
+    if (key >= date) continue;
+    if (best === null || key > best) best = key;
+  }
+  return best === null ? null : store.days[best] ?? null;
+}
+
+/* ── Porcentagens ──────────────────────────────────────────────
+   Sempre automáticas, sempre contra a data anterior do arquivo local.
+   Não existe porcentagem digitada — não existe nada digitado. */
+
+type PctTone = "negative" | "neutral" | "positive";
+
+/** Sair do zero é crescimento total, e "+100,00%" é o jeito seguro de
+ *  dizer isso sem imprimir Infinity num card. */
+const FROM_ZERO_PCT = 100;
+
+/**
+ * Variação contra a data anterior. NUNCA devolve NaN nem Infinity (§4
+ * dos requisitos): toda entrada passa por safe() e a divisão por zero é
+ * interceptada antes de acontecer.
+ */
+function autoPct(current: number, previous: PanelDay | null, key: MetricKey): number {
   const before = previous ? safe(previous[key]) : 0;
   const now = safe(current);
-  if (before === 0) return now === 0 ? 0 : null;
-  const pct = ((now - before) / before) * 100;
-  return Number.isFinite(pct) ? pct : null;
-}
-
-/** Lê a porcentagem manual do jsonb. Só objeto conta; só número finito
- *  conta. Qualquer outra coisa volta a ser automático. */
-function readOverride(overrides: Json | null | undefined, key: EditableKey): number | null {
-  if (!overrides || typeof overrides !== "object" || Array.isArray(overrides)) return null;
-  const bag = overrides as Record<string, Json | undefined>;
-  for (const alias of PCT_ALIASES[key]) {
-    const raw = bag[alias];
-    if (raw === null || raw === undefined) continue;
-    const n = typeof raw === "number" ? raw : typeof raw === "string" ? Number(raw) : NaN;
-    if (Number.isFinite(n)) return n;
+  if (before === 0) {
+    if (now === 0) return 0;
+    return now > 0 ? FROM_ZERO_PCT : -FROM_ZERO_PCT;
   }
-  return null;
+  const pct = ((now - before) / before) * 100;
+  return Number.isFinite(pct) ? pct : 0;
 }
 
-function formatPct(value: number | null): { text: string; tone: PctTone } {
-  if (value === null || !Number.isFinite(value)) return { text: "--", tone: "neutral" };
-  const rounded = Math.round(value * 100) / 100;
+/** Formatação, sinal, casas e cor idênticos ao aprovado: zero sai "0%"
+ *  cinza e sem sinal, o resto sai com duas casas e sinal explícito. */
+function formatPct(value: number): { text: string; tone: PctTone } {
+  const rounded = Math.round(safe(value) * 100) / 100;
   if (rounded === 0) return { text: "0%", tone: "neutral" };
   const body = Math.abs(rounded).toLocaleString("pt-BR", {
     minimumFractionDigits: 2,
@@ -373,51 +527,136 @@ function formatPct(value: number | null): { text: string; tone: PctTone } {
 }
 
 /* ── Catálogo ──────────────────────────────────────────────────
-   product_n → produto. Um Map em vez de find() por linha: são 300
-   produtos e cinco linhas por data. Nome, imagem e URL vêm SEMPRE
-   daqui — o banco guarda só o `n` (§6 e §10 dos requisitos). */
-const productByN = new Map<number, AffiliateProduct>(affiliateProducts.map((p) => [p.n, p]));
+   Os mesmos 300 produtos que a página de Produtos usa. Nome, imagem,
+   preço e porcentagem de comissão vêm SEMPRE daqui; o arquivo local
+   guarda só o id, as unidades e a comissão acumulada. */
+const productById = new Map<string, AffiliateProduct>(affiliateProducts.map((p) => [p.id, p]));
+
+/**
+ * COMISSÃO É DINHEIRO, NÃO PORCENTAGEM.
+ *
+ * O catálogo guarda `commissionPct` como número inteiro — 30 quer dizer
+ * 30%. Esta é a ÚNICA função do arquivo que converte para taxa e a
+ * única que conhece o padrão: nem `/ 100` nem `0.3` aparecem em
+ * qualquer outro lugar. Um produto de R$ 50,00 a 30% soma R$ 15,00 em
+ * "Comissão est. (R$)" — nunca R$ 30,00, nunca "30%".
+ */
+const DEFAULT_COMMISSION_RATE = 0.3;
+
+function commissionRate(product: AffiliateProduct): number {
+  const pct = safe(product.commissionPct);
+  return pct > 0 ? pct / 100 : DEFAULT_COMMISSION_RATE;
+}
+
+/* ── VENDA SIMULADA ────────────────────────────────────────────
+   UM clique no sininho = UMA venda completa na data selecionada. */
+
+/** Uma venda é um item, um pedido, um comprador novo. */
+const SALE_QUANTITY = 1;
+const SALE_NEW_BUYERS = 1;
+
+/** Cliques plausíveis por venda: venda não acontece sem visita, e parte
+ *  dessas visitas veio de rede social — por isso o social é sempre uma
+ *  fatia do total, nunca um número maior que ele. */
+const CLICKS_PER_SALE_MIN = 4;
+const CLICKS_PER_SALE_MAX = 14;
+
+function randInt(min: number, max: number): number {
+  return min + Math.floor(Math.random() * (max - min + 1));
+}
+
+/**
+ * Produto da próxima venda. Enquanto sobrar vaga no Top 5 sai sempre um
+ * INÉDITO, para a tabela encher com cinco produtos diferentes; com as
+ * cinco vagas ocupadas a venda cai num dos cinco e a quantidade dele
+ * cresce. É por isso que nunca existe um sexto produto fora da tabela —
+ * e é por isso que as somas do Top 5 fecham com os cards.
+ */
+function pickProduct(day: PanelDay): AffiliateProduct | null {
+  const used = new Set(day.products.map((row) => row.id));
+  const pool =
+    used.size < TOP_SLOTS
+      ? affiliateProducts.filter((p) => !used.has(p.id))
+      : affiliateProducts.filter((p) => used.has(p.id));
+  if (!pool.length) return null;
+  return pool[randInt(0, pool.length - 1)] ?? null;
+}
+
+/**
+ * Aplica UMA venda na data e devolve o arquivo inteiro já novo.
+ *
+ * Tudo é calculado antes de qualquer coisa chegar à tela: quem chama faz
+ * um `setStore` só, com este objeto pronto. Não existe quadro
+ * intermediário em que "Pedido" já subiu e "Comissão est." ainda está
+ * velha.
+ */
+function applySale(store: PanelStore, date: string): PanelStore {
+  const day = store.days[date] ?? emptyDay();
+  const product = pickProduct(day);
+  if (!product) return store;
+
+  const price = Math.max(0, safe(product.price));
+  const orderValue = round2(price * SALE_QUANTITY);
+  const commission = round2(orderValue * commissionRate(product));
+
+  const clicksAdd = randInt(CLICKS_PER_SALE_MIN, CLICKS_PER_SALE_MAX);
+  const socialClicksAdd = randInt(Math.ceil(clicksAdd / 2), clicksAdd);
+
+  /* O MESMO `commission` entra no card e na linha do produto: somar o
+     mesmo centavo dos dois lados é o que mantém as duas colunas iguais. */
+  const known = day.products.some((row) => row.id === product.id);
+  const products: PanelProduct[] = known
+    ? day.products.map((row) =>
+        row.id === product.id
+          ? {
+              ...row,
+              units: row.units + SALE_QUANTITY,
+              commission: round2(row.commission + commission),
+            }
+          : row,
+      )
+    : [...day.products, { id: product.id, units: SALE_QUANTITY, commission }];
+
+  const next: PanelDay = {
+    clicks: day.clicks + clicksAdd,
+    orders: day.orders + 1,
+    estimated_commission: round2(day.estimated_commission + commission),
+    items_sold: day.items_sold + SALE_QUANTITY,
+    order_value: round2(day.order_value + orderValue),
+    new_buyers: day.new_buyers + SALE_NEW_BUYERS,
+    social_clicks: day.social_clicks + socialClicksAdd,
+    products,
+  };
+
+  return { v: STORE_VERSION, days: { ...store.days, [date]: next } };
+}
+
+/* ── Top 5 ─────────────────────────────────────────────────────
+   A agregação por produto já vem pronta do arquivo local: uma linha por
+   id, sem duplicata possível. */
 
 type TopRow = {
-  productN: number;
+  id: string;
   product: AffiliateProduct | undefined;
-  itemsSold: number;
+  units: number;
   commission: number;
 };
 
-/** Ordena por itens vendidos (desc); empate desempata pela maior
- *  comissão estimada. Corta em cinco — o preenchimento com "--" é da
- *  renderização, para as cinco linhas existirem mesmo sem dado. */
-function buildTop5(stats: ProductStatRow[]): TopRow[] {
-  return stats
-    .map((row) => {
-      const itemsSold = Math.max(0, Math.round(safe(row.items_sold)));
-      const perSale = Math.max(0, safe(row.commission_per_sale));
-      return {
-        productN: row.product_n,
-        product: productByN.get(row.product_n),
-        itemsSold,
-        commission: itemsSold * perSale,
-      };
-    })
-    .sort((a, b) => b.itemsSold - a.itemsSold || b.commission - a.commission)
-    .slice(0, 5);
+/** Ordena por unidades (desc); empate desempata pela maior comissão
+ *  acumulada. O preenchimento até cinco linhas é da renderização, para
+ *  as cinco existirem mesmo sem venda nenhuma. */
+function buildTop5(day: PanelDay | null): TopRow[] {
+  if (!day) return [];
+  return day.products
+    .map((row) => ({
+      id: row.id,
+      product: productById.get(row.id),
+      units: Math.max(0, Math.round(safe(row.units))),
+      commission: Math.max(0, safe(row.commission)),
+    }))
+    .sort((a, b) => b.units - a.units || b.commission - a.commission)
+    .slice(0, TOP_SLOTS);
 }
-
-/* ── Estado visual aprovado ────────────────────────────────────
-   O que a tela mostra enquanto a primeira consulta está no ar e
-   quando NÃO EXISTE nenhum registro no banco (§5 dos requisitos:
-   "usar o estado visual aprovado"). É a cópia literal do pacote. */
-const STATIC_DATE = "2026-08-22";
-const STATIC_METRICS: Record<MetricKey, { value: string; pct: { text: string; tone: PctTone } }> = {
-  clicks: { value: "3", pct: { text: "-92,86%", tone: "negative" } },
-  orders: { value: "0", pct: { text: "0%", tone: "neutral" } },
-  estimated_commission: { value: "0", pct: { text: "0%", tone: "neutral" } },
-  items_sold: { value: "0", pct: { text: "0%", tone: "neutral" } },
-  order_value: { value: "0", pct: { text: "0%", tone: "neutral" } },
-  new_buyers: { value: "0", pct: { text: "0%", tone: "neutral" } },
-};
-const STATIC_SOCIAL_CLICKS = "3";
 
 /* ══════════════════════════════════════════════════════════════
    COMPONENTES DA TELA
@@ -446,7 +685,7 @@ function MetricCard({
 
 function ProductsPanel({ rows }: { rows: TopRow[] }) {
   const padded: (TopRow | null)[] = [...rows];
-  while (padded.length < 5) padded.push(null);
+  while (padded.length < TOP_SLOTS) padded.push(null);
 
   return (
     <section className="products-panel">
@@ -459,7 +698,7 @@ function ProductsPanel({ rows }: { rows: TopRow[] }) {
           <div role="columnheader">Ação</div>
         </div>
         {padded.map((row, index) => (
-          <div className="table-row" role="row" key={row ? `p-${row.productN}` : `empty-${index}`}>
+          <div className="table-row" role="row" key={row ? `p-${row.id}` : `empty-${index}`}>
             <div role="cell">
               {row ? (
                 <span className="product-cell">
@@ -467,18 +706,18 @@ function ProductsPanel({ rows }: { rows: TopRow[] }) {
                     <img src={row.product.image} alt="" width={28} height={28} loading="lazy" />
                   ) : null}
                   <span className="product-name" title={row.product?.name}>
-                    {/* Sem produto no catálogo para esse `n` não se inventa
+                    {/* Sem produto no catálogo para esse id não se inventa
                         nome: mostra o identificador e pronto. */}
-                    {row.product?.name ?? `Produto #${row.productN}`}
+                    {row.product?.name ?? `Produto ${row.id}`}
                   </span>
                 </span>
               ) : (
                 "--"
               )}
             </div>
-            <div className="align-right" role="cell">{row ? intFmt(row.itemsSold) : "--"}</div>
+            <div className="align-right" role="cell">{row ? intFmt(row.units) : "--"}</div>
             <div className="align-right" role="cell">{row ? money2Fmt(row.commission) : "--"}</div>
-            {/* Coluna Ação permanece "--", sem botão (§6 dos requisitos). */}
+            {/* Coluna Ação permanece "--", sem botão. */}
             <div role="cell">--</div>
           </div>
         ))}
@@ -492,282 +731,57 @@ function ProductsPanel({ rows }: { rows: TopRow[] }) {
    ══════════════════════════════════════════════════════════════ */
 
 function PainelPage() {
-  /* `null` enquanto a busca pela data mais recente não respondeu. */
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  /* true quando não existe NENHUM registro — a tela fica no estado
-     visual aprovado até o admin escolher uma data à mão. */
-  const [staticState, setStaticState] = useState(true);
-  const [daily, setDaily] = useState<DailyRow | null>(null);
-  const [previous, setPrevious] = useState<DailyRow | null>(null);
-  const [stats, setStats] = useState<ProductStatRow[]>([]);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [editorOpen, setEditorOpen] = useState(false);
-  /* A página é dona da persistência — o editor é um componente puro
-     e não fala com o Supabase. Estes dois descem como prop. */
-  const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
-
-  /* `currentUserId` é o id da sessão do Supabase — o mesmo auth.uid()
-     que as policies checam. Vai para updated_by; não há trigger
-     preenchendo essa coluna, de propósito. */
-  const { currentUserId } = useApp();
+  /* UM estado para o arquivo inteiro. É o que permite aplicar a venda
+     num `setStore` só: cliques, pedido, comissão, itens, valor do
+     pedido, compradores novos, rede social e Top 5 mudam no MESMO
+     quadro, nunca um antes do outro. */
+  const [store, setStore] = useState<PanelStore>(loadStore);
 
   /* Hoje em São Paulo, não no fuso do visitante: um navegador em Tóquio
      não pode oferecer uma data que ainda não começou no Brasil. */
   const maxDate = useMemo(() => spDateKey(), []);
+  const [selectedDate, setSelectedDate] = useState<string>(maxDate);
 
-  /* Descarta resposta de consulta antiga quando o admin troca de data
-     mais rápido do que a rede responde. */
-  const requestId = useRef(0);
-
-  /* 1) Data inicial = registro mais recente que existir. */
+  /* Persistência fora do updater: `setStore` continua puro, e o
+     StrictMode pode chamá-lo duas vezes sem gravar dois arquivos. Roda
+     também na montagem — é assim que a semente vira arquivo. */
   useEffect(() => {
-    let alive = true;
-    (async () => {
-      const { data, error } = await supabase
-        .from("panel_daily_records")
-        .select("record_date")
-        .order("record_date", { ascending: false })
-        .limit(1);
-      if (!alive) return;
-      if (error) {
-        console.error("[painel] falha ao buscar a data mais recente", error);
-        setLoadError("Não foi possível carregar os dados do painel.");
-        return;
-      }
-      const latest = data?.[0]?.record_date;
-      if (latest) {
-        setStaticState(false);
-        setSelectedDate(latest);
-      }
-    })();
-    return () => {
-      alive = false;
-    };
-  }, []);
+    saveStore(store);
+  }, [store]);
 
-  /* 2) Métricas + produtos da data escolhida. Vive num callback porque
-     o editor precisa disparar a mesma leitura depois de salvar — é
-     assim que o painel atrás repinta sem recarregar a página. */
-  const loadDate = useCallback(async (date: string) => {
-    const id = ++requestId.current;
-    const before = prevDay(date);
+  const daily = store.days[selectedDate] ?? null;
+  const previous = useMemo(() => previousDayOf(store, selectedDate), [store, selectedDate]);
 
-    const [dailyRes, statsRes] = await Promise.all([
-      supabase
-        .from("panel_daily_records")
-        .select("*")
-        .in("record_date", [date, before]),
-      supabase
-        .from("panel_product_stats")
-        .select("*")
-        .eq("record_date", date),
-    ]);
-
-    if (id !== requestId.current) return;
-
-    if (dailyRes.error || statsRes.error) {
-      console.error("[painel] falha ao carregar a data", dailyRes.error ?? statsRes.error);
-      setLoadError("Não foi possível carregar os dados desta data.");
-      setDaily(null);
-      setPrevious(null);
-      setStats([]);
-      return;
-    }
-
-    const rows = dailyRes.data ?? [];
-    setLoadError(null);
-    setDaily(rows.find((r) => r.record_date === date) ?? null);
-    setPrevious(rows.find((r) => r.record_date === before) ?? null);
-    setStats(statsRes.data ?? []);
-  }, []);
-
-  useEffect(() => {
-    if (!selectedDate) return;
-    void loadDate(selectedDate);
-  }, [selectedDate, loadDate]);
+  /* O sininho: um clique, uma venda, na data que está na tela. */
+  const handleSale = useCallback(() => {
+    setStore((current) => applySale(current, selectedDate));
+  }, [selectedDate]);
 
   const onPickDate = useCallback((value: string) => {
-    if (!value) return;
-    setStaticState(false);
+    if (!DATE_RE.test(value)) return;
     setSelectedDate(value);
   }, []);
 
-  /* Salvou: sai do estado visual estático, aponta o painel para a data
-     gravada e relê. `setSelectedDate` sozinho não bastaria — gravar a
-     data que já estava selecionada não muda o estado e o efeito não
-     dispararia. */
-  const repaintAfterSave = useCallback(
-    (date: string) => {
-      setStaticState(false);
-      setSelectedDate(date);
-      void loadDate(date);
-    },
-    [loadDate],
-  );
-
-  const dateForInput = selectedDate ?? STATIC_DATE;
-
-  /* Sem nenhum registro no banco, o painel mostra o estado aprovado com
-     a data da referência. Aí o editor abre em HOJE (São Paulo), que é a
-     data que o admin realmente quer criar — não a do print. */
-  const editorDate = selectedDate ?? maxDate;
-
-  const handleSave = useCallback(
-    async (next: {
-      metrics: PanelMetrics;
-      pctOverrides: PanelPctOverrides;
-      products: PanelProductRow[];
-    }) => {
-      const date = editorDate;
-      setSaving(true);
-      setSaveError(null);
-
-      /* CONTRATO DO null: o componente devolve as sete chaves, cada uma
-         com número ou `null`. `null` significa AUTOMÁTICO, e automático
-         é CHAVE AUSENTE do jsonb — nunca um zero gravado. Escrever 0
-         aqui trocaria "calcule a variação" por "mostre 0%", que é outro
-         número na tela e não levantaria erro em lugar nenhum. */
-      const overrides: Record<string, number> = {};
-      for (const key of EDITABLE_KEYS) {
-        const value = next.pctOverrides[key];
-        if (typeof value === "number" && Number.isFinite(value)) overrides[key] = value;
-      }
-
-      const { error: dailyError } = await supabase.from("panel_daily_records").upsert(
-        {
-          record_date: date,
-          clicks: next.metrics.clicks,
-          orders: next.metrics.orders,
-          estimated_commission: next.metrics.estimated_commission,
-          items_sold: next.metrics.items_sold,
-          order_value: next.metrics.order_value,
-          new_buyers: next.metrics.new_buyers,
-          social_clicks: next.metrics.social_clicks,
-          pct_overrides: Object.keys(overrides).length ? (overrides as Json) : null,
-          // Instante absoluto, não data de calendário — toISOString é o
-          // certo para timestamptz e não depende do fuso de ninguém.
-          updated_at: new Date().toISOString(),
-          updated_by: currentUserId,
-        },
-        { onConflict: "record_date" },
-      );
-
-      if (dailyError) {
-        console.error("[painel] falha ao salvar métricas", dailyError);
-        setSaveError(`Não foi possível salvar as métricas. ${dailyError.message}`);
-        setSaving(false);
-        return;
-      }
-
-      if (next.products.length) {
-        const { error } = await supabase.from("panel_product_stats").upsert(
-          next.products.map((row) => ({
-            record_date: date,
-            product_n: row.product_n,
-            items_sold: row.items_sold,
-            commission_per_sale: row.commission_per_sale,
-          })),
-          { onConflict: "record_date,product_n" },
-        );
-        if (error) {
-          console.error("[painel] falha ao salvar produtos", error);
-          setSaveError(`Métricas salvas, mas os produtos não. ${error.message}`);
-          setSaving(false);
-          repaintAfterSave(date);
-          return;
-        }
-      }
-
-      // Grava primeiro, apaga depois: nenhuma janela em que uma linha que
-      // vai continuar existindo esteja ausente da tabela.
-      const keep = next.products.map((row) => row.product_n);
-      let removal = supabase.from("panel_product_stats").delete().eq("record_date", date);
-      if (keep.length) removal = removal.not("product_n", "in", `(${keep.join(",")})`);
-      const { error: removalError } = await removal;
-
-      if (removalError) {
-        console.error("[painel] falha ao remover produtos", removalError);
-        setSaveError(
-          `Salvo, mas não deu para remover os produtos tirados. ${removalError.message}`,
-        );
-      }
-
-      /* `saving` cai para false no mesmo lote em que `saveError` é
-         definido: é assim que o componente distingue sucesso de falha. */
-      setSaving(false);
-      repaintAfterSave(date);
-    },
-    [editorDate, currentUserId, repaintAfterSave],
-  );
-
-  /* Data sem registro mostra zeros — o layout é o mesmo, só os números
-     mudam (§5 dos requisitos). */
+  /* Data sem venda nenhuma mostra zeros — o layout é o mesmo, só os
+     números mudam. */
   const cards = METRIC_KEYS.map((key) => {
-    if (staticState) {
-      const fallback = STATIC_METRICS[key];
-      return { key, label: METRIC_LABEL[key], value: fallback.value, pct: fallback.pct };
-    }
     const current = safe(daily?.[key] ?? 0);
-    const override = readOverride(daily?.pct_overrides, key);
     return {
       key,
       label: METRIC_LABEL[key],
       value: metricValueFmt(key, current),
-      pct: formatPct(override ?? autoPct(current, previous, key)),
+      pct: formatPct(autoPct(current, previous, key)),
     };
   });
 
-  const socialClicks = staticState ? STATIC_SOCIAL_CLICKS : intFmt(safe(daily?.social_clicks ?? 0));
-  const top5 = staticState ? [] : buildTop5(stats);
-
-  /* ── Props do editor ──────────────────────────────────────────
-     O componente é PURO: não busca nada. Estes três derivam do que a
-     página já leu do banco. Data sem registro vira zeros — o mesmo que
-     a tela mostra. */
-  const editorMetrics: PanelMetrics = useMemo(
-    () => ({
-      clicks: safe(daily?.clicks ?? 0),
-      orders: safe(daily?.orders ?? 0),
-      estimated_commission: safe(daily?.estimated_commission ?? 0),
-      items_sold: safe(daily?.items_sold ?? 0),
-      order_value: safe(daily?.order_value ?? 0),
-      new_buyers: safe(daily?.new_buyers ?? 0),
-      social_clicks: safe(daily?.social_clicks ?? 0),
-    }),
-    [daily],
-  );
-
-  /* readOverride devolve `number` ou `null` — exatamente o contrato do
-     componente. `null` é automático, nunca zero. */
-  const editorPct: PanelPctOverrides = useMemo(() => {
-    const out: PanelPctOverrides = {};
-    for (const key of EDITABLE_KEYS) out[key] = readOverride(daily?.pct_overrides, key);
-    return out;
-  }, [daily]);
-
-  /* Só os três campos que o banco guarda. Nome, imagem, URL e preço
-     continuam vindo do catálogo — nada disso é copiado para cá. */
-  const editorProducts: PanelProductRow[] = useMemo(
-    () =>
-      stats.map((row) => ({
-        product_n: row.product_n,
-        items_sold: safe(row.items_sold),
-        commission_per_sale: safe(row.commission_per_sale),
-      })),
-    [stats],
-  );
+  const socialClicks = intFmt(safe(daily?.social_clicks ?? 0));
+  const top5 = buildTop5(daily);
 
   return (
     <div className="pnlx">
       <style>{CSS}</style>
 
-      <Header
-        onEdit={() => {
-          setSaveError(null);
-          setEditorOpen(true);
-        }}
-      />
+      <Header onSale={handleSale} />
       <Sidebar />
       <main className="content">
         <section className="date-panel">
@@ -779,12 +793,12 @@ function PainelPage() {
                 DD/MM/AAAA mesmo num navegador em locale en-US, e a
                 caixa continua com os mesmos 230px do aprovado. */}
             <label className="date-input">
-              <span>{toBR(dateForInput)}</span>
+              <span>{toBR(selectedDate)}</span>
               <Icon name="calendar" size={17} />
               <input
                 type="date"
                 aria-label="Período dos dados"
-                value={dateForInput}
+                value={selectedDate}
                 max={maxDate}
                 onChange={(event) => onPickDate(event.currentTarget.value)}
                 onClick={(event) => {
@@ -800,9 +814,7 @@ function PainelPage() {
               />
             </label>
           </div>
-          <span className={loadError ? "updated-text error" : "updated-text"}>
-            {loadError ?? "Dados atualizados diariamente às 5:30 PM"}
-          </span>
+          <span className="updated-text">Dados atualizados diariamente às 5:30 PM</span>
         </section>
 
         <section className="metrics-panel">
@@ -830,34 +842,6 @@ function PainelPage() {
         </section>
         <ProductsPanel rows={top5} />
       </main>
-
-      {/* Overlay: o painel embaixo mantém layout, cards e Top 5 intactos.
-
-          MONTA AO ABRIR, não fica montado com `open` false. O componente
-          semeia o rascunho na inicialização preguiçosa do estado, que só
-          roda na montagem — deixá-lo montado desde o carregamento da
-          página semearia com `products` ainda vazio, e a lista de
-          produtos apareceria vazia no primeiro quadro do editor.
-
-          SEM `key` variável e SEM `metrics`/`products` em dependência de
-          efeito: esses objetos têm identidade nova a cada render daqui, e
-          remontar apagaria o que o admin está digitando. */}
-      {editorOpen ? (
-        <PainelEditor
-          open
-          recordDate={editorDate}
-          metrics={editorMetrics}
-          pctOverrides={editorPct}
-          products={editorProducts}
-          saving={saving}
-          error={saveError}
-          onSave={handleSave}
-          onClose={() => {
-            setEditorOpen(false);
-            setSaveError(null);
-          }}
-        />
-      ) : null}
     </div>
   );
 }
@@ -1049,11 +1033,11 @@ const CSS = `
 .pnlx .product-name{ min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 
-/* O "..." do cabeçalho virou <button> para abrir o editor. Estas
-   propriedades desfazem o que o UA e o preflight do Tailwind fazem com
-   button; largura, altura e cor continuam vindo de .pnlx .utility, que
-   não é tocada aqui. O resto do CSS do editor mora dentro do próprio
-   componente, em src/components/painel/PainelEditor.tsx. */
+/* O sininho é <button>: ele é clicável de verdade, e assim funciona no
+   teclado e no leitor de tela. Estas propriedades desfazem o que o UA e
+   o preflight do Tailwind fazem com button; largura, altura e cor
+   continuam vindo de .pnlx .utility, que não é tocada aqui. O resultado
+   desenha exatamente como o <div> da composição aprovada. */
 .pnlx button.utility{ appearance: none; -webkit-appearance: none; background: none; border: 0; margin: 0; padding: 0; font: inherit; cursor: pointer; }
 
 @media (max-width: 1180px){
