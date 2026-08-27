@@ -7,10 +7,18 @@ import {
   Search, Play, Info, Clock, GraduationCap,
   BarChart3, ShoppingBag, MessageCircle,
   Clapperboard, Link2, Star, Sparkles, ChevronDown, X,
-  User, CheckCircle2, Calendar, Trash2,
+  CheckCircle2, Calendar, Trash2,
 } from "lucide-react";
 import { Input } from "../components/ui/input";
 import { toast } from "sonner";
+import {
+  BOOKING_SECTION_ID,
+  fetchClassBookings,
+  findConfirmedBooking,
+  formatBookingDateLong,
+  parseBookingDate,
+  type ClassBooking,
+} from "../lib/class-booking";
 
 export const Route = createFileRoute("/dashboard/aulas")({ component: AulasPage });
 
@@ -41,23 +49,16 @@ interface TimeSlot {
   totalSpots: number;
 }
 
+/* Horários OFERECIDOS hoje. Esta lista governa só o que a tela deixa marcar
+   daqui pra frente — ela NÃO é usada para interpretar agendamento já gravado.
+   Reservas antigas em 18:30/20:30/22:00 continuam no banco e aparecem com o
+   horário real delas, porque a tela imprime `scheduled_time` direto, sem
+   procurar o valor aqui. Não existe lookup de TIME_SLOTS por horário salvo —
+   se algum dia passar a existir, ele precisa tratar horário fora desta lista. */
 const TIME_SLOTS: TimeSlot[] = [
-  { time: "18:30", totalSpots: 3 },
-  { time: "20:30", totalSpots: 2 },
-  { time: "22:00", totalSpots: 4 },
+  { time: "09:00", totalSpots: 4 },
+  { time: "15:00", totalSpots: 4 },
 ];
-
-/** Linha de public.class_bookings — a fonte de verdade do agendamento.
- *  payment_status 'paid' agora também cobre reserva confirmada de graça via
- *  confirm_free_class_booking — ver migration 20260827120000. */
-interface ClassBooking {
-  id: string;
-  professor_id: string;
-  scheduled_date: string;  // YYYY-MM-DD
-  scheduled_time: string;  // bate com TIME_SLOTS
-  payment_status: "pending" | "paid" | "expired";
-  created_at: string;
-}
 
 /** Disponibilidade vinda de public.class_professors. A aula é gratuita, mas o
  *  professor ainda pode estar desativado — o preço da tabela fica sem uso. */
@@ -95,13 +96,15 @@ function clearBooking(userId: string) {
   localStorage.removeItem(BOOKING_KEY(userId));
 }
 
-/** Count 3 business days (Mon-Fri) forward from `from` (inclusive of `from` if it's a business day? No — "from 3 business days AFTER today"). Returns a Date at midnight local time. */
+/** Primeira data agendável: 4 dias ÚTEIS (seg–sex) depois de `from`, sem contar
+ *  o próprio dia. Sábado e domingo nunca entram na contagem e nunca são
+ *  oferecidos. Devolve a data à meia-noite no fuso local. */
 function getEarliestBookingDate(from: Date = new Date()): Date {
   const d = new Date(from);
   d.setHours(0, 0, 0, 0);
   // Advance one day at a time, counting only Mon-Fri
   let counted = 0;
-  while (counted < 3) {
+  while (counted < 4) {
     d.setDate(d.getDate() + 1);
     const day = d.getDay(); // 0=Sun, 6=Sat
     if (day !== 0 && day !== 6) {
@@ -130,13 +133,6 @@ function generateAvailableDates(earliest: Date, count: number = 10): Date[] {
 /** Format a Date as "DD/MM" for pills */
 function formatDateShort(d: Date): string {
   return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
-}
-
-/** Full format: "Quarta-feira, 23 de Julho de 2026" */
-function formatDateLong(d: Date): string {
-  const days = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
-  const months = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
-  return `${days[d.getDay()]}, ${d.getDate()} de ${months[d.getMonth()]} de ${d.getFullYear()}`;
 }
 
 /** Format a short weekday label for date pills: "Qua 23/07" */
@@ -559,10 +555,8 @@ function AulasPage() {
   // 'paid' é o único estado terminal — cobre tanto uma reserva paga de verdade
   // (de antes de a aula virar gratuita) quanto uma confirmada sem pagamento
   // via confirm_free_class_booking. As duas são "aula marcada" pra tela.
-  const paidBooking = useMemo(
-    () => bookings?.find((b) => b.payment_status === "paid") ?? null,
-    [bookings],
-  );
+  // Mesmo critério que a etapa 7 do Vídeo IA usa, via lib/class-booking.
+  const paidBooking = useMemo(() => findConfirmedBooking(bookings), [bookings]);
 
   // 'pending' só deveria existir pelo instante entre create_class_booking e
   // confirm_free_class_booking — o efeito de autocura abaixo fecha isso
@@ -595,19 +589,29 @@ function AulasPage() {
     return () => { cancelled = true; };
   }, []);
 
-  /* Agendamentos do banco. */
+  /* Agendamentos do banco — mesma query que a etapa 7 do Vídeo IA usa. */
   const refreshBookings = useCallback(async () => {
     if (!currentUserId) { setBookings([]); return; }
-    const { data, error } = await supabase
-      .from("class_bookings")
-      .select("id, professor_id, scheduled_date, scheduled_time, payment_status, created_at")
-      .eq("user_id", currentUserId)
-      .order("created_at", { ascending: false });
-    if (error) return; // mantém o que já estava; erro de rede não apaga a tela
-    setBookings((data ?? []) as ClassBooking[]);
+    const rows = await fetchClassBookings(currentUserId);
+    if (rows === null) return; // mantém o que já estava; erro de rede não apaga a tela
+    setBookings(rows);
   }, [currentUserId]);
 
   useEffect(() => { void refreshBookings(); }, [refreshBookings]);
+
+  /* Chegou de /dashboard/video-ia com #agendar-aula: rola até o formulário.
+     Feito à mão em vez de depender do scroll automático do router — a seção
+     está dentro do DashboardShell, que monta depois, e sem isso a âncora
+     chega antes do elemento existir. */
+  useEffect(() => {
+    if (window.location.hash !== `#${BOOKING_SECTION_ID}`) return;
+    const id = window.requestAnimationFrame(() => {
+      document
+        .getElementById(BOOKING_SECTION_ID)
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    return () => window.cancelAnimationFrame(id);
+  }, []);
 
   /* Agendamento antigo do localStorage — só se não houver nada no banco. */
   useEffect(() => {
@@ -811,8 +815,13 @@ function AulasPage() {
 
         {/* ══════════════════════════════════════════════════════════════
             LIVE CLASS BOOKING — Agende sua aula ao vivo
+            O id é a âncora usada pela etapa 7 do Vídeo IA para mandar o
+            usuário agendar aqui, em vez de duplicar o formulário lá.
             ══════════════════════════════════════════════════════════════ */}
-        <section className="mb-8 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 sm:p-6">
+        <section
+          id={BOOKING_SECTION_ID}
+          className="mb-8 scroll-mt-24 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 sm:p-6"
+        >
           <div className="flex items-center gap-3 mb-1">
             <span className="text-2xl">📅</span>
             <div>
@@ -867,7 +876,7 @@ function AulasPage() {
                       <div className="flex items-center gap-1.5">
                         <Calendar className="h-3.5 w-3.5 shrink-0 text-[var(--muted)]" />
                         <span className="text-xs text-[var(--text)]">
-                          {formatDateLong(new Date(paidBooking.scheduled_date + "T12:00:00"))}
+                          {formatBookingDateLong(parseBookingDate(paidBooking.scheduled_date))}
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5">
@@ -896,7 +905,7 @@ function AulasPage() {
                     Agendamento antigo encontrado neste navegador
                   </p>
                   <p className="mt-1 text-[11px] leading-relaxed text-[var(--muted)]">
-                    {legacyBooking.professorName} — {legacyBooking.time}, {formatDateLong(new Date(legacyBooking.date + "T12:00:00"))}.
+                    {legacyBooking.professorName} — {legacyBooking.time}, {formatBookingDateLong(parseBookingDate(legacyBooking.date))}.
                     Este registro é anterior ao pagamento e não vale como aula marcada. Agende de novo abaixo.
                   </p>
                   <button

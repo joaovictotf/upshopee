@@ -17,6 +17,7 @@ import {
 import { products as mockProducts, type Product } from "../lib/mock/products";
 import Step7GeminiChat from "../components/Step7GeminiChat";
 import AdminStep7Video from "../components/AdminStep7Video";
+import { VideoIaClassGate } from "../components/VideoIaClassGate";
 
 /* ───────────────────────────────────────────────────────────────
    Types
@@ -1191,10 +1192,13 @@ function VideoIaPage() {
             {currentStep === 4 && <Step4Style styleConfig={styleConfig} setStyleConfig={setStyleConfig} dailyCount={dailyCount} dailyLimitReached={dailyLimitReached} dailyLimitChecked={dailyLimitChecked} isAdmin={isAdmin} handleBack={handleBack} />}
             {currentStep === 5 && <Step5Generation productInfo={productInfo} styleConfig={styleConfig} generating={generating} genStep={genStep} genError={genError} generatedContent={generatedContent} dailyCount={dailyCount} dailyLimitReached={dailyLimitReached} dailyLimitChecked={dailyLimitChecked} isAdmin={isAdmin} handleGenerate={handleGenerate} handleRegenerate={handleRegenerate} />}
             {currentStep === 6 && <Step6Review generatedContent={generatedContent} setGeneratedContent={setGeneratedContent} handleRegenerate={handleRegenerate} />}
+            {/* Etapa 7: admin gera o vídeo direto (AdminStep7Video, intocado).
+                Usuário comum vê antes o aviso de que a geração por IA é
+                liberada na aula ao vivo, com o caminho para agendar. */}
             {currentStep === 7 && (isAdmin ? (
               <AdminStep7Video productInfo={productInfo} styleConfig={styleConfig} generatedContent={generatedContent} projectId={projectId} handleBack={handleBack} />
             ) : (
-              <Step7GeminiChat productInfo={productInfo} styleConfig={styleConfig} generatedContent={generatedContent} projectId={projectId} handleBack={handleBack} handleCopyFinalPrompt={handleCopyFinalPrompt} />
+              <><VideoIaClassGate currentUserId={currentUserId} /><Step7GeminiChat productInfo={productInfo} styleConfig={styleConfig} generatedContent={generatedContent} projectId={projectId} handleBack={handleBack} handleCopyFinalPrompt={handleCopyFinalPrompt} /></>
             ))}
           </div>
 
