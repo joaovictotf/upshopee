@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useApp } from "../lib/state";
 import { supabase } from "../integrations/supabase/client";
 import { DashboardShell } from "../components/layout/DashboardShell";
@@ -7,21 +7,10 @@ import {
   Search, Play, Info, Clock, GraduationCap,
   BarChart3, ShoppingBag, MessageCircle,
   Clapperboard, Link2, Star, Sparkles, ChevronDown, X,
-  User, CheckCircle2, Calendar, Trash2, QrCode,
+  User, CheckCircle2, Calendar, Trash2,
 } from "lucide-react";
 import { Input } from "../components/ui/input";
-import { brl } from "../lib/format";
-import { PixQrModal, type PixQrState } from "../components/PixQrModal";
 import { toast } from "sonner";
-
-// Mesma função que o Impulsionar usa. Para a aula só se manda { bookingId } —
-// o valor e o clientReference saem da linha de class_bookings, no servidor.
-const EVOPAY_CREATE_PIX_URL =
-  "https://ndawyrqzqhzbyjdmkdge.supabase.co/functions/v1/evopay-create-pix";
-
-/** Validade de uma reserva pendente. Igual ao expiresIn do PIX em
- *  evopay-create-pix e à janela anti-spam de create_class_booking. */
-const PENDING_TTL_MS = 30 * 60 * 1000;
 
 export const Route = createFileRoute("/dashboard/aulas")({ component: AulasPage });
 
@@ -58,20 +47,21 @@ const TIME_SLOTS: TimeSlot[] = [
   { time: "22:00", totalSpots: 4 },
 ];
 
-/** Linha de public.class_bookings — a fonte de verdade do agendamento. */
+/** Linha de public.class_bookings — a fonte de verdade do agendamento.
+ *  payment_status 'paid' agora também cobre reserva confirmada de graça via
+ *  confirm_free_class_booking — ver migration 20260827120000. */
 interface ClassBooking {
   id: string;
   professor_id: string;
   scheduled_date: string;  // YYYY-MM-DD
   scheduled_time: string;  // bate com TIME_SLOTS
-  amount: number | string; // numeric do Postgres pode vir como string
   payment_status: "pending" | "paid" | "expired";
   created_at: string;
 }
 
-/** Preço vindo de public.class_professors. Nunca hardcodado aqui. */
-interface ProfessorPrice {
-  price: number;
+/** Disponibilidade vinda de public.class_professors. A aula é gratuita, mas o
+ *  professor ainda pode estar desativado — o preço da tabela fica sem uso. */
+interface ProfessorAvailability {
   active: boolean;
 }
 
@@ -552,18 +542,13 @@ function AulasPage() {
   const [selectedProfessor, setSelectedProfessor] = useState<Professor | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null); // YYYY-MM-DD
   const [legacyBooking, setLegacyBooking] = useState<Booking | null>(null);
-  // null = ainda carregando. Map vazio = não deu para saber o preço, e nesse
-  // caso a tela mostra o professor SEM preço em vez de arriscar um errado.
-  const [prices, setPrices] = useState<Map<string, ProfessorPrice> | null>(null);
+  // null = ainda carregando. Map vazio = não deu para saber quem está
+  // indisponível, e nesse caso nenhum professor aparece desativado por engano.
+  const [availability, setAvailability] = useState<Map<string, ProfessorAvailability> | null>(null);
   const [bookings, setBookings] = useState<ClassBooking[] | null>(null);
-  const [qrState, setQrState] = useState<PixQrState>({ status: "idle" });
-  // Guarda o QR já gerado para o usuário poder reabrir sem criar outra
-  // cobrança na EvoPay. Some no refresh da página — é memória de sessão.
-  const [pixData, setPixData] = useState<Extract<PixQrState, { status: "success" }> | null>(null);
-  const [payingFor, setPayingFor] = useState<{ name: string; amount: number } | null>(null);
-  // Relógio da tela. Existe só para a reserva pendente poder "envelhecer" sem
-  // depender de uma resposta do servidor.
-  const [nowTick, setNowTick] = useState(() => Date.now());
+  // Trava os botões durante o create_class_booking + confirm_free_class_booking
+  // da mesma reserva, pra não deixar clicar em outro horário no meio do caminho.
+  const [isBooking, setIsBooking] = useState(false);
 
   const earliestDate = useMemo(() => getEarliestBookingDate(), []);
   const availableDates = useMemo(() => {
@@ -571,47 +556,39 @@ function AulasPage() {
     return dates.filter(isWithin30Days);
   }, [earliestDate]);
 
-  // Só 'paid' conta como aula marcada. 'pending' é cobrança em aberto.
+  // 'paid' é o único estado terminal — cobre tanto uma reserva paga de verdade
+  // (de antes de a aula virar gratuita) quanto uma confirmada sem pagamento
+  // via confirm_free_class_booking. As duas são "aula marcada" pra tela.
   const paidBooking = useMemo(
     () => bookings?.find((b) => b.payment_status === "paid") ?? null,
     [bookings],
   );
 
-  const rawPending = useMemo(
+  // 'pending' só deveria existir pelo instante entre create_class_booking e
+  // confirm_free_class_booking — o efeito de autocura abaixo fecha isso
+  // sozinho se sobrar uma reserva pendente (ex.: aba fechada no meio das duas
+  // chamadas).
+  const pendingBooking = useMemo(
     () => bookings?.find((b) => b.payment_status === "pending") ?? null,
     [bookings],
   );
 
-  // Uma reserva pendente só segura a tela por 30 minutos — o mesmo expiresIn do
-  // PIX e a mesma janela que create_class_booking usa para recusar uma segunda.
-  // Nada no banco escreve 'expired' hoje, então sem este corte uma cobrança
-  // nunca paga esconderia o formulário para sempre.
-  const pendingBooking = useMemo(() => {
-    if (!rawPending) return null;
-    const age = nowTick - new Date(rawPending.created_at).getTime();
-    return age < PENDING_TTL_MS ? rawPending : null;
-  }, [rawPending, nowTick]);
-
-  /* Preços reais, de class_professors. */
+  /* Disponibilidade real, de class_professors. O preço da tabela fica sem uso
+     — só o campo active decide se o professor aparece reservável. */
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const { data, error } = await supabase
         .from("class_professors")
-        .select("id, price, active");
+        .select("id, active");
       if (cancelled) return;
       if (error || !data) {
-        // Falhou: Map vazio → nenhum preço na tela. Melhor faltar preço do que
-        // mostrar um valor que não é o que o servidor vai cobrar.
-        setPrices(new Map());
+        setAvailability(new Map());
         return;
       }
-      setPrices(
+      setAvailability(
         new Map(
-          data.map((r: { id: string; price: number | string; active: boolean }) => [
-            r.id,
-            { price: Number(r.price), active: Boolean(r.active) },
-          ]),
+          data.map((r: { id: string; active: boolean }) => [r.id, { active: Boolean(r.active) }]),
         ),
       );
     })();
@@ -623,7 +600,7 @@ function AulasPage() {
     if (!currentUserId) { setBookings([]); return; }
     const { data, error } = await supabase
       .from("class_bookings")
-      .select("id, professor_id, scheduled_date, scheduled_time, amount, payment_status, created_at")
+      .select("id, professor_id, scheduled_date, scheduled_time, payment_status, created_at")
       .eq("user_id", currentUserId)
       .order("created_at", { ascending: false });
     if (error) return; // mantém o que já estava; erro de rede não apaga a tela
@@ -638,41 +615,19 @@ function AulasPage() {
     setLegacyBooking(loadBooking(currentUserId));
   }, [currentUserId]);
 
-  /* Enquanto o pagamento não confirma, pergunta ao banco de tempos em tempos.
-     Quem escreve 'paid' é o evopay-webhook, então a tela não tem como saber
-     antes — e não pode dizer que a aula está marcada enquanto isso. */
+  /* Autocura: se uma reserva ficou 'pending' (confirm_free_class_booking falhou
+     logo depois de criar, por exemplo por queda de rede), tenta confirmar de
+     novo sozinho, uma vez por reserva. Se falhar de novo, o usuário só vê o
+     formulário de novo e pode marcar outro horário — não fica reperguntando. */
   useEffect(() => {
-    if (!rawPending) return;
-    const createdAt = new Date(rawPending.created_at).getTime();
-    const id = window.setInterval(() => {
-      setNowTick(Date.now());
-      // Passados os 30 min o PIX expirou: uma última atualização do relógio
-      // devolve o formulário para a tela, e aí não há mais o que perguntar.
-      if (Date.now() - createdAt >= PENDING_TTL_MS) {
-        window.clearInterval(id);
-        return;
-      }
-      void refreshBookings();
-    }, 5000);
-    return () => window.clearInterval(id);
-  }, [rawPending?.id, rawPending?.created_at, refreshBookings]);
-
-  /* Avisa só na TRANSIÇÃO para pago — quem já chega com aula marcada não leva
-     um toast a cada visita. `undefined` marca "ainda não carregou". */
-  const lastPaidId = useRef<string | null | undefined>(undefined);
-  useEffect(() => {
-    if (bookings === null) return;
-    const id = paidBooking?.id ?? null;
-    if (lastPaidId.current === undefined) { lastPaidId.current = id; return; }
-    if (id && id !== lastPaidId.current) {
-      toast.success("Pagamento confirmado!", {
-        description: "Sua aula ao vivo está marcada.",
+    if (!pendingBooking) return;
+    const bookingId = pendingBooking.id;
+    void supabase
+      .rpc("confirm_free_class_booking", { _booking_id: bookingId })
+      .then(({ data, error }) => {
+        if (!error && data) void refreshBookings();
       });
-      setQrState({ status: "idle" });
-      setPixData(null);
-    }
-    lastPaidId.current = id;
-  }, [bookings, paidBooking]);
+  }, [pendingBooking?.id, refreshBookings]);
 
   // On mount, check if user already saved store data
   useEffect(() => {
@@ -721,47 +676,10 @@ function AulasPage() {
     setSelectedDate(dateStr);
   }, []);
 
-  /** Pede a cobrança PIX de uma reserva que JÁ existe no banco.
-   *  O corpo leva só `bookingId`: valor e clientReference saem da linha de
-   *  class_bookings, no servidor. Nada de amount, packName ou referência
-   *  vindos daqui. */
-  const requestPix = useCallback(async (
-    bookingId: string,
-    label: { name: string; amount: number },
-  ) => {
-    setPayingFor(label);
-    setQrState({ status: "loading" });
-    try {
-      const res = await fetch(EVOPAY_CREATE_PIX_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ bookingId }),
-      });
-      const payload = await res.json();
-      if (!payload.ok) throw new Error(payload.error || "Erro ao gerar PIX");
-
-      const success: Extract<PixQrState, { status: "success" }> = {
-        status: "success",
-        qrCodeText: payload.qrCodeText,
-        qrCodeUrl: payload.qrCodeUrl,
-        qrCodeBase64: payload.qrCodeBase64,
-        transactionId: payload.transactionId,
-        clientReference: payload.clientReference,
-      };
-      setPixData(success);
-      setQrState(success);
-    } catch (err) {
-      setQrState({
-        status: "error",
-        message: err instanceof Error ? err.message : "Erro desconhecido ao gerar PIX",
-      });
-    }
-  }, []);
-
-  /** Reserva no banco → cobrança PIX → QR na tela.
-   *  O preço NUNCA sai daqui: create_class_booking lê class_professors, e a
-   *  Edge Function lê a linha criada. O client só manda quem, quando e qual
-   *  bookingId. */
+  /** Reserva no banco e confirma na hora, sem pagamento. create_class_booking
+   *  não mudou (continua gravando 'pending' e validando contra
+   *  class_professors); confirm_free_class_booking, chamada em seguida, é
+   *  quem marca a reserva como aula confirmada. */
   const handleBookSlot = useCallback(async (time: string) => {
     if (!selectedProfessor || !selectedDate) return;
     if (!currentUserId) {
@@ -769,15 +687,8 @@ function AulasPage() {
       return;
     }
 
-    const knownPrice = prices?.get(selectedProfessor.id)?.price;
-    // Enquanto carrega, só mostra o preço se ele já for conhecido. Nunca zero.
-    setPayingFor(
-      knownPrice !== undefined ? { name: selectedProfessor.name, amount: knownPrice } : null,
-    );
-    setQrState({ status: "loading" });
-
+    setIsBooking(true);
     try {
-      // 1. Reserva pendente. A RPC valida o preço e monta o client_reference.
       const { data, error } = await supabase.rpc("create_class_booking", {
         _professor_id: selectedProfessor.id,
         _date: selectedDate,
@@ -789,54 +700,26 @@ function AulasPage() {
       const created = (Array.isArray(data) ? data[0] : data) as { id?: string } | null;
       if (!created?.id) throw new Error("Não foi possível criar o agendamento.");
 
-      // 2. O valor mostrado é o que o banco gravou, não o que a tela supunha.
-      const { data: row } = await supabase
-        .from("class_bookings")
-        .select("amount")
-        .eq("id", created.id)
-        .maybeSingle();
-      const charged = Number(row?.amount);
-      const amountToShow = Number.isFinite(charged) && charged > 0 ? charged : knownPrice;
+      const { error: confirmError } = await supabase.rpc("confirm_free_class_booking", {
+        _booking_id: created.id,
+      });
+      if (confirmError) throw new Error(confirmError.message);
 
-      // Sem valor confiável não dá para abrir a tela de pagamento: o modal
-      // mostraria R$ 0,00, que é pior do que não mostrar nada. A reserva fica
-      // pendente e o usuário pode tentar de novo.
-      if (amountToShow === undefined) {
-        throw new Error("Não foi possível confirmar o valor da aula. Tente novamente.");
-      }
-      // 3. PIX para a reserva recém-criada.
-      await requestPix(created.id, { name: selectedProfessor.name, amount: amountToShow });
+      toast.success("Aula marcada!", {
+        description: "Sua aula ao vivo está confirmada. Nos vemos lá!",
+      });
       setSelectedProfessor(null);
       setSelectedDate(null);
     } catch (err) {
-      setQrState({
-        status: "error",
-        message: err instanceof Error ? err.message : "Erro desconhecido ao gerar PIX",
-      });
+      toast.error(err instanceof Error ? err.message : "Erro ao agendar a aula.");
     } finally {
-      // Roda mesmo em erro: se a reserva chegou a ser criada, ela existe no
-      // banco e precisa aparecer como pendente — senão o usuário tenta de novo
-      // e esbarra no limite de 30 min sem entender por quê.
+      // Roda mesmo em erro: se a reserva chegou a ser criada mas a confirmação
+      // falhou, ela existe no banco como 'pending' e o efeito de autocura
+      // acima tenta confirmá-la sozinho assim que este refresh trouxer a linha.
+      setIsBooking(false);
       void refreshBookings();
     }
-  }, [selectedProfessor, selectedDate, currentUserId, prices, refreshBookings, requestPix]);
-
-  /** Reabre o QR já gerado nesta sessão. Não chama a EvoPay de novo. */
-  const handleReopenPix = useCallback(() => {
-    if (pixData) setQrState(pixData);
-  }, [pixData]);
-
-  /** Gera o PIX de uma reserva pendente que ficou sem QR — por exemplo quando
-   *  a primeira tentativa falhou, ou quando a página foi recarregada e o QR
-   *  da sessão anterior se perdeu. */
-  const handleGeneratePixForPending = useCallback(() => {
-    if (!pendingBooking) return;
-    const prof = PROFESSORS.find((p) => p.id === pendingBooking.professor_id);
-    void requestPix(pendingBooking.id, {
-      name: prof?.name ?? pendingBooking.professor_id,
-      amount: Number(pendingBooking.amount),
-    });
-  }, [pendingBooking, requestPix]);
+  }, [selectedProfessor, selectedDate, currentUserId, refreshBookings]);
 
   /** Só dispensa o registro antigo do navegador. Não existe cancelamento de
    *  reserva paga: isso precisaria de backend, que não existe. */
@@ -943,7 +826,7 @@ function AulasPage() {
           </div>
 
           {paidBooking ? (
-            /* ═══ AULA MARCADA — pagamento confirmado pelo webhook ═══ */
+            /* ═══ AULA MARCADA — confirmada na hora, sem pagamento ═══ */
             (() => {
               const prof = PROFESSORS.find((p) => p.id === paidBooking.professor_id);
               return (
@@ -957,7 +840,7 @@ function AulasPage() {
                         Aula marcada!
                       </p>
                       <p className="text-xs text-emerald-600/70 dark:text-emerald-400/60">
-                        Pagamento confirmado
+                        Sua sessão está confirmada
                       </p>
                     </div>
                   </div>
@@ -980,7 +863,7 @@ function AulasPage() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t border-emerald-200/50 dark:border-emerald-500/10">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-emerald-200/50 dark:border-emerald-500/10">
                       <div className="flex items-center gap-1.5">
                         <Calendar className="h-3.5 w-3.5 shrink-0 text-[var(--muted)]" />
                         <span className="text-xs text-[var(--text)]">
@@ -993,70 +876,11 @@ function AulasPage() {
                           {paidBooking.scheduled_time}
                         </span>
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs text-[var(--muted)]">Valor pago:</span>
-                        <span className="text-xs font-semibold text-[var(--text)]">
-                          {brl(Number(paidBooking.amount))}
-                        </span>
-                      </div>
                     </div>
                   </div>
 
-                  {/* Instrução obrigatória — não traduzir, não inventar link nem número */}
                   <p className="mt-3 rounded-xl border border-emerald-200 dark:border-emerald-500/15 bg-[var(--surface)]/70 dark:bg-white/[0.03] px-3 py-2.5 text-xs font-medium leading-relaxed text-[var(--text)]">
-                    Aula marcada! Envie o comprovante para o seu professor no WhatsApp.
-                  </p>
-                </div>
-              );
-            })()
-          ) : pendingBooking ? (
-            /* ═══ PAGAMENTO PENDENTE — a aula ainda NÃO está marcada ═══ */
-            (() => {
-              const prof = PROFESSORS.find((p) => p.id === pendingBooking.professor_id);
-              return (
-                <div className="mt-5 rounded-2xl border-2 border-[var(--accent)]/40 bg-[var(--accent-soft)] p-4 sm:p-5">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[var(--accent)]">
-                      <Clock className="h-5 w-5 text-white" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-base font-bold text-[var(--text)]">
-                        Aguardando pagamento
-                      </p>
-                      <p className="text-xs text-[var(--muted)]">
-                        Sua aula será marcada assim que o PIX for confirmado
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3 sm:p-4">
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-[var(--text)]">
-                      <span className="font-semibold">{prof?.name ?? pendingBooking.professor_id}</span>
-                      <span className="flex items-center gap-1.5">
-                        <Calendar className="h-3.5 w-3.5 shrink-0 text-[var(--muted)]" />
-                        {formatDateLong(new Date(pendingBooking.scheduled_date + "T12:00:00"))}
-                      </span>
-                      <span className="flex items-center gap-1.5">
-                        <Clock className="h-3.5 w-3.5 shrink-0 text-[var(--muted)]" />
-                        {pendingBooking.scheduled_time}
-                      </span>
-                      <span className="font-semibold text-[var(--accent)]">
-                        {brl(Number(pendingBooking.amount))}
-                      </span>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={pixData ? handleReopenPix : handleGeneratePixForPending}
-                    disabled={qrState.status === "loading"}
-                    className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--accent)] px-4 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60 sm:w-auto"
-                  >
-                    <QrCode className="h-4 w-4" />
-                    {pixData ? "Ver código PIX" : "Gerar código PIX"}
-                  </button>
-
-                  <p className="mt-3 text-[11px] leading-relaxed text-[var(--muted)]">
-                    Esta tela se atualiza sozinha quando o pagamento for confirmado.
+                    Sua aula está marcada! Não é necessário nenhum pagamento — nos vemos no dia e horário combinados.
                   </p>
                 </div>
               );
@@ -1093,9 +917,9 @@ function AulasPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {PROFESSORS.map((prof) => {
                     const isSelected = selectedProfessor?.id === prof.id;
-                    // Preço real de class_professors. `undefined` = não deu para
-                    // carregar; o card sai sem preço em vez de com um errado.
-                    const info = prices?.get(prof.id);
+                    // `undefined` (fetch ainda não voltou, ou falhou) não bloqueia —
+                    // só desativa quando o banco confirma active: false.
+                    const info = availability?.get(prof.id);
                     const unavailable = info ? !info.active : false;
                     return (
                       <button
@@ -1117,14 +941,7 @@ function AulasPage() {
                           {prof.initial}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <div className="flex items-baseline justify-between gap-2">
-                            <p className="truncate text-sm font-semibold text-[var(--text)]">{prof.name}</p>
-                            {info && !unavailable && (
-                              <span className="shrink-0 text-sm font-bold text-[var(--accent)]">
-                                {brl(info.price)}
-                              </span>
-                            )}
-                          </div>
+                          <p className="truncate text-sm font-semibold text-[var(--text)]">{prof.name}</p>
                           <p className="text-[11px] text-[var(--muted)] line-clamp-2">{prof.bio}</p>
                           {unavailable && (
                             <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">
@@ -1136,11 +953,6 @@ function AulasPage() {
                     );
                   })}
                 </div>
-                {prices !== null && prices.size === 0 && (
-                  <p className="mt-2 text-[11px] text-[var(--muted)]">
-                    Não foi possível carregar os valores agora. O preço aparece na hora de pagar.
-                  </p>
-                )}
               </div>
 
               {/* Step 2 — Date Picker */}
@@ -1194,11 +1006,11 @@ function AulasPage() {
                 const selDate = new Date(selectedDate + "T12:00:00");
                 const isBeforeEarliest = selDate < earliestDate;
                 // For dates exactly at earliest or later, all slots available
-                const isBusy = qrState.status === "loading";
+                const isBusy = isBooking;
                 return (
                   <div className="animate-in fade-in slide-in-from-top-2 duration-200">
                     <p className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wider mb-3">
-                      3. Escolha o horário e pague
+                      3. Escolha o horário
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       {TIME_SLOTS.map((slot) => {
@@ -1232,8 +1044,7 @@ function AulasPage() {
                       })}
                     </div>
                     <p className="mt-3 text-[11px] leading-relaxed text-[var(--muted)]">
-                      Ao escolher o horário, geramos um PIX. A aula só é marcada depois que o
-                      pagamento é confirmado.
+                      Ao escolher o horário, sua aula é marcada na hora — sem pagamento.
                     </p>
                   </div>
                 );
@@ -1563,23 +1374,6 @@ function AulasPage() {
             </div>
           )}
         </div>
-      )}
-
-      {/* ═══ PIX da aula ao vivo — mesmo modal do Impulsionar ═══ */}
-      {qrState.status !== "idle" && (
-        <PixQrModal
-          qrState={qrState}
-          item={payingFor}
-          itemLabel="Aula com"
-          footerNote={
-            <>
-              Assim que o pagamento for confirmado, sua aula aparece como{" "}
-              <strong>marcada</strong> nesta página.
-            </>
-          }
-          onClose={() => setQrState({ status: "idle" })}
-          onRetry={() => setQrState({ status: "idle" })}
-        />
       )}
     </DashboardShell>
   );

@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.17"
   }
   graphql_public: {
     Tables: {
@@ -579,6 +579,30 @@ export type Database = {
         }
         Relationships: []
       }
+      user_affiliate_products: {
+        Row: {
+          click_count: number
+          first_clicked_at: string
+          last_clicked_at: string
+          product_n: number
+          user_id: string
+        }
+        Insert: {
+          click_count?: number
+          first_clicked_at?: string
+          last_clicked_at?: string
+          product_n: number
+          user_id: string
+        }
+        Update: {
+          click_count?: number
+          first_clicked_at?: string
+          last_clicked_at?: string
+          product_n?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_marketplace_connections: {
         Row: {
           id: string
@@ -956,6 +980,10 @@ export type Database = {
         Args: { _client_reference: string; _tx_id: string }
         Returns: boolean
       }
+      confirm_free_class_booking: {
+        Args: { _booking_id: string }
+        Returns: boolean
+      }
       create_class_booking: {
         Args: { _date: string; _professor_id: string; _time: string }
         Returns: {
@@ -1010,6 +1038,10 @@ export type Database = {
         Args: { _idempotency_key: string; _record_date: string }
         Returns: Json
       }
+      record_affiliate_click: {
+        Args: { _product_n: number }
+        Returns: undefined
+      }
       record_lightning_click: { Args: { _amount: number }; Returns: number }
       reject_marketplace_connection: {
         Args: { _marketplace: string; _reason?: string; _user_id: string }
@@ -1021,6 +1053,10 @@ export type Database = {
         Returns: number
       }
       release_due_boost_events: { Args: { _user_id?: string }; Returns: number }
+      remove_affiliate_product: {
+        Args: { _product_n: number }
+        Returns: undefined
+      }
       reset_today_sales: { Args: never; Returns: number }
       revoke_presentation_admin: {
         Args: { _user_id: string }
