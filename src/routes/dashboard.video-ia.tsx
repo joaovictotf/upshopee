@@ -17,9 +17,9 @@ import {
 import { products as mockProducts } from "../lib/mock/products";
 import type { AffiliateProduct } from "../lib/mock/affiliate-products";
 import { fetchMyAffiliateRows, rowsToAffiliateProducts } from "../lib/my-affiliate-products";
+import { generateVideoPrompt } from "../lib/video-prompt-engine";
 import Step7GeminiChat from "../components/Step7GeminiChat";
 import AdminStep7Video from "../components/AdminStep7Video";
-import { VideoIaClassGate } from "../components/VideoIaClassGate";
 
 /* ───────────────────────────────────────────────────────────────
    Types
@@ -1116,6 +1116,25 @@ function VideoIaPage() {
     });
   }, []);
 
+  /* O prompt final NÃO vem mais da IA. Ele é montado offline por
+     generateVideoPrompt — de graça, sem chamada de rede e sempre com as regras
+     obrigatórias (vertical, fotorrealista, sem texto, sem música, uma voz só).
+     O RESTO do conteúdo (roteiro, locução, legenda, hashtags) continua vindo
+     da Edge Function: só a origem deste campo mudou.
+
+     recentPromptsRef guarda os últimos prompts para passar em `avoid`, e é
+     por isso que clicar em "gerar de novo" nunca devolve o mesmo texto. */
+  const recentPromptsRef = useRef<string[]>([]);
+
+  const withOfflinePrompt = useCallback((content: GeneratedContent): GeneratedContent => {
+    const final_prompt = generateVideoPrompt(
+      { name: productInfo.name, category: productInfo.category },
+      recentPromptsRef.current,
+    );
+    recentPromptsRef.current = [final_prompt, ...recentPromptsRef.current].slice(0, 8);
+    return { ...content, final_prompt };
+  }, [productInfo.name, productInfo.category]);
+
   // ── Step 5: Call Edge Function ──
   const handleGenerate = useCallback(async () => {
     if (!currentUserId) {
@@ -1147,8 +1166,9 @@ function VideoIaPage() {
         });
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.error || `Erro ${res.status} ao gerar conteúdo`);
-      setGeneratedContent(data.content);
-      await saveProjectWithContent(data.content);
+      const content = withOfflinePrompt(data.content);
+      setGeneratedContent(content);
+      await saveProjectWithContent(content);
       setDailyCount((c) => c + 1);
       if (dailyCount + 1 >= DAILY_LIMIT) setDailyLimitReached(true);
       toast.success("Conteúdo gerado com sucesso!");
@@ -1159,7 +1179,7 @@ function VideoIaPage() {
       clearTimeout(timeoutId); clearInterval(stepInterval);
       setGenStep(GENERATION_STEPS.length - 1); setGenerating(false);
     }
-  }, [currentUserId, productInfo, styleConfig, dailyLimitReached, dailyCount, isAdmin]);
+  }, [currentUserId, productInfo, styleConfig, dailyLimitReached, dailyCount, isAdmin, withOfflinePrompt]);
 
   const handleRegenerate = useCallback(async (variant?: string) => {
     if (!isAdmin && dailyLimitReached) {
@@ -1186,8 +1206,9 @@ function VideoIaPage() {
         });
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.error || "Erro ao gerar");
-      setGeneratedContent(data.content);
-      await saveProjectWithContent(data.content);
+      const content = withOfflinePrompt(data.content);
+      setGeneratedContent(content);
+      await saveProjectWithContent(content);
       setDailyCount((c) => c + 1);
       if (dailyCount + 1 >= DAILY_LIMIT) setDailyLimitReached(true);
       toast.success("Nova versão gerada!");
@@ -1197,7 +1218,7 @@ function VideoIaPage() {
       clearTimeout(timeoutId); clearInterval(stepInterval);
       setGenStep(GENERATION_STEPS.length - 1); setGenerating(false);
     }
-  }, [currentUserId, productInfo, styleConfig, dailyLimitReached, dailyCount, isAdmin]);
+  }, [currentUserId, productInfo, styleConfig, dailyLimitReached, dailyCount, isAdmin, withOfflinePrompt]);
 
   // ── Save project to database ──
   const saveProjectWithContent = useCallback(async (content?: GeneratedContent) => {
@@ -1324,7 +1345,7 @@ function VideoIaPage() {
             {currentStep === 7 && (isAdmin ? (
               <AdminStep7Video productInfo={productInfo} styleConfig={styleConfig} generatedContent={generatedContent} projectId={projectId} handleBack={handleBack} />
             ) : (
-              <><VideoIaClassGate currentUserId={currentUserId} /><Step7GeminiChat productInfo={productInfo} styleConfig={styleConfig} generatedContent={generatedContent} projectId={projectId} handleBack={handleBack} handleCopyFinalPrompt={handleCopyFinalPrompt} /></>
+              <Step7GeminiChat productInfo={productInfo} styleConfig={styleConfig} generatedContent={generatedContent} projectId={projectId} currentUserId={currentUserId} handleBack={handleBack} handleCopyFinalPrompt={handleCopyFinalPrompt} />
             ))}
           </div>
 

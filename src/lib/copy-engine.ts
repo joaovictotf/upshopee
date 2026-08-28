@@ -34,7 +34,7 @@ export type CopyInput = {
 
 // ─── Contexto por palavra-chave ──────────────────────────────────────────────
 
-type ProductContext = {
+export type ProductContext = {
   category: string;
   benefit: string;
   audience: string;
@@ -118,7 +118,7 @@ const DEFAULT_CONTEXT: ProductContext = {
   audience: "você",
 };
 
-const deburr = (s: string) =>
+export const deburr = (s: string) =>
   s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
 
 /**
@@ -126,7 +126,7 @@ const deburr = (s: string) =>
  * primeira da lista. Assim "camisa da seleção brasileira" cai em Futebol (via
  * "seleção brasileira") e não em Moda (via "camisa"), sem depender da ordem do array.
  */
-function inferProductContext(text: string): ProductContext {
+export function inferProductContext(text: string): ProductContext {
   const hay = deburr(text);
   let best = DEFAULT_CONTEXT;
   let bestLen = 0;

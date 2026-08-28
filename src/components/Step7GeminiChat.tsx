@@ -8,6 +8,7 @@ import {
   Send, Star, ChevronLeft, Loader2, User, Phone,
   CreditCard, Mail, Clock, ArrowRight, AtSign,
 } from "lucide-react";
+import { VideoIaClassGate } from "./VideoIaClassGate";
 
 // ── Types (mirrored from dashboard.video-ia.tsx) ────────────
 
@@ -35,6 +36,7 @@ interface Step7GeminiChatProps {
   styleConfig: StyleConfig;
   generatedContent: GeneratedContent;
   projectId: string | null;
+  currentUserId: string | null;
   handleBack: () => void;
   handleCopyFinalPrompt: () => void;
 }
@@ -44,6 +46,7 @@ interface Step7GeminiChatProps {
 function arePropsEqual(prev: Step7GeminiChatProps, next: Step7GeminiChatProps): boolean {
   return (
     prev.projectId === next.projectId &&
+    prev.currentUserId === next.currentUserId &&
     prev.handleBack === next.handleBack &&
     prev.handleCopyFinalPrompt === next.handleCopyFinalPrompt &&
     JSON.stringify(prev.productInfo) === JSON.stringify(next.productInfo) &&
@@ -503,9 +506,18 @@ function Step7GeminiChat({
   styleConfig,
   generatedContent,
   projectId,
+  currentUserId,
   handleBack,
   handleCopyFinalPrompt,
 }: Step7GeminiChatProps) {
+  /* O aviso da aula só aparece DEPOIS de o usuário copiar o prompt: antes
+     disso ele atropelaria a tarefa que a pessoa veio fazer aqui. */
+  const [promptCopied, setPromptCopied] = useState(false);
+
+  const copyPromptAndReveal = useCallback(() => {
+    handleCopyFinalPrompt();
+    setPromptCopied(true);
+  }, [handleCopyFinalPrompt]);
   // ── Registration gate state ──
   const [unlocked, setUnlocked] = useState<boolean>(() => {
     if (!getRegistered()) return false;
@@ -771,9 +783,28 @@ function Step7GeminiChat({
         <p className="pb-2 text-[10px] text-muted-foreground text-center">Enter para enviar · Shift+Enter para nova linha</p>
       </div>
 
+      {/* Prompt final — o texto que vai ser colado na IA de vídeo. Fica à
+          vista para o usuário conferir antes de copiar. */}
+      <div className="flex-shrink-0 mb-3 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-3.5 w-3.5 shrink-0 text-[var(--accent)]" />
+          <h4 className="text-xs font-bold text-[var(--text)]">Prompt do seu vídeo</h4>
+        </div>
+        <pre className="mt-2.5 max-h-40 overflow-y-auto whitespace-pre-wrap break-words rounded-xl bg-[var(--surface-2)] p-3 text-[11px] leading-relaxed text-[var(--muted)]">
+          {generatedContent.final_prompt}
+        </pre>
+      </div>
+
+      {/* Aviso da aula — revelado só depois da cópia. */}
+      {promptCopied && (
+        <div className="flex-shrink-0">
+          <VideoIaClassGate currentUserId={currentUserId} />
+        </div>
+      )}
+
       {/* Action buttons */}
       <div className="flex-shrink-0 flex flex-col gap-2 sm:flex-row mb-3 pb-6 sm:pb-0">
-        <Button onClick={handleCopyFinalPrompt} variant="outline"
+        <Button onClick={copyPromptAndReveal} variant="outline"
           className="h-12 flex-1 rounded-xl border-gray-200 bg-white text-sm font-medium text-gray-600 shadow-sm hover:border-[#EE4D2D]/30 hover:text-[#EE4D2D] transition-all duration-300">
           <Copy className="mr-2 h-4 w-4" /> Copiar prompt
         </Button>

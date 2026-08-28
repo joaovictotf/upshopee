@@ -4,6 +4,9 @@
    Bloco que explica que a geração de vídeo por IA é liberada DURANTE a aula
    ao vivo, e leva o usuário até o agendamento.
 
+   Renderizado por Step7GeminiChat, e SÓ depois de o usuário copiar o prompt —
+   antes disso ele atropelaria a tarefa que a pessoa veio fazer na etapa 7.
+
    Só aparece para usuário comum. O admin cai em AdminStep7Video, que não
    passa por aqui e não foi tocado.
 
@@ -61,11 +64,11 @@ export function VideoIaClassGate({ currentUserId }: { currentUserId: string | nu
           </div>
           <div className="min-w-0">
             <h3 className="text-sm font-bold leading-snug text-[var(--text)] sm:text-base">
-              A geração de vídeo com IA é liberada durante a aula ao vivo
+              Seu prompt está pronto. Falta liberar o Vídeo IA
             </h3>
             <p className="mt-1 text-xs leading-relaxed text-[var(--muted)] sm:text-sm">
-              Seu roteiro já está pronto e continua salvo aqui. O acesso à IA que gera o vídeo é
-              liberado com o professor, ao vivo, durante a sua aula.
+              Guarde o prompt que você acabou de copiar. A liberação do seu Vídeo IA é feita
+              pelo professor durante a aula ao vivo, aqui no Uptube — é só pedir na hora.
             </p>
           </div>
         </div>
@@ -95,15 +98,26 @@ export function VideoIaClassGate({ currentUserId }: { currentUserId: string | nu
               </span>
             </div>
             <p className="mt-2.5 text-xs leading-relaxed text-[var(--muted)]">
-              É nessa aula que seu acesso à geração de vídeo é liberado. Leve o roteiro que você
-              acabou de montar.
+              Seu Vídeo IA será liberado nessa aula. Leve o prompt que você acabou de copiar e
+              peça a ativação ao professor.
             </p>
+            {/* Leva para a mesma tela, mas sem pedir um novo agendamento a
+                quem já tem aula marcada. */}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={goToBooking}
+              className="mt-3 h-11 w-full rounded-xl border-[var(--border)] bg-[var(--surface)] text-sm font-semibold text-[var(--text)] transition-all hover:border-[var(--accent)]/40 hover:text-[var(--accent)] active:scale-[0.98] sm:w-auto"
+            >
+              <CalendarCheck className="mr-2 h-4 w-4" />
+              Ver minha aula
+            </Button>
           </div>
         ) : (
           <div>
             <p className="text-xs leading-relaxed text-[var(--text)] sm:text-sm">
-              Você ainda não tem aula marcada. Escolha um professor, um dia e um horário — o
-              agendamento é gratuito.
+              Marque sua aula aqui no Uptube e, durante ela, peça ao professor a ativação do seu
+              Vídeo IA. Escolha um professor, um dia e um horário — a aula é gratuita.
             </p>
             <Button
               type="button"
