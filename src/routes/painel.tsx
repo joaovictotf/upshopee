@@ -972,7 +972,7 @@ function PainelGate() {
       navigate({ to: "/login" });
       return;
     }
-    if (!isAdmin) navigate({ to: "/dashboard" });
+    if (!isAdmin) navigate({ to: "/dashboard/produtos" });
   }, [authReady, user, isAdmin, navigate]);
 
   if (!authReady) {

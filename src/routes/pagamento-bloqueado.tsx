@@ -35,7 +35,7 @@ function PagamentoBloqueado() {
     if (user && (isAdmin || (accountStatus && accountStatus !== "blocked_payment"))) {
       try { sessionStorage.removeItem("shopesync.blocked_payment"); } catch {}
       if (accountStatus === "approved" || isAdmin) {
-        navigate({ to: "/dashboard" });
+        navigate({ to: "/dashboard/produtos" });
       }
     }
   }, [user, accountStatus, isAdmin, navigate]);

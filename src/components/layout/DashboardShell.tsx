@@ -63,7 +63,7 @@ export function DashboardShell({ children, title, subtitle, actions, onLightning
         <header className="sticky top-0 z-20 flex h-16 items-center justify-between gap-2 border-b border-[var(--border)] bg-[var(--bg)]/80 backdrop-blur px-3 md:px-8">
           <div className="flex min-w-0 items-center gap-2">
             {/* Logo — visible on mobile where it was previously in the sidebar */}
-            <Link to="/dashboard" className="flex shrink-0 items-center md:hidden">
+            <Link to="/dashboard/produtos" className="flex shrink-0 items-center md:hidden">
               <img
                 src="/brand/logo.png"
                 alt="UpShopee"

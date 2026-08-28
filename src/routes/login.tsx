@@ -196,7 +196,7 @@ function LoginPage() {
         navigate({ to: "/redefinir-senha" });
         return;
       }
-      navigate({ to: "/dashboard" });
+      navigate({ to: "/dashboard/produtos" });
     } finally {
       setSubmitting(false);
     }

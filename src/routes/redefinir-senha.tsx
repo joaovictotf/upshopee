@@ -27,7 +27,7 @@ function PasswordResetPage() {
 
   // If user doesn't need password reset, go to dashboard
   if (authReady && user && !passwordResetRequired) {
-    navigate({ to: "/dashboard", replace: true });
+    navigate({ to: "/dashboard/produtos", replace: true });
     return null;
   }
 
@@ -51,7 +51,7 @@ function PasswordResetPage() {
       }
       await clearPasswordResetRequired();
       toast.success("Senha atualizada com sucesso!");
-      navigate({ to: "/dashboard", replace: true });
+      navigate({ to: "/dashboard/produtos", replace: true });
     } catch {
       toast.error("Erro ao atualizar a senha. Tente novamente.");
       setLoading(false);

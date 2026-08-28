@@ -132,7 +132,7 @@ function ValidarCadastros() {
   const [bulkApproveAllRunning, setBulkApproveAllRunning] = useState(false);
 
   useEffect(() => {
-    if (!isAdmin) navigate({ to: "/dashboard" });
+    if (!isAdmin) navigate({ to: "/dashboard/produtos" });
   }, [isAdmin, navigate]);
 
   const [filter, setFilter] = useState<FilterKey>("all");

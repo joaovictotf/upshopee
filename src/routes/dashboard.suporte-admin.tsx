@@ -127,7 +127,7 @@ function SuporteAdminPage() {
 
   /* ── Admin gate ── */
   useEffect(() => {
-    if (!isAdmin) navigate({ to: "/dashboard" });
+    if (!isAdmin) navigate({ to: "/dashboard/produtos" });
   }, [isAdmin, navigate]);
 
   /* ── State ── */

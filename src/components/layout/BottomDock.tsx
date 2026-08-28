@@ -4,7 +4,6 @@ import { useTheme } from "../../hooks/use-theme";
 import { useApp } from "../../lib/state";
 import type { LucideIcon } from "lucide-react";
 import {
-  LayoutDashboard,
   ShoppingBag,
   MessageCircle,
   Clapperboard,
@@ -31,8 +30,10 @@ type DockItem = {
 
 /* ── Dock Items Config ── */
 
+/* A aba "Dashboard" (/dashboard) fica dormente: a rota continua existindo e
+   renderiza por URL direta, mas não aparece na navegação. Para reativar, basta
+   devolver a entrada abaixo (icon LayoutDashboard, exact: true). */
 const DOCK_ITEMS: DockItem[] = [
-  { to: "/dashboard", tooltip: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/dashboard/produtos", tooltip: "Produtos", icon: ShoppingBag },
   { to: "/dashboard/grupos", tooltip: "Grupos de Divulgação", icon: MessageCircle },
   { to: "/dashboard/video-ia", tooltip: "Vídeo IA", icon: Clapperboard },
@@ -163,16 +164,16 @@ export function BottomDock() {
               key={to}
               to={to}
               aria-label={tooltip}
-              className="relative flex flex-col items-center gap-0.5 py-1"
+              className="relative flex min-w-0 flex-1 flex-col items-center gap-0.5 py-1"
             >
               <span
-                className={`flex h-[44px] w-[44px] items-center justify-center transition-all duration-180 ${
+                className={`flex h-[44px] w-full max-w-[44px] items-center justify-center transition-all duration-180 ${
                   active ? "-translate-y-0.5" : "text-[var(--muted)]"
                 }`}
               >
                 <Icon
                   strokeWidth={2}
-                  className={`h-[22px] w-[22px] transition-all duration-180 ${
+                  className={`h-[22px] w-[22px] shrink-0 transition-all duration-180 ${
                     active ? "text-[var(--accent)]" : ""
                   }`}
                 />
@@ -188,9 +189,9 @@ export function BottomDock() {
         <button
           onClick={toggleTheme}
           aria-label={theme === "light" ? "Modo noturno" : "Modo claro"}
-          className="relative flex flex-col items-center gap-0.5 py-1 text-[var(--muted)]"
+          className="relative flex min-w-0 flex-1 flex-col items-center gap-0.5 py-1 text-[var(--muted)]"
         >
-          <span className="flex h-[44px] w-[44px] items-center justify-center">
+          <span className="flex h-[44px] w-full max-w-[44px] items-center justify-center">
             {theme === "light" ? <Moon strokeWidth={2} size={22} /> : <Sun strokeWidth={2} size={22} />}
           </span>
           <span className="h-1 w-1 rounded-full bg-transparent" />
