@@ -12,7 +12,7 @@ import {
   Search, Upload, X, ChevronLeft, ArrowRight, Check, Loader2, Star,
   Camera, Package, Image, Info, Sparkles, Copy, Send,
   Wand2, RotateCw, Shirt, Zap, Lightbulb, ShoppingBag, Play, Trophy,
-  Gem, Scissors, Eye, Subtitles, Volume2, Music, Video,
+  Gem, Scissors, Eye, Volume2, Video,
 } from "lucide-react";
 import { products as mockProducts } from "../lib/mock/products";
 import type { AffiliateProduct } from "../lib/mock/affiliate-products";
@@ -48,6 +48,30 @@ type GeneratedContent = {
 };
 
 type ProjectMode = "existing" | "manual";
+
+/**
+ * Descrição mínima para produto que não tem uma.
+ *
+ * O catálogo de afiliado (mock/affiliate-products.ts) não tem campo de
+ * descrição — só o catálogo legado (mock/products.ts) tem. Sem isto, escolher
+ * qualquer um dos 300 produtos do catálogo mandava descrição vazia e a Edge
+ * Function recusava a geração ("product.name and product.description are
+ * required"). Ela está CERTA em recusar: não se escreve roteiro a partir do
+ * nada. Quem tem que resolver é o cliente, aqui.
+ *
+ * Usa só o que o catálogo realmente sabe: nome e categoria. Nada de material,
+ * medida, especificação ou promessa — este texto vira roteiro que uma pessoa
+ * de verdade vai publicar, e não existe fonte para inventar nada disso. O
+ * prompt da Edge Function já proíbe o modelo de fabricar características.
+ */
+function deriveDescription(name: string, category: string): string {
+  const cleanName = name.trim().replace(/[.\s]+$/, "");
+  if (!cleanName) return "";
+  const cleanCategory = category.trim();
+  return cleanCategory
+    ? `${cleanName}. Produto da categoria ${cleanCategory}.`
+    : `${cleanName}.`;
+}
 
 /* ───────────────────────────────────────────────────────────────
    ETAPA 1 — as duas origens de produto pronto
@@ -189,8 +213,6 @@ const STYLE_OPTIONS = [
   { id: "achadinho", label: "Achadinho da Shopee", icon: ShoppingBag, desc: "Tom de descoberta, 'olha o que eu achei'" },
   { id: "antes-depois", label: "Antes e depois", icon: Scissors, desc: "Comparação dramática de resultado" },
   { id: "narracao", label: "Narração", icon: Volume2, desc: "Foco na locução explicativa" },
-  { id: "texto-tela", label: "Texto na tela", icon: Subtitles, desc: "Sem voz, apenas textos e música" },
-  { id: "sem-fala", label: "Vídeo sem fala", icon: Eye, desc: "Visual puro, só imagens e música" },
   { id: "promocao", label: "Vídeo para promoção", icon: Trophy, desc: "Foco em desconto e oferta limitada" },
   { id: "comparacao-precos", label: "Comparação de preços", icon: Gem, desc: "Mostra a vantagem de preço e custo-benefício" },
   { id: "review-produto", label: "Review do produto", icon: Eye, desc: "Avaliação completa com teste, prós e contras" },
@@ -686,30 +708,17 @@ const Step4Style = memo(function Step4Style({
         </div>
       </div>
 
-      {/* Toggles — custom sliding pills */}
-      <div className="flex flex-wrap gap-3 sm:gap-6">
-        <div className="flex items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-2.5 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0">
-          <Subtitles className="h-4 w-4 shrink-0 text-[var(--muted)]" />
-          <span className="flex-1 text-sm font-medium text-[var(--text)] sm:flex-none">Textos na tela</span>
-          <button type="button" onClick={() => setStyleConfig((s) => ({ ...s, hasText: !s.hasText }))}
-            className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors duration-300 ${
-              styleConfig.hasText ? "bg-[var(--accent)]" : "bg-[var(--muted-bg)]"
-            }`}>
-            <span className={`inline-block h-5 w-5 rounded-full bg-[var(--surface)] shadow-sm transition-transform duration-300 ${
-              styleConfig.hasText ? "translate-x-6" : "translate-x-1"}`} />
-          </button>
-        </div>
-        <div className="flex items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-2.5 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0">
-          <Music className="h-4 w-4 shrink-0 text-[var(--muted)]" />
-          <span className="flex-1 text-sm font-medium text-[var(--text)] sm:flex-none">Música de fundo</span>
-          <button type="button" onClick={() => setStyleConfig((s) => ({ ...s, hasMusic: !s.hasMusic }))}
-            className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors duration-300 ${
-              styleConfig.hasMusic ? "bg-[var(--accent)]" : "bg-[var(--muted-bg)]"
-            }`}>
-            <span className={`inline-block h-5 w-5 rounded-full bg-[var(--surface)] shadow-sm transition-transform duration-300 ${
-              styleConfig.hasMusic ? "translate-x-6" : "translate-x-1"}`} />
-          </button>
-        </div>
+      {/* Antes havia dois toggles aqui, "Textos na tela" e "Música de fundo".
+          Saíram: ligá-los produzia vídeo que quebra a regra do produto. O que
+          fica é o aviso do que o vídeo sempre vai ser. */}
+      <div className="flex items-start gap-2.5 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-4 py-3">
+        <Info className="mt-0.5 h-4 w-4 shrink-0 text-[var(--muted)]" />
+        <p className="text-xs leading-relaxed text-[var(--muted)]">
+          Todo vídeo sai <span className="font-semibold text-[var(--text)]">sem texto na tela</span>,{" "}
+          <span className="font-semibold text-[var(--text)]">sem música de fundo</span> e com{" "}
+          <span className="font-semibold text-[var(--text)]">uma voz humana só</span>. É o formato
+          que rende no story e no reels.
+        </p>
       </div>
 
       {/* Daily limit warning (hidden for admins) */}
@@ -758,7 +767,7 @@ const Step5Generation = memo(function Step5Generation({
           <SummaryRow label="Estilo" value={STYLE_OPTIONS.find((s) => s.id === styleConfig.style)?.label || ""} />
           <SummaryRow label="Voz" value={VOICE_OPTIONS.find((v) => v.value === styleConfig.voiceType)?.label || ""} />
           <SummaryRow label="Tom" value={TONE_OPTIONS.find((t) => t.value === styleConfig.tone)?.label || ""} />
-          <SummaryRow label="Extras" value={[styleConfig.hasText && "Textos na tela", styleConfig.hasMusic && "Música de fundo"].filter(Boolean).join(", ") || "Nenhum"} />
+          <SummaryRow label="Extras" value="Sem texto na tela e sem música" />
         </div>
       </div>
 
@@ -937,7 +946,11 @@ function VideoIaPage() {
   // Step 4
   const [styleConfig, setStyleConfig] = useState<StyleConfig>({
     style: "produto-destaque", duration: "30s", voiceType: "feminina",
-    tone: "entusiasmado", hasText: true, hasMusic: true,
+    // Regra fixa do produto: nunca texto na tela, nunca música de fundo.
+    // Os campos continuam existindo porque a Edge Function e as colunas
+    // has_text/has_music de video_projects os esperam — mas não são mais
+    // configuráveis, e é por isso que os dois toggles saíram da etapa 4.
+    tone: "entusiasmado", hasText: false, hasMusic: false,
   });
 
   // Step 5-6
@@ -978,13 +991,22 @@ function VideoIaPage() {
   useEffect(() => {
     if (currentStep === 3) {
       const source = productMode === "existing" && selectedProduct
-        ? { name: selectedProduct.name, url: selectedProduct.sourceUrl, description: selectedProduct.description }
-        : manualProduct;
+        ? {
+            name: selectedProduct.name,
+            url: selectedProduct.sourceUrl,
+            description: selectedProduct.description,
+            category: selectedProduct.category,
+          }
+        : { ...manualProduct, category: "" };
       setProductInfo((prev) => ({
         ...prev,
         name: prev.name || source.name,
         url: prev.url || source.url,
-        description: prev.description || source.description,
+        category: prev.category || source.category,
+        // Ordem importa: o que o usuário digitou vence; a descrição do
+        // catálogo vem depois; a derivada é o último recurso.
+        description:
+          prev.description || source.description || deriveDescription(source.name, source.category),
       }));
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1126,6 +1148,20 @@ function VideoIaPage() {
      por isso que clicar em "gerar de novo" nunca devolve o mesmo texto. */
   const recentPromptsRef = useRef<string[]>([]);
 
+  /* Corpo `product` das duas chamadas da Edge Function, num lugar só.
+     A descrição digitada pela pessoa na etapa 3 sempre vence; a derivada só
+     entra quando o campo está vazio. */
+  const buildProductPayload = useCallback(() => ({
+    name: productInfo.name,
+    description:
+      productInfo.description.trim() || deriveDescription(productInfo.name, productInfo.category),
+    benefits: productInfo.benefits,
+    targetAudience: productInfo.targetAudience || undefined,
+    differentiators: productInfo.differentiators || undefined,
+    problemSolved: productInfo.problemSolved || undefined,
+    url: productInfo.url || undefined,
+  }), [productInfo]);
+
   const withOfflinePrompt = useCallback((content: GeneratedContent): GeneratedContent => {
     const final_prompt = generateVideoPrompt(
       { name: productInfo.name, category: productInfo.category },
@@ -1159,7 +1195,7 @@ function VideoIaPage() {
         "https://ndawyrqzqhzbyjdmkdge.supabase.co/functions/v1/generate-video-script",
         { method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            product: { name: productInfo.name, description: productInfo.description, benefits: productInfo.benefits, targetAudience: productInfo.targetAudience || undefined, differentiators: productInfo.differentiators || undefined, problemSolved: productInfo.problemSolved || undefined, url: productInfo.url || undefined },
+            product: buildProductPayload(),
             style: styleConfig,
           }),
           signal: controller.signal,
@@ -1179,7 +1215,7 @@ function VideoIaPage() {
       clearTimeout(timeoutId); clearInterval(stepInterval);
       setGenStep(GENERATION_STEPS.length - 1); setGenerating(false);
     }
-  }, [currentUserId, productInfo, styleConfig, dailyLimitReached, dailyCount, isAdmin, withOfflinePrompt]);
+  }, [currentUserId, productInfo, styleConfig, dailyLimitReached, dailyCount, isAdmin, withOfflinePrompt, buildProductPayload]);
 
   const handleRegenerate = useCallback(async (variant?: string) => {
     if (!isAdmin && dailyLimitReached) {
@@ -1199,7 +1235,7 @@ function VideoIaPage() {
         "https://ndawyrqzqhzbyjdmkdge.supabase.co/functions/v1/generate-video-script",
         { method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            product: { name: productInfo.name, description: productInfo.description, benefits: productInfo.benefits, targetAudience: productInfo.targetAudience || undefined, differentiators: productInfo.differentiators || undefined, problemSolved: productInfo.problemSolved || undefined, url: productInfo.url || undefined },
+            product: buildProductPayload(),
             style: variantStyle,
           }),
           signal: controller.signal,
@@ -1218,7 +1254,7 @@ function VideoIaPage() {
       clearTimeout(timeoutId); clearInterval(stepInterval);
       setGenStep(GENERATION_STEPS.length - 1); setGenerating(false);
     }
-  }, [currentUserId, productInfo, styleConfig, dailyLimitReached, dailyCount, isAdmin, withOfflinePrompt]);
+  }, [currentUserId, productInfo, styleConfig, dailyLimitReached, dailyCount, isAdmin, withOfflinePrompt, buildProductPayload]);
 
   // ── Save project to database ──
   const saveProjectWithContent = useCallback(async (content?: GeneratedContent) => {
