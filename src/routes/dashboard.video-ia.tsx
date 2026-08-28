@@ -14,7 +14,9 @@ import {
   Wand2, RotateCw, Shirt, Zap, Lightbulb, ShoppingBag, Play, Trophy,
   Gem, Scissors, Eye, Subtitles, Volume2, Music, Video,
 } from "lucide-react";
-import { products as mockProducts, type Product } from "../lib/mock/products";
+import { products as mockProducts } from "../lib/mock/products";
+import type { AffiliateProduct } from "../lib/mock/affiliate-products";
+import { fetchMyAffiliateRows, rowsToAffiliateProducts } from "../lib/my-affiliate-products";
 import Step7GeminiChat from "../components/Step7GeminiChat";
 import AdminStep7Video from "../components/AdminStep7Video";
 import { VideoIaClassGate } from "../components/VideoIaClassGate";
@@ -47,14 +49,90 @@ type GeneratedContent = {
 
 type ProjectMode = "existing" | "manual";
 
+/* ───────────────────────────────────────────────────────────────
+   ETAPA 1 — as duas origens de produto pronto
+   ───────────────────────────────────────────────────────────────
+   A lista junta catálogos de formatos diferentes (mock/products.ts e
+   mock/affiliate-products.ts), então as duas origens são normalizadas para
+   este tipo. São exatamente os campos que a etapa 1 desenha e que a etapa 3
+   recebe pré-preenchidos — nada é inventado só para caber num formato maior. */
+type Step1Group = "legacy" | "affiliate";
+
+type Step1Item = {
+  id: string;
+  name: string;
+  category: string;
+  image: string;
+  sourceUrl: string;
+  description: string;
+  tags: string[];
+  keywords: string[];
+  group: Step1Group;
+};
+
+/* Os três produtos que destravam os vídeos de demonstração da etapa 7.
+   detectVideo(), em AdminStep7Video.tsx, casa por PEDAÇO DO NOME — é de lá
+   que estes fragmentos vêm, e renomear o produto no mock quebra o vídeo.
+   Ficam no topo da lista porque a "Toalha" é o item ~46 de 52 no mock: sem
+   isto o admin só a encontra digitando na busca. */
+const DEMO_VIDEO_NAME_FRAGMENTS = ["álbum", "figurinha", "toalha"];
+
+const isDemoVideoProduct = (name: string) => {
+  const n = name.toLowerCase();
+  return DEMO_VIDEO_NAME_FRAGMENTS.some((fragment) => n.includes(fragment));
+};
+
+/** Catálogo legado na ordem em que a etapa 1 mostra: primeiro os três de
+ *  demonstração, depois os fixados, depois o resto na ordem do arquivo. */
+const LEGACY_ITEMS: Step1Item[] = mockProducts
+  .map((p) => ({
+    id: p.id,
+    name: p.name,
+    category: p.category,
+    image: p.image,
+    sourceUrl: p.sourceUrl,
+    description: p.description,
+    tags: p.tags,
+    keywords: p.keywords,
+    group: "legacy" as const,
+    rank: isDemoVideoProduct(p.name) ? 0 : p.pinned ? 1 : 2,
+  }))
+  .sort((a, b) => a.rank - b.rank)
+  .map(({ rank: _rank, ...item }) => item);
+
+/** Sem busca o legado aparece cortado, como já era antes desta lista ter duas
+ *  origens. A busca varre os 52 inteiros. */
+const LEGACY_PREVIEW_COUNT = 12;
+
+/** Produto afiliado → item da etapa 1. A descrição fica vazia de propósito: o
+ *  catálogo de afiliado não tem texto de descrição, e a etapa 3 já é onde o
+ *  usuário escreve a dele. Melhor campo vazio do que texto inventado. */
+const affiliateToStep1Item = (p: AffiliateProduct): Step1Item => ({
+  id: p.id, // "af-001" — nunca colide com os "p1".."p52" do legado
+  name: p.name,
+  category: p.category,
+  image: p.image,
+  sourceUrl: p.shopeeUrl,
+  description: "",
+  tags: [],
+  keywords: [],
+  group: "affiliate",
+});
+
+const GROUP_LABEL: Record<Step1Group, string> = {
+  legacy: "Produtos da plataforma",
+  affiliate: "Meus produtos afiliados",
+};
+
 // ── Step component props ──
 interface Step1Props {
   productMode: ProjectMode; setProductMode: (m: ProjectMode) => void;
   productSearch: string; setProductSearch: (s: string) => void;
-  selectedProduct: Product | null; setSelectedProduct: (p: Product | null) => void;
+  selectedProduct: Step1Item | null; setSelectedProduct: (p: Step1Item | null) => void;
   manualProduct: { name: string; url: string; description: string };
   setManualProduct: (m: { name: string; url: string; description: string }) => void;
-  filteredProducts: Product[];
+  productGroups: Array<{ group: Step1Group; items: Step1Item[] }>;
+  hasAnyResult: boolean;
   step1Valid: boolean;
 }
 interface Step2Props {
@@ -279,7 +357,7 @@ const StepIndicator = memo(function StepIndicator({
 const Step1SelectProduct = memo(function Step1SelectProduct({
   productMode, setProductMode, productSearch, setProductSearch,
   selectedProduct, setSelectedProduct, manualProduct, setManualProduct,
-  filteredProducts, step1Valid,
+  productGroups, hasAnyResult, step1Valid,
 }: Step1Props) {
   return (
     <div className="vi-step-enter space-y-6" key={`step1-${productMode}`}>
@@ -304,8 +382,21 @@ const Step1SelectProduct = memo(function Step1SelectProduct({
               placeholder="Buscar produto por nome, categoria ou palavra-chave..."
               className="h-12 rounded-xl border-[var(--border)] bg-[var(--surface)] pl-11 pr-4 text-sm text-[var(--text)] transition-colors duration-200 focus:border-[var(--accent)] focus:ring-4 focus:ring-[var(--accent)]/10" />
           </div>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredProducts.map((product) => (
+          {productGroups.map(({ group, items }) => (
+          <div key={group} className="space-y-3">
+            {/* Cabeçalho do grupo: diz de onde o produto veio sem precisar de
+                um selo em cada card. */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+                {GROUP_LABEL[group]}
+              </span>
+              <span className="rounded-full bg-[var(--muted-bg)] px-2 py-0.5 text-[10px] font-medium tabular-nums text-[var(--muted)]">
+                {items.length}
+              </span>
+              <span className="h-px flex-1 bg-[var(--border)]" />
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {items.map((product) => (
               <button key={product.id} type="button" onClick={() => setSelectedProduct(product)}
                 className={`group relative flex items-start gap-3 rounded-2xl border p-3 text-left transition-all duration-300 ${
                   selectedProduct?.id === product.id
@@ -330,8 +421,10 @@ const Step1SelectProduct = memo(function Step1SelectProduct({
                   </div>)}
               </button>
             ))}
+            </div>
           </div>
-          {filteredProducts.length === 0 && (
+          ))}
+          {!hasAnyResult && (
             <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--border)] py-12 text-center">
               <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--muted-bg)]">
                 <Search className="h-6 w-6 text-[var(--muted)]" />
@@ -828,7 +921,7 @@ function VideoIaPage() {
   // Step 1
   const [productMode, setProductMode] = useState<ProjectMode>("existing");
   const [productSearch, setProductSearch] = useState("");
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<Step1Item | null>(null);
   const [manualProduct, setManualProduct] = useState({ name: "", url: "", description: "" });
 
   // Step 2
@@ -897,14 +990,47 @@ function VideoIaPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentStep]);
 
-  // ── Product search ──
-  const filteredProducts = useMemo(() => {
-    if (!productSearch.trim()) return mockProducts.slice(0, 12);
-    const q = productSearch.toLowerCase();
-    return mockProducts.filter((p) =>
-      p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q) ||
-      p.keywords.some((k) => k.toLowerCase().includes(q)));
-  }, [productSearch]);
+  // ── Produtos afiliados do usuário (mesma leitura da aba "Meus produtos") ──
+  // null = ainda carregando; [] = não afiliou nada. Nos dois casos a etapa 1
+  // segue funcionando com o legado + cadastro manual.
+  const [myAffiliates, setMyAffiliates] = useState<Step1Item[] | null>(null);
+
+  useEffect(() => {
+    if (!currentUserId) {
+      setMyAffiliates([]);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      const rows = await fetchMyAffiliateRows(currentUserId);
+      if (cancelled) return;
+      setMyAffiliates(rowsToAffiliateProducts(rows).map(affiliateToStep1Item));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [currentUserId]);
+
+  // ── Product search — varre as duas origens, legado sempre no topo ──
+  const productGroups = useMemo(() => {
+    const q = productSearch.trim().toLowerCase();
+    const matches = (item: Step1Item) =>
+      !q ||
+      item.name.toLowerCase().includes(q) ||
+      item.category.toLowerCase().includes(q) ||
+      item.keywords.some((k) => k.toLowerCase().includes(q));
+
+    const legacy = LEGACY_ITEMS.filter(matches);
+    const groups: Array<{ group: Step1Group; items: Step1Item[] }> = [
+      // Sem busca o legado vem cortado; com busca, inteiro. Os afiliados do
+      // usuário nunca são cortados — são poucos e são o que ele veio buscar.
+      { group: "legacy", items: q ? legacy : legacy.slice(0, LEGACY_PREVIEW_COUNT) },
+      { group: "affiliate", items: (myAffiliates ?? []).filter(matches) },
+    ];
+    return groups.filter((g) => g.items.length > 0);
+  }, [productSearch, myAffiliates]);
+
+  const hasAnyResult = productGroups.length > 0;
 
   // ── Validation ──
   const step1Valid = productMode === "existing" ? !!selectedProduct
@@ -1186,7 +1312,7 @@ function VideoIaPage() {
 
           {/* Step content */}
           <div className="vi-step-enter min-h-[300px]" key={currentStep}>
-            {currentStep === 1 && <Step1SelectProduct productMode={productMode} setProductMode={setProductMode} productSearch={productSearch} setProductSearch={setProductSearch} selectedProduct={selectedProduct} setSelectedProduct={setSelectedProduct} manualProduct={manualProduct} setManualProduct={setManualProduct} filteredProducts={filteredProducts} step1Valid={step1Valid} />}
+            {currentStep === 1 && <Step1SelectProduct productMode={productMode} setProductMode={setProductMode} productSearch={productSearch} setProductSearch={setProductSearch} selectedProduct={selectedProduct} setSelectedProduct={setSelectedProduct} manualProduct={manualProduct} setManualProduct={setManualProduct} productGroups={productGroups} hasAnyResult={hasAnyResult} step1Valid={step1Valid} />}
             {currentStep === 2 && <Step2UploadImages primaryImage={primaryImage} additionalImages={additionalImages} handlePrimaryImageSelect={handlePrimaryImageSelect} handleAdditionalImageSelect={handleAdditionalImageSelect} removePrimaryImage={removePrimaryImage} removeAdditionalImage={removeAdditionalImage} />}
             {currentStep === 3 && <Step3ProductInfo productInfo={productInfo} setProductInfo={setProductInfo} />}
             {currentStep === 4 && <Step4Style styleConfig={styleConfig} setStyleConfig={setStyleConfig} dailyCount={dailyCount} dailyLimitReached={dailyLimitReached} dailyLimitChecked={dailyLimitChecked} isAdmin={isAdmin} handleBack={handleBack} />}

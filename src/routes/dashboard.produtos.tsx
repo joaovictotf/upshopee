@@ -3,6 +3,11 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { DashboardShell } from "../components/layout/DashboardShell";
 import { products, categories, type Product } from "../lib/mock/products";
 import { affiliateProducts, type AffiliateProduct } from "../lib/mock/affiliate-products";
+import {
+  fetchMyAffiliateRows,
+  rowsToAffiliateProducts,
+  type MyAffiliateRow,
+} from "../lib/my-affiliate-products";
 import { ProductCard, catalogOrder, type CatalogItem } from "../components/products/ProductCard";
 import { MyProductCard } from "../components/products/MyProductCard";
 import { GenerateListingFlow } from "../components/products/GenerateListingFlow";
@@ -11,22 +16,9 @@ import { Input } from "../components/ui/input";
 import { RolePickerDialog } from "../components/products/RolePickerDialog";
 import { Search, Package } from "lucide-react";
 import { spWindowIndex, msUntilNextSpWindow } from "../lib/timeWindow";
-import { supabase } from "../integrations/supabase/client";
 import { useApp } from "../lib/state";
 
 export const Route = createFileRoute("/dashboard/produtos")({ component: Produtos });
-
-/** Resolve o `product_n` gravado no banco de volta para o produto do catálogo.
- *  O banco guarda só o número — nome, preço e imagem vivem no bundle. */
-const affiliateByN = new Map<number, AffiliateProduct>(
-  affiliateProducts.map((p) => [p.n, p]),
-);
-
-type MyProductRow = {
-  product_n: number;
-  last_clicked_at: string;
-  click_count: number;
-};
 
 type SubTab = "catalogo" | "meus";
 
@@ -131,7 +123,7 @@ function Produtos() {
   const [windowIndex, setWindowIndex] = useState(() => spWindowIndex(WINDOW_MS));
   // null = ainda carregando. A busca roda na montagem, não na troca de aba,
   // porque a contagem no rótulo tem que aparecer sem o usuário trocar de aba.
-  const [mine, setMine] = useState<MyProductRow[] | null>(null);
+  const [mine, setMine] = useState<MyAffiliateRow[] | null>(null);
 
   useEffect(() => {
     if (!currentUserId) {
@@ -140,31 +132,8 @@ function Produtos() {
     }
     let cancelled = false;
     void (async () => {
-      try {
-        const { data, error } = (await (supabase
-          .from("user_affiliate_products" as never)
-          .select("product_n, last_clicked_at, click_count")
-          // O filtro por user_id é obrigatório mesmo com RLS: a policy de admin
-          // permite SELECT em tudo, e sem isto a lista do admin viria com as
-          // linhas dos outros usuários misturadas.
-          .eq("user_id", currentUserId)
-          .order("last_clicked_at", { ascending: false }) as unknown)) as {
-          data: MyProductRow[] | null;
-          error: { message: string } | null;
-        };
-        if (cancelled) return;
-        if (error) {
-          console.warn("[meus-produtos] falha ao carregar:", error.message);
-          setMine([]);
-          return;
-        }
-        setMine(data ?? []);
-      } catch (err) {
-        if (!cancelled) {
-          console.warn("[meus-produtos] falha ao carregar:", err);
-          setMine([]);
-        }
-      }
+      const rows = await fetchMyAffiliateRows(currentUserId);
+      if (!cancelled) setMine(rows);
     })();
     return () => {
       cancelled = true;
@@ -194,16 +163,9 @@ function Produtos() {
     setMine((prev) => (prev ? prev.filter((row) => row.product_n !== productN) : prev));
   }, []);
 
-  // Linhas do banco → produtos do catálogo, na ordem que veio (clique mais
-  // recente primeiro). Um `n` que não existe mais no catálogo é descartado em
-  // silêncio: o catálogo é regerado por script e pode encolher.
-  const myProducts = useMemo(
-    () =>
-      (mine ?? [])
-        .map((row) => affiliateByN.get(row.product_n))
-        .filter((p): p is AffiliateProduct => !!p),
-    [mine],
-  );
+  // Clique mais recente primeiro — a ordem vem do banco, o mapeamento vem do
+  // lib compartilhado (mesma lista que a etapa 1 do Vídeo IA monta).
+  const myProducts = useMemo(() => rowsToAffiliateProducts(mine), [mine]);
 
   // Fires once per 6h window, right at the boundary, rather than polling —
   // negligible cost, and it only touches state when the window actually rolls.
