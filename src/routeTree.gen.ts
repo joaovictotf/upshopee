@@ -16,6 +16,8 @@ import { Route as Planos3RouteImport } from './routes/planos3'
 import { Route as Planos2RouteImport } from './routes/planos2'
 import { Route as PainelRouteImport } from './routes/painel'
 import { Route as PagamentoBloqueadoRouteImport } from './routes/pagamento-bloqueado'
+import { Route as Ofertas8RouteImport } from './routes/ofertas8'
+import { Route as Ofertas7RouteImport } from './routes/ofertas7'
 import { Route as Ofertas6RouteImport } from './routes/ofertas6'
 import { Route as Ofertas5RouteImport } from './routes/ofertas5'
 import { Route as Ofertas4RouteImport } from './routes/ofertas4'
@@ -82,6 +84,16 @@ const PainelRoute = PainelRouteImport.update({
 const PagamentoBloqueadoRoute = PagamentoBloqueadoRouteImport.update({
   id: '/pagamento-bloqueado',
   path: '/pagamento-bloqueado',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const Ofertas8Route = Ofertas8RouteImport.update({
+  id: '/ofertas8',
+  path: '/ofertas8',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const Ofertas7Route = Ofertas7RouteImport.update({
+  id: '/ofertas7',
+  path: '/ofertas7',
   getParentRoute: () => rootRouteImport,
 } as any)
 const Ofertas6Route = Ofertas6RouteImport.update({
@@ -261,6 +273,8 @@ export interface FileRoutesByFullPath {
   '/ofertas4': typeof Ofertas4Route
   '/ofertas5': typeof Ofertas5Route
   '/ofertas6': typeof Ofertas6Route
+  '/ofertas7': typeof Ofertas7Route
+  '/ofertas8': typeof Ofertas8Route
   '/pagamento-bloqueado': typeof PagamentoBloqueadoRoute
   '/painel': typeof PainelRoute
   '/planos2': typeof Planos2Route
@@ -300,6 +314,8 @@ export interface FileRoutesByTo {
   '/ofertas4': typeof Ofertas4Route
   '/ofertas5': typeof Ofertas5Route
   '/ofertas6': typeof Ofertas6Route
+  '/ofertas7': typeof Ofertas7Route
+  '/ofertas8': typeof Ofertas8Route
   '/pagamento-bloqueado': typeof PagamentoBloqueadoRoute
   '/painel': typeof PainelRoute
   '/planos2': typeof Planos2Route
@@ -342,6 +358,8 @@ export interface FileRoutesById {
   '/ofertas4': typeof Ofertas4Route
   '/ofertas5': typeof Ofertas5Route
   '/ofertas6': typeof Ofertas6Route
+  '/ofertas7': typeof Ofertas7Route
+  '/ofertas8': typeof Ofertas8Route
   '/pagamento-bloqueado': typeof PagamentoBloqueadoRoute
   '/painel': typeof PainelRoute
   '/planos2': typeof Planos2Route
@@ -385,6 +403,8 @@ export interface FileRouteTypes {
     | '/ofertas4'
     | '/ofertas5'
     | '/ofertas6'
+    | '/ofertas7'
+    | '/ofertas8'
     | '/pagamento-bloqueado'
     | '/painel'
     | '/planos2'
@@ -424,6 +444,8 @@ export interface FileRouteTypes {
     | '/ofertas4'
     | '/ofertas5'
     | '/ofertas6'
+    | '/ofertas7'
+    | '/ofertas8'
     | '/pagamento-bloqueado'
     | '/painel'
     | '/planos2'
@@ -465,6 +487,8 @@ export interface FileRouteTypes {
     | '/ofertas4'
     | '/ofertas5'
     | '/ofertas6'
+    | '/ofertas7'
+    | '/ofertas8'
     | '/pagamento-bloqueado'
     | '/painel'
     | '/planos2'
@@ -507,6 +531,8 @@ export interface RootRouteChildren {
   Ofertas4Route: typeof Ofertas4Route
   Ofertas5Route: typeof Ofertas5Route
   Ofertas6Route: typeof Ofertas6Route
+  Ofertas7Route: typeof Ofertas7Route
+  Ofertas8Route: typeof Ofertas8Route
   PagamentoBloqueadoRoute: typeof PagamentoBloqueadoRoute
   PainelRoute: typeof PainelRoute
   Planos2Route: typeof Planos2Route
@@ -565,6 +591,20 @@ declare module '@tanstack/react-router' {
       path: '/pagamento-bloqueado'
       fullPath: '/pagamento-bloqueado'
       preLoaderRoute: typeof PagamentoBloqueadoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ofertas8': {
+      id: '/ofertas8'
+      path: '/ofertas8'
+      fullPath: '/ofertas8'
+      preLoaderRoute: typeof Ofertas8RouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ofertas7': {
+      id: '/ofertas7'
+      path: '/ofertas7'
+      fullPath: '/ofertas7'
+      preLoaderRoute: typeof Ofertas7RouteImport
       parentRoute: typeof rootRouteImport
     }
     '/ofertas6': {
@@ -878,6 +918,8 @@ const rootRouteChildren: RootRouteChildren = {
   Ofertas4Route: Ofertas4Route,
   Ofertas5Route: Ofertas5Route,
   Ofertas6Route: Ofertas6Route,
+  Ofertas7Route: Ofertas7Route,
+  Ofertas8Route: Ofertas8Route,
   PagamentoBloqueadoRoute: PagamentoBloqueadoRoute,
   PainelRoute: PainelRoute,
   Planos2Route: Planos2Route,
