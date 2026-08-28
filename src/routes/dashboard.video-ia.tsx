@@ -172,15 +172,11 @@ interface Step3Props {
 }
 interface Step4Props {
   styleConfig: StyleConfig; setStyleConfig: (s: StyleConfig) => void;
-  dailyCount: number; dailyLimitReached: boolean; dailyLimitChecked: boolean;
-  isAdmin: boolean; handleBack: () => void;
 }
 interface Step5Props {
   productInfo: ProductInfo; styleConfig: StyleConfig;
   generating: boolean; genStep: number; genError: string | null;
   generatedContent: GeneratedContent;
-  dailyCount: number; dailyLimitReached: boolean; dailyLimitChecked: boolean;
-  isAdmin: boolean;
   handleGenerate: () => void; handleRegenerate: (v?: string) => void;
 }
 interface Step6Props {
@@ -239,7 +235,6 @@ const GENERATION_STEPS = [
   "Montando prompt final...",
 ];
 
-const DAILY_LIMIT = 3;
 
 function emptySlot(): ImageSlot {
   return { file: null, preview: null, storagePath: null, uploading: false, progress: 0 };
@@ -636,23 +631,9 @@ const Step3ProductInfo = memo(function Step3ProductInfo({
 
 const Step4Style = memo(function Step4Style({
   styleConfig, setStyleConfig,
-  dailyCount, dailyLimitReached, dailyLimitChecked,
-  isAdmin, handleBack,
 }: Step4Props) {
   return (
     <div className="space-y-6">
-      {/* Daily limit badge (hidden for admins) */}
-      {!isAdmin && dailyLimitChecked && (
-        <div className={`flex items-center gap-2.5 rounded-xl px-4 py-2.5 text-xs font-medium ${
-          dailyLimitReached
-            ? "bg-[var(--accent-soft)] text-[var(--accent)] border border-[var(--accent)]/20"
-            : "bg-[var(--muted-bg)] text-[var(--muted)] border border-[var(--border)]"
-        }`}>
-          <Info className="h-3.5 w-3.5 shrink-0" />
-          <span>{dailyCount} de {DAILY_LIMIT} gerações disponíveis hoje{dailyLimitReached ? " — limite atingido!" : ""}</span>
-        </div>
-      )}
-
       {/* Style cards */}
       <div>
         <Label className="text-sm font-semibold text-[var(--text)]">Estilo do vídeo</Label>
@@ -720,23 +701,6 @@ const Step4Style = memo(function Step4Style({
           que rende no story e no reels.
         </p>
       </div>
-
-      {/* Daily limit warning (hidden for admins) */}
-      {!isAdmin && dailyLimitReached && (
-        <div className="rounded-2xl border border-[var(--accent)]/20 bg-[var(--accent-soft)] p-6 text-center vi-step-enter">
-          <div className="flex justify-center mb-3">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--accent)]/10">
-              <Info className="h-7 w-7 text-[var(--accent)]" />
-            </div>
-          </div>
-          <h3 className="text-sm font-bold text-[var(--accent)]">Limite diário atingido</h3>
-          <p className="mt-1 text-xs text-[var(--accent)]/80">Você já gerou {DAILY_LIMIT} roteiros hoje. O limite reseta à meia-noite.</p>
-          <Button onClick={handleBack} variant="outline"
-            className="mt-3 h-10 rounded-xl border-[var(--accent)]/20 bg-[var(--surface)] text-sm font-medium text-[var(--accent)] hover:bg-[var(--accent-soft)]">
-            Voltar
-          </Button>
-        </div>
-      )}
     </div>
   );
 });
@@ -748,8 +712,6 @@ const Step4Style = memo(function Step4Style({
 const Step5Generation = memo(function Step5Generation({
   productInfo, styleConfig,
   generating, genStep, genError, generatedContent,
-  dailyCount, dailyLimitReached, dailyLimitChecked,
-  isAdmin,
   handleGenerate, handleRegenerate,
 }: Step5Props) {
   return (
@@ -781,21 +743,13 @@ const Step5Generation = memo(function Step5Generation({
           <p className="mt-2 max-w-sm px-6 text-sm text-[var(--muted)]">
             A IA vai analisar o produto e gerar um roteiro profissional com base no estilo escolhido.
           </p>
-          {!isAdmin && dailyLimitChecked && (
-            <p className="mt-2 text-xs text-[var(--muted)]">
-              <span className={dailyLimitReached ? "text-[var(--accent)] font-semibold" : "text-[var(--accent)] font-semibold"}>
-                {dailyCount}/{DAILY_LIMIT}
-              </span> gerações hoje
-            </p>
-          )}
           <Button onClick={handleGenerate}
-            disabled={!isAdmin && dailyLimitReached}
             className="mt-6 h-14 w-[calc(100%-2rem)] max-w-sm rounded-2xl text-base font-semibold text-white transition-all active:scale-[0.98] disabled:opacity-40"
             style={{
               background: "var(--accent-gradient, var(--accent))",
               boxShadow: "var(--accent-glow)",
             }}>
-            <Wand2 className="mr-2 h-5 w-5" /> {dailyLimitReached ? "Limite diário atingido" : "Gerar conteúdo com IA"}
+            <Wand2 className="mr-2 h-5 w-5" /> Gerar conteúdo com IA
           </Button>
         </div>
       )}
@@ -999,30 +953,6 @@ function VideoIaPage() {
   });
   const [projectId, setProjectId] = useState<string | null>(null);
 
-  // Daily limit
-  const [dailyCount, setDailyCount] = useState(0);
-  const [dailyLimitReached, setDailyLimitReached] = useState(false);
-  const [dailyLimitChecked, setDailyLimitChecked] = useState(false);
-
-  // Check daily limit when entering step 4 (admins are exempt)
-  useEffect(() => {
-    if (!currentUserId || currentStep < 4) return;
-    if (isAdmin) { setDailyLimitReached(false); setDailyLimitChecked(true); return; }
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-    (supabase.from as any)("video_projects")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", currentUserId)
-      .gte("created_at", todayStart.toISOString())
-      .then(({ count, error }: { count: number | null; error: any }) => {
-        if (!error) {
-          setDailyCount(count || 0);
-          setDailyLimitReached((count || 0) >= DAILY_LIMIT);
-          setDailyLimitChecked(true);
-        }
-      });
-  }, [currentUserId, currentStep, isAdmin]);
-
   // Pre-fill step 3 from step 1
   useEffect(() => {
     if (currentStep === 3) {
@@ -1213,10 +1143,6 @@ function VideoIaPage() {
       toast.error("Sessão não encontrada. Faça login novamente.");
       return;
     }
-    if (!isAdmin && dailyLimitReached) {
-      toast.error(`Limite diário de ${DAILY_LIMIT} roteiros atingido. Volte amanhã!`);
-      return;
-    }
 
     // Advance to step 5 immediately — show generation animation
     setCurrentStep(5);
@@ -1241,8 +1167,6 @@ function VideoIaPage() {
       const content = withOfflinePrompt(data.content);
       setGeneratedContent(content);
       await saveProjectWithContent(content);
-      setDailyCount((c) => c + 1);
-      if (dailyCount + 1 >= DAILY_LIMIT) setDailyLimitReached(true);
       toast.success("Conteúdo gerado com sucesso!");
       setCurrentStep(6);
     } catch (err: any) {
@@ -1251,13 +1175,9 @@ function VideoIaPage() {
       clearTimeout(timeoutId); clearInterval(stepInterval);
       setGenStep(GENERATION_STEPS.length - 1); setGenerating(false);
     }
-  }, [currentUserId, productInfo, styleConfig, dailyLimitReached, dailyCount, isAdmin, withOfflinePrompt, buildProductPayload]);
+  }, [currentUserId, productInfo, styleConfig, withOfflinePrompt, buildProductPayload]);
 
   const handleRegenerate = useCallback(async (variant?: string) => {
-    if (!isAdmin && dailyLimitReached) {
-      toast.error(`Limite diário de ${DAILY_LIMIT} roteiros atingido. Volte amanhã!`);
-      return;
-    }
     const variantStyle = variant
       ? { ...styleConfig, style: variant === "curta" ? "oferta-rapida" : variant === "comercial" ? "promocao" : "ugc" }
       : styleConfig;
@@ -1281,8 +1201,6 @@ function VideoIaPage() {
       const content = withOfflinePrompt(data.content);
       setGeneratedContent(content);
       await saveProjectWithContent(content);
-      setDailyCount((c) => c + 1);
-      if (dailyCount + 1 >= DAILY_LIMIT) setDailyLimitReached(true);
       toast.success("Nova versão gerada!");
     } catch (err: any) {
       setGenError(err?.name === "AbortError" ? "Tempo limite excedido (35s). Tente novamente." : err?.message || "Erro ao gerar. Tente novamente.");
@@ -1290,7 +1208,7 @@ function VideoIaPage() {
       clearTimeout(timeoutId); clearInterval(stepInterval);
       setGenStep(GENERATION_STEPS.length - 1); setGenerating(false);
     }
-  }, [currentUserId, productInfo, styleConfig, dailyLimitReached, dailyCount, isAdmin, withOfflinePrompt, buildProductPayload]);
+  }, [currentUserId, productInfo, styleConfig, withOfflinePrompt, buildProductPayload]);
 
   // ── Save project to database ──
   const saveProjectWithContent = useCallback(async (content?: GeneratedContent) => {
@@ -1331,7 +1249,6 @@ function VideoIaPage() {
   const handleContinue = useCallback(async () => {
     if (currentStep === 3) { await handleSubmitProject(); return; }
     if (currentStep === 4) {
-      if (!isAdmin && dailyLimitReached) { toast.error(`Limite diário de ${DAILY_LIMIT} roteiros atingido. Volte amanhã!`); return; }
       await saveProjectWithContent(); setCurrentStep(5); return;
     }
     if (currentStep === 6) {
@@ -1340,7 +1257,7 @@ function VideoIaPage() {
       setCurrentStep(7); return;
     }
     setCurrentStep((s) => Math.min(s + 1, 7));
-  }, [currentStep, handleSubmitProject, saveProjectWithContent, projectId, dailyLimitReached, isAdmin]);
+  }, [currentStep, handleSubmitProject, saveProjectWithContent, projectId]);
 
   const handleBack = useCallback(() => {
     if (currentStep === 1) return;
@@ -1408,8 +1325,8 @@ function VideoIaPage() {
             {currentStep === 1 && <Step1SelectProduct productMode={productMode} setProductMode={setProductMode} productSearch={productSearch} setProductSearch={setProductSearch} selectedProduct={selectedProduct} setSelectedProduct={setSelectedProduct} manualProduct={manualProduct} setManualProduct={setManualProduct} productGroups={productGroups} hasAnyResult={hasAnyResult} step1Valid={step1Valid} />}
             {currentStep === 2 && <Step2UploadImages primaryImage={primaryImage} additionalImages={additionalImages} handlePrimaryImageSelect={handlePrimaryImageSelect} handleAdditionalImageSelect={handleAdditionalImageSelect} removePrimaryImage={removePrimaryImage} removeAdditionalImage={removeAdditionalImage} />}
             {currentStep === 3 && <Step3ProductInfo productInfo={productInfo} setProductInfo={setProductInfo} />}
-            {currentStep === 4 && <Step4Style styleConfig={styleConfig} setStyleConfig={setStyleConfig} dailyCount={dailyCount} dailyLimitReached={dailyLimitReached} dailyLimitChecked={dailyLimitChecked} isAdmin={isAdmin} handleBack={handleBack} />}
-            {currentStep === 5 && <Step5Generation productInfo={productInfo} styleConfig={styleConfig} generating={generating} genStep={genStep} genError={genError} generatedContent={generatedContent} dailyCount={dailyCount} dailyLimitReached={dailyLimitReached} dailyLimitChecked={dailyLimitChecked} isAdmin={isAdmin} handleGenerate={handleGenerate} handleRegenerate={handleRegenerate} />}
+            {currentStep === 4 && <Step4Style styleConfig={styleConfig} setStyleConfig={setStyleConfig} />}
+            {currentStep === 5 && <Step5Generation productInfo={productInfo} styleConfig={styleConfig} generating={generating} genStep={genStep} genError={genError} generatedContent={generatedContent} handleGenerate={handleGenerate} handleRegenerate={handleRegenerate} />}
             {currentStep === 6 && <Step6Review generatedContent={generatedContent} setGeneratedContent={setGeneratedContent} handleRegenerate={handleRegenerate} />}
             {/* Etapa 7: admin gera o vídeo direto (AdminStep7Video, intocado).
                 Usuário comum vê antes o aviso de que a geração por IA é
@@ -1431,7 +1348,7 @@ function VideoIaPage() {
               </Button>
               {continueLabel[currentStep] && (
                 <Button type="button" onClick={currentStep === 4 ? handleGenerate : handleContinue}
-                  disabled={submitting || generating || (currentStep === 4 && !isAdmin && dailyLimitReached)}
+                  disabled={submitting || generating}
                   className="group h-11 w-full sm:w-auto sm:min-w-[160px] rounded-xl text-sm font-semibold text-white transition-all active:scale-[0.98] disabled:opacity-40"
                   style={{
                     background: "var(--accent-gradient, var(--accent))",
