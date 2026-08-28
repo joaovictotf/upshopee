@@ -81,6 +81,7 @@ export function MyProductCard({
   const [history, setHistory] = useState<string[]>([]);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [removing, setRemoving] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   // Dado de mercado do PRODUTO. Determinístico e estável dentro do dia de São
   // Paulo, então pode ser calculado a cada render sem piscar número na tela.
@@ -97,6 +98,17 @@ export function MyProductCard({
     setHistory((prev) =>
       [`${next.titulo}\n${next.descricao}\n${next.hashtags}`, ...prev].slice(0, HISTORY_SIZE),
     );
+  };
+
+  const copyAffiliateLink = async () => {
+    try {
+      await navigator.clipboard.writeText(product.shopeeUrl);
+      setLinkCopied(true);
+      toast.success("Link copiado");
+      window.setTimeout(() => setLinkCopied(false), 1500);
+    } catch {
+      toast.error("Não foi possível copiar agora. Tente de novo.");
+    }
   };
 
   const remove = async () => {
@@ -191,7 +203,7 @@ export function MyProductCard({
       )}
 
       {/* ── Ações ──
-          Uma linha só: o botão principal ocupa o espaço que sobra e os dois
+          Uma linha só: o botão principal ocupa o espaço que sobra e os
           ícones ficam com 40px fixos, que é o que faz caber em 320px. */}
       <div className="flex items-center gap-2">
         <button
@@ -201,6 +213,16 @@ export function MyProductCard({
         >
           {content ? <RefreshCw className="h-3.5 w-3.5" /> : <Sparkles className="h-3.5 w-3.5" />}
           Gerar conteúdo
+        </button>
+
+        <button
+          type="button"
+          onClick={copyAffiliateLink}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] transition-colors hover:border-[var(--accent)]/40 hover:text-[var(--accent)]"
+          aria-label="Copiar link de afiliado"
+          title="Copiar link de afiliado"
+        >
+          {linkCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
         </button>
 
         <a
