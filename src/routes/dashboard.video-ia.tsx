@@ -861,35 +861,71 @@ const Step6Review = memo(function Step6Review({
 }: Step6Props) {
   const update = (field: keyof GeneratedContent, value: string) =>
     setGeneratedContent((prev) => ({ ...prev, [field]: value }));
+
+  /* A etapa mostra DOIS campos. idea_title, hook, script, voiceover,
+     screen_texts, cta e caption continuam sendo gerados e salvos nas colunas
+     de video_projects — só saíram da tela. screen_texts em especial não pode
+     ser oferecido: estes vídeos não levam texto na tela. */
+  const [copied, setCopied] = useState(false);
+  const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (copyTimer.current) clearTimeout(copyTimer.current); }, []);
+
+  const handleCopyPrompt = async () => {
+    try {
+      await navigator.clipboard.writeText(generatedContent.final_prompt);
+    } catch {
+      toast.error("Não foi possível copiar. Selecione o texto e copie à mão.");
+      return;
+    }
+    setCopied(true);
+    toast.success("Prompt copiado!");
+    if (copyTimer.current) clearTimeout(copyTimer.current);
+    copyTimer.current = setTimeout(() => setCopied(false), 2500);
+  };
+
   return (
-    <div className="space-y-6">
-      {/* Regeneration options */}
-      <div className="flex flex-wrap gap-2">
-        <RegenButton icon={RotateCw} label="Gerar outra versão" onClick={() => handleRegenerate()} />
-        <RegenButton icon={Zap} label="Mais curta" onClick={() => handleRegenerate("curta")} />
-        <RegenButton icon={Trophy} label="Mais comercial" onClick={() => handleRegenerate("comercial")} />
-        <RegenButton icon={Camera} label="Mais natural" onClick={() => handleRegenerate("natural")} />
+    <div className="space-y-5">
+      {/* O prompt e o botão de copiar. É o que as sete etapas existem para
+          entregar, então é o que domina a tela. */}
+      <div className="rounded-2xl border border-[var(--accent)]/30 bg-[var(--surface)] p-4 shadow-[var(--shadow-card)] sm:p-6">
+        <EditableField label="Prompt final em inglês" value={generatedContent.final_prompt}
+          onChange={(v) => update("final_prompt", v)} rows={10} />
+        <Button onClick={handleCopyPrompt}
+          className="mt-4 h-14 w-full rounded-2xl text-base font-semibold text-white transition-all active:scale-[0.98] sm:h-16 sm:text-lg"
+          style={{ background: "var(--accent-gradient, var(--accent))", boxShadow: "var(--accent-glow)" }}>
+          {copied ? (
+            <><Check className="mr-2 h-5 w-5 shrink-0" strokeWidth={2.5} /> Prompt copiado!</>
+          ) : (
+            <><Copy className="mr-2 h-5 w-5 shrink-0" /> Copiar prompt</>
+          )}
+        </Button>
+        <p className="mt-2 text-center text-xs text-[var(--muted)]">
+          {copied ? "Pronto — o prompt está na área de transferência." : "Copie o prompt para gerar seu vídeo."}
+        </p>
       </div>
 
-      {/* Editable fields */}
-      <div className="space-y-4 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 sm:p-6">
-        {([
-          { field: "idea_title" as const, label: "Título da ideia", rows: 2 },
-          { field: "hook" as const, label: "Hook (abertura)", rows: 2 },
-          { field: "script" as const, label: "Roteiro (3 cenas)", rows: 6 },
-          { field: "voiceover" as const, label: "Locução / Narração", rows: 3 },
-          { field: "screen_texts" as const, label: "Textos na tela", rows: 3 },
-          { field: "cta" as const, label: "Chamada para ação (CTA)", rows: 2 },
-          { field: "caption" as const, label: "Legenda", rows: 2 },
-          { field: "hashtags" as const, label: "Hashtags", rows: 2 },
-          { field: "final_prompt" as const, label: "Prompt final em inglês", rows: 10 },
-        ]).map(({ field, label, rows }) => (
-          <div key={field}
-            className="vi-float-up border border-[var(--border)] rounded-2xl p-4 transition-all duration-300 focus-within:border-l-2 focus-within:border-l-[var(--accent)] focus-within:shadow-[var(--shadow-glow)]">
-            <EditableField label={label} value={generatedContent[field]}
-              onChange={(v) => update(field, v)} rows={rows} />
-          </div>
-        ))}
+      {/* Regeneration options — antes eram quatro pílulas discretas em cima da
+          lista de campos; ninguém achava. */}
+      <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 sm:p-5">
+        <div className="flex items-center gap-2">
+          <RotateCw className="h-4 w-4 shrink-0 text-[var(--accent)]" />
+          <h4 className="text-sm font-bold text-[var(--text)]">Quer testar outra versão?</h4>
+        </div>
+        <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">
+          Cada versão sai diferente da anterior. Escolha um caminho:
+        </p>
+        <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          <RegenButton icon={RotateCw} label="Gerar outra versão" onClick={() => handleRegenerate()} />
+          <RegenButton icon={Zap} label="Mais curta" onClick={() => handleRegenerate("curta")} />
+          <RegenButton icon={Trophy} label="Mais comercial" onClick={() => handleRegenerate("comercial")} />
+          <RegenButton icon={Camera} label="Mais natural" onClick={() => handleRegenerate("natural")} />
+        </div>
+      </div>
+
+      {/* Hashtags */}
+      <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 sm:p-6">
+        <EditableField label="Hashtags" value={generatedContent.hashtags}
+          onChange={(v) => update("hashtags", v)} rows={2} />
       </div>
     </div>
   );
@@ -1449,8 +1485,9 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
 function RegenButton({ icon: Icon, label, onClick }: { icon: typeof RotateCw; label: string; onClick: () => void }) {
   return (
     <button type="button" onClick={onClick}
-      className="inline-flex h-11 items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 text-xs font-semibold text-[var(--muted)] transition-all duration-300 hover:border-[var(--accent)]/40 hover:text-[var(--accent)] hover:shadow-[var(--shadow-card)] active:scale-[0.97]">
-      <Icon className="h-3.5 w-3.5" /> {label}
+      className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-[var(--accent)]/25 bg-[var(--surface-2)] px-2.5 text-xs font-semibold text-[var(--text)] transition-all duration-300 hover:-translate-y-0.5 hover:border-[var(--accent)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent)] hover:shadow-[var(--shadow-card)] active:scale-[0.97]">
+      <Icon className="h-4 w-4 shrink-0 text-[var(--accent)]" />
+      <span className="truncate">{label}</span>
     </button>
   );
 }

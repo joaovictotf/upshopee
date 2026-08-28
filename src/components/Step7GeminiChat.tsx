@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import {
   Check, Sparkles, Copy, Image, Wand2, Subtitles, Play,
   Send, Star, ChevronLeft, Loader2, User, Phone,
-  CreditCard, Mail, Clock, ArrowRight, AtSign,
+  CreditCard, Mail, ArrowDown, ArrowRight, AtSign,
 } from "lucide-react";
 import { VideoIaClassGate } from "./VideoIaClassGate";
 
@@ -118,14 +118,14 @@ const ANIM_CSS = `
     to   { opacity: 1; transform: translateY(0); }
   }
   .ad-msg-enter { animation: ad-msg-enter 0.3s ease-out both; }
-  @keyframes pulse-glow {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(238,77,45,0.4); }
-    50% { box-shadow: 0 0 0 12px rgba(238,77,45,0); }
+  @keyframes nudge-down {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(5px); }
   }
-  .pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
+  .nudge-down { animation: nudge-down 1.6s ease-in-out infinite; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .vi-bounce-in, .ad-msg-enter, .pulse-glow { animation: none; }
+  .vi-bounce-in, .ad-msg-enter, .nudge-down { animation: none; }
 }
 `;
 
@@ -147,9 +147,11 @@ type RegPhase = "loading" | "form" | "submitting" | "queue";
 
 function RegistrationGate({
   productInfo,
+  currentUserId,
   onUnlocked,
 }: {
   productInfo: ProductInfo;
+  currentUserId: string | null;
   onUnlocked: () => void;
 }) {
   // Try to load saved form data so user doesn't lose work on refresh
@@ -304,34 +306,29 @@ function RegistrationGate({
           <Check className="h-12 w-12 text-white" />
         </div>
 
-        <div className="text-center space-y-3">
+        {/* Nada aqui é automático. O card de fila que ficava neste lugar
+            prometia liberação sozinha em 12 horas — quem libera é o professor,
+            ao vivo, na aula. */}
+        <div className="space-y-3 text-center">
           <h3 className="text-2xl font-bold text-[var(--text)]">
-            Cadastro enviado com sucesso!
+            Cadastro recebido!
           </h3>
-          <p className="text-[var(--muted)] max-w-sm">
-            Seu acesso ao criador de vídeos será liberado automaticamente
+          <p className="max-w-sm text-[var(--muted)]">
+            Falta um passo: quem libera seu Vídeo IA é um professor, ao vivo, durante a aula.
           </p>
         </div>
 
-        {/* Queue position card */}
-        <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8 text-center w-full max-w-sm pulse-glow">
-          <p className="text-sm font-medium text-[var(--muted)] uppercase tracking-wide">
-            Sua posição na fila
-          </p>
-          <p className="mt-1 text-5xl font-black text-[var(--accent)]">
-            Nº {queueNumber}
-          </p>
-          <p className="mt-3 text-sm text-[var(--muted)] leading-relaxed">
-            ⏳ Tempo de espera aproximado: 12 horas
-          </p>
-          <p className="mt-3 text-sm text-[var(--muted)] leading-relaxed">
-            A liberação acontece automaticamente.<br />
-            Aguarde alguns instantes...
-          </p>
-          <div className="mt-5 flex items-center justify-center gap-2 text-xs text-[var(--muted)]">
-            <Clock className="h-3.5 w-3.5" />
-            <span>Atualiza a cada 2 horas</span>
-          </div>
+        {/* A seta é o que puxa o olho para a ação — última tela de um fluxo
+            de sete etapas, a pessoa precisa saber o que fazer agora. */}
+        <div className="flex flex-col items-center gap-1.5">
+          <span className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+            Próximo passo
+          </span>
+          <ArrowDown className="nudge-down h-5 w-5 text-[var(--accent)]" />
+        </div>
+
+        <div className="w-full max-w-sm">
+          <VideoIaClassGate currentUserId={currentUserId} />
         </div>
 
         {queueNumber <= 0 && (
@@ -549,7 +546,7 @@ function Step7GeminiChat({
     return (
       <>
         <style>{ANIM_CSS}</style>
-        <RegistrationGate productInfo={productInfo} onUnlocked={handleUnlocked} />
+        <RegistrationGate productInfo={productInfo} currentUserId={currentUserId} onUnlocked={handleUnlocked} />
       </>
     );
   }
