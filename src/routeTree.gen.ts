@@ -11,19 +11,12 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
-import { Route as PlanosupRouteImport } from './routes/planosup'
-import { Route as Planos3RouteImport } from './routes/planos3'
-import { Route as Planos2RouteImport } from './routes/planos2'
 import { Route as PainelRouteImport } from './routes/painel'
 import { Route as PagamentoBloqueadoRouteImport } from './routes/pagamento-bloqueado'
 import { Route as Ofertas8RouteImport } from './routes/ofertas8'
 import { Route as Ofertas7RouteImport } from './routes/ofertas7'
 import { Route as Ofertas6RouteImport } from './routes/ofertas6'
 import { Route as Ofertas5RouteImport } from './routes/ofertas5'
-import { Route as Ofertas4RouteImport } from './routes/ofertas4'
-import { Route as Ofertas3RouteImport } from './routes/ofertas3'
-import { Route as Ofertas2RouteImport } from './routes/ofertas2'
-import { Route as OfertasRouteImport } from './routes/ofertas'
 import { Route as MercadolivrecombrRouteImport } from './routes/mercadolivrecombr'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DemoRouteImport } from './routes/demo'
@@ -61,21 +54,6 @@ const RedefinirSenhaRoute = RedefinirSenhaRouteImport.update({
   path: '/redefinir-senha',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PlanosupRoute = PlanosupRouteImport.update({
-  id: '/planosup',
-  path: '/planosup',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const Planos3Route = Planos3RouteImport.update({
-  id: '/planos3',
-  path: '/planos3',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const Planos2Route = Planos2RouteImport.update({
-  id: '/planos2',
-  path: '/planos2',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const PainelRoute = PainelRouteImport.update({
   id: '/painel',
   path: '/painel',
@@ -104,26 +82,6 @@ const Ofertas6Route = Ofertas6RouteImport.update({
 const Ofertas5Route = Ofertas5RouteImport.update({
   id: '/ofertas5',
   path: '/ofertas5',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const Ofertas4Route = Ofertas4RouteImport.update({
-  id: '/ofertas4',
-  path: '/ofertas4',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const Ofertas3Route = Ofertas3RouteImport.update({
-  id: '/ofertas3',
-  path: '/ofertas3',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const Ofertas2Route = Ofertas2RouteImport.update({
-  id: '/ofertas2',
-  path: '/ofertas2',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OfertasRoute = OfertasRouteImport.update({
-  id: '/ofertas',
-  path: '/ofertas',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MercadolivrecombrRoute = MercadolivrecombrRouteImport.update({
@@ -267,19 +225,12 @@ export interface FileRoutesByFullPath {
   '/demo': typeof DemoRouteWithChildren
   '/login': typeof LoginRoute
   '/mercadolivrecombr': typeof MercadolivrecombrRoute
-  '/ofertas': typeof OfertasRoute
-  '/ofertas2': typeof Ofertas2Route
-  '/ofertas3': typeof Ofertas3Route
-  '/ofertas4': typeof Ofertas4Route
   '/ofertas5': typeof Ofertas5Route
   '/ofertas6': typeof Ofertas6Route
   '/ofertas7': typeof Ofertas7Route
   '/ofertas8': typeof Ofertas8Route
   '/pagamento-bloqueado': typeof PagamentoBloqueadoRoute
   '/painel': typeof PainelRoute
-  '/planos2': typeof Planos2Route
-  '/planos3': typeof Planos3Route
-  '/planosup': typeof PlanosupRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/register': typeof RegisterRoute
   '/dashboard/aulas': typeof DashboardAulasRoute
@@ -308,19 +259,12 @@ export interface FileRoutesByTo {
   '/conta-em-analise': typeof ContaEmAnaliseRoute
   '/login': typeof LoginRoute
   '/mercadolivrecombr': typeof MercadolivrecombrRoute
-  '/ofertas': typeof OfertasRoute
-  '/ofertas2': typeof Ofertas2Route
-  '/ofertas3': typeof Ofertas3Route
-  '/ofertas4': typeof Ofertas4Route
   '/ofertas5': typeof Ofertas5Route
   '/ofertas6': typeof Ofertas6Route
   '/ofertas7': typeof Ofertas7Route
   '/ofertas8': typeof Ofertas8Route
   '/pagamento-bloqueado': typeof PagamentoBloqueadoRoute
   '/painel': typeof PainelRoute
-  '/planos2': typeof Planos2Route
-  '/planos3': typeof Planos3Route
-  '/planosup': typeof PlanosupRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/register': typeof RegisterRoute
   '/dashboard/aulas': typeof DashboardAulasRoute
@@ -352,19 +296,12 @@ export interface FileRoutesById {
   '/demo': typeof DemoRouteWithChildren
   '/login': typeof LoginRoute
   '/mercadolivrecombr': typeof MercadolivrecombrRoute
-  '/ofertas': typeof OfertasRoute
-  '/ofertas2': typeof Ofertas2Route
-  '/ofertas3': typeof Ofertas3Route
-  '/ofertas4': typeof Ofertas4Route
   '/ofertas5': typeof Ofertas5Route
   '/ofertas6': typeof Ofertas6Route
   '/ofertas7': typeof Ofertas7Route
   '/ofertas8': typeof Ofertas8Route
   '/pagamento-bloqueado': typeof PagamentoBloqueadoRoute
   '/painel': typeof PainelRoute
-  '/planos2': typeof Planos2Route
-  '/planos3': typeof Planos3Route
-  '/planosup': typeof PlanosupRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/register': typeof RegisterRoute
   '/dashboard/aulas': typeof DashboardAulasRoute
@@ -397,19 +334,12 @@ export interface FileRouteTypes {
     | '/demo'
     | '/login'
     | '/mercadolivrecombr'
-    | '/ofertas'
-    | '/ofertas2'
-    | '/ofertas3'
-    | '/ofertas4'
     | '/ofertas5'
     | '/ofertas6'
     | '/ofertas7'
     | '/ofertas8'
     | '/pagamento-bloqueado'
     | '/painel'
-    | '/planos2'
-    | '/planos3'
-    | '/planosup'
     | '/redefinir-senha'
     | '/register'
     | '/dashboard/aulas'
@@ -438,19 +368,12 @@ export interface FileRouteTypes {
     | '/conta-em-analise'
     | '/login'
     | '/mercadolivrecombr'
-    | '/ofertas'
-    | '/ofertas2'
-    | '/ofertas3'
-    | '/ofertas4'
     | '/ofertas5'
     | '/ofertas6'
     | '/ofertas7'
     | '/ofertas8'
     | '/pagamento-bloqueado'
     | '/painel'
-    | '/planos2'
-    | '/planos3'
-    | '/planosup'
     | '/redefinir-senha'
     | '/register'
     | '/dashboard/aulas'
@@ -481,19 +404,12 @@ export interface FileRouteTypes {
     | '/demo'
     | '/login'
     | '/mercadolivrecombr'
-    | '/ofertas'
-    | '/ofertas2'
-    | '/ofertas3'
-    | '/ofertas4'
     | '/ofertas5'
     | '/ofertas6'
     | '/ofertas7'
     | '/ofertas8'
     | '/pagamento-bloqueado'
     | '/painel'
-    | '/planos2'
-    | '/planos3'
-    | '/planosup'
     | '/redefinir-senha'
     | '/register'
     | '/dashboard/aulas'
@@ -525,19 +441,12 @@ export interface RootRouteChildren {
   DemoRoute: typeof DemoRouteWithChildren
   LoginRoute: typeof LoginRoute
   MercadolivrecombrRoute: typeof MercadolivrecombrRoute
-  OfertasRoute: typeof OfertasRoute
-  Ofertas2Route: typeof Ofertas2Route
-  Ofertas3Route: typeof Ofertas3Route
-  Ofertas4Route: typeof Ofertas4Route
   Ofertas5Route: typeof Ofertas5Route
   Ofertas6Route: typeof Ofertas6Route
   Ofertas7Route: typeof Ofertas7Route
   Ofertas8Route: typeof Ofertas8Route
   PagamentoBloqueadoRoute: typeof PagamentoBloqueadoRoute
   PainelRoute: typeof PainelRoute
-  Planos2Route: typeof Planos2Route
-  Planos3Route: typeof Planos3Route
-  PlanosupRoute: typeof PlanosupRoute
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
   RegisterRoute: typeof RegisterRoute
 }
@@ -556,27 +465,6 @@ declare module '@tanstack/react-router' {
       path: '/redefinir-senha'
       fullPath: '/redefinir-senha'
       preLoaderRoute: typeof RedefinirSenhaRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/planosup': {
-      id: '/planosup'
-      path: '/planosup'
-      fullPath: '/planosup'
-      preLoaderRoute: typeof PlanosupRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/planos3': {
-      id: '/planos3'
-      path: '/planos3'
-      fullPath: '/planos3'
-      preLoaderRoute: typeof Planos3RouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/planos2': {
-      id: '/planos2'
-      path: '/planos2'
-      fullPath: '/planos2'
-      preLoaderRoute: typeof Planos2RouteImport
       parentRoute: typeof rootRouteImport
     }
     '/painel': {
@@ -619,34 +507,6 @@ declare module '@tanstack/react-router' {
       path: '/ofertas5'
       fullPath: '/ofertas5'
       preLoaderRoute: typeof Ofertas5RouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/ofertas4': {
-      id: '/ofertas4'
-      path: '/ofertas4'
-      fullPath: '/ofertas4'
-      preLoaderRoute: typeof Ofertas4RouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/ofertas3': {
-      id: '/ofertas3'
-      path: '/ofertas3'
-      fullPath: '/ofertas3'
-      preLoaderRoute: typeof Ofertas3RouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/ofertas2': {
-      id: '/ofertas2'
-      path: '/ofertas2'
-      fullPath: '/ofertas2'
-      preLoaderRoute: typeof Ofertas2RouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/ofertas': {
-      id: '/ofertas'
-      path: '/ofertas'
-      fullPath: '/ofertas'
-      preLoaderRoute: typeof OfertasRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mercadolivrecombr': {
@@ -912,19 +772,12 @@ const rootRouteChildren: RootRouteChildren = {
   DemoRoute: DemoRouteWithChildren,
   LoginRoute: LoginRoute,
   MercadolivrecombrRoute: MercadolivrecombrRoute,
-  OfertasRoute: OfertasRoute,
-  Ofertas2Route: Ofertas2Route,
-  Ofertas3Route: Ofertas3Route,
-  Ofertas4Route: Ofertas4Route,
   Ofertas5Route: Ofertas5Route,
   Ofertas6Route: Ofertas6Route,
   Ofertas7Route: Ofertas7Route,
   Ofertas8Route: Ofertas8Route,
   PagamentoBloqueadoRoute: PagamentoBloqueadoRoute,
   PainelRoute: PainelRoute,
-  Planos2Route: Planos2Route,
-  Planos3Route: Planos3Route,
-  PlanosupRoute: PlanosupRoute,
   RedefinirSenhaRoute: RedefinirSenhaRoute,
   RegisterRoute: RegisterRoute,
 }

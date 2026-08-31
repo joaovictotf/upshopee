@@ -19,7 +19,7 @@ function PagamentoBloqueado() {
   const navigate = useNavigate();
 
   // Single delayed redirect. Kept in a ref so we can clear it on unmount and on
-  // any button click. It targets /planos (a different public route that never
+  // any button click. It targets /ofertas5 (a different public route that never
   // redirects back here), so it fires at most once and cannot loop.
   const redirectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -40,18 +40,18 @@ function PagamentoBloqueado() {
     }
   }, [user, accountStatus, isAdmin, navigate]);
 
-  // 60s inactivity auto-redirect to /planos. Cleared on unmount.
+  // 60s inactivity auto-redirect to /ofertas5. Cleared on unmount.
   useEffect(() => {
     redirectTimer.current = setTimeout(() => {
       redirectTimer.current = null;
-      navigate({ to: "/ofertas" });
+      navigate({ to: "/ofertas5" });
     }, AUTO_REDIRECT_MS);
     return () => cancelAutoRedirect();
   }, [navigate, cancelAutoRedirect]);
 
   const goToPlans = useCallback(() => {
     cancelAutoRedirect();
-    navigate({ to: "/ofertas" });
+    navigate({ to: "/ofertas5" });
   }, [cancelAutoRedirect, navigate]);
 
   return (

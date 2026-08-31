@@ -87,7 +87,7 @@ src/
 │   │   ├── BottomDock.tsx       ← NAVEGAÇÃO PRINCIPAL (array NAV)
 │   │   ├── DemoShell.tsx
 │   │   └── LightScope.tsx
-│   ├── OfertasLanding.tsx       ← landing parametrizável (padrão bom, reusar)
+│   ├── Ofertas5Landing.tsx      ← landing compartilhada por /ofertas5..8
 │   ├── Step7GeminiChat.tsx
 │   ├── AdminStep7Video.tsx
 │   ├── boost/ products/ withdrawal/ ui/
@@ -135,11 +135,16 @@ src/
 - `/conta-em-analise` — ainda referenciada em `login.tsx:185` apesar da aprovação instantânea
 
 ### Públicas
-`/` → **redireciona para `/ofertas4`** · `/login` · `/register` · `/redefinir-senha` · `/pagamento-bloqueado` · `/ofertas` `/ofertas2` `/ofertas3` `/ofertas4` · `/planos2` `/planos3` `/planosup` · `/mercadolivrecombr`
+`/` → **redireciona para `/ofertas5`** · `/login` · `/register` · `/redefinir-senha` · `/pagamento-bloqueado` · `/ofertas5` `/ofertas6` `/ofertas7` `/ofertas8` · `/mercadolivrecombr`
+
+`/ofertas`, `/ofertas2`, `/ofertas3`, `/ofertas4`, `/planos2`, `/planos3` e `/planosup` foram
+removidas em 31/08/2026 (junto com `components/OfertasLanding.tsx`, que só existia para
+servi-las). Não recriar — tudo que era essas sete rotas hoje é `/ofertas5..8`. Links internos
+para elas foram todos repontados para `/ofertas5` (site root, botão "Planos" do dashboard,
+`demo.produtos.tsx`, `register.tsx`, `login.tsx`, `pagamento-bloqueado.tsx`).
 
 ### Arquivos órfãos (candidatos a remoção)
 - `dashboard.impulsionar-vendas.backup.tsx` — 922 linhas mortas
-- `planos2` / `planos3` / `planosup` — ~270 KB, `planos2` e `planos3` diferem em **12 linhas** (só links de checkout)
 
 ---
 
@@ -194,20 +199,25 @@ Padrão de feature nova: **admin vê primeiro**, depois libera geral via `adminO
 
 ## 8. LINKS DE PAGAMENTO (CRÍTICO — não perder)
 
-### Em produção — `/ofertas4` (é para onde `/` redireciona)
+### Em produção — `/ofertas5` (é para onde `/` redireciona)
 
-| Plano | Método | Link |
+Markup, CSS e comportamento das quatro landings vivem juntos em
+`src/components/Ofertas5Landing.tsx`. Cada rota (`ofertas5.tsx` .. `ofertas8.tsx`) só define
+para onde o botão de compra aponta — mesmo checkout base
+(`checkout.applyfy.com.br/checkout/cmrc5aowy0s7y01ol3jfeb4he`), variando por `offer` (plano) e,
+nas de afiliado, por `code` (é esse parâmetro que credita a comissão — se sumir, o afiliado não
+recebe).
+
+| Landing | Código de afiliado | Venda de |
 |---|---|---|
-| Mensal | PIX | https://go.ironpayapp.com.br/zbu0e9tvo9 |
-| Mensal | Cartão | https://checkout.applyfy.com.br/checkout/cmrc5aowy0s7y01ol3jfeb4he?offer=Q7TO6PU |
-| Vitalício | PIX | https://go.ironpayapp.com.br/wqqa7uihfe |
-| Vitalício | Cartão | https://checkout.applyfy.com.br/checkout/cmrc5aowy0s7y01ol3jfeb4he?offer=4XWIBWR |
+| `/ofertas5` | nenhum | dono |
+| `/ofertas6` | `e374ucw` | afiliado |
+| `/ofertas7` | `nuwp8bm` | afiliado |
+| `/ofertas8` | `96mb4ae` | afiliado |
 
-### Outras landings (hashes diferentes, conferir no arquivo antes de mexer)
-`ofertas` · `ofertas2` · `ofertas3` têm configs próprias em cada arquivo de rota.
-`planos2` / `planos3` / `planosup` usam IronPay + PerfectPay + Wiven.
-
-Hashes IronPay presentes no código: `zbu0e9tvo9` `wqqa7uihfe` `knwcyeiala` `jxzfsyhoci` `paqjh` `a7brsesrse` `bsyspglspg` `k32yu4hx10` `kteiyf8epw` `rnaqezkbld`
+Cada landing tem dois links (`offer=Q7TO6PU` mensal, `offer=4XWIBWR` vitalício), com o `code`
+acima anexado nas três de afiliado. Os links são texto intocável: não reordenar parâmetros, não
+url-encodar, não "limpar".
 
 **Nunca alterar link de pagamento sem confirmar com o Juam qual landing está no ar.**
 
@@ -231,7 +241,7 @@ Hashes IronPay presentes no código: `zbu0e9tvo9` `wqqa7uihfe` `knwcyeiala` `jxz
 | `--accent` | `#F4541E` (igual nos dois) | |
 
 - **Exceção:** `/dashboard` e `/dashboard/metricas` passam `forceLight` no `DashboardShell` e ficam claras sempre. Todas as outras páginas do dashboard seguem o toggle.
-- **Landings (`ofertas*`, `planos*`):** sempre escuras, CSS próprio.
+- **Landings (`/ofertas5..8`, `/mercadolivrecombr`):** sempre escuras, CSS próprio.
 
 ---
 
@@ -320,7 +330,6 @@ Migrations `20260522211315` e `20260609173538`. Revisar se a exposição é inte
 ### 🟢 DEPOIS DO LANÇAMENTO
 
 - Quebrar `state.tsx` (2.551 linhas) em módulos: auth / vendas / boost / produtos
-- Consolidar `planos2`/`planos3`/`planosup` no padrão `OfertasLanding` (economiza ~180 KB)
 - Remover `dashboard.impulsionar-vendas.backup.tsx`, `wrangler.jsonc`, `/conta-em-analise`
 - Typecheck leva **mais de 8 minutos** — sintoma dos arquivos de 1.300+ linhas com JSX inline
 - Chunk principal do bundle: 1,1 MB

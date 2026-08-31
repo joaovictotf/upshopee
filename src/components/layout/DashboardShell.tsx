@@ -85,7 +85,7 @@ export function DashboardShell({ children, title, subtitle, actions, onLightning
 
             {/* Planos link */}
             <Link
-              to="/ofertas4"
+              to="/ofertas5"
               target="_blank"
               rel="noopener noreferrer"
               className="hidden items-center gap-1.5 rounded-full border border-[var(--accent)]/20 bg-[var(--accent-soft)] px-3 py-1.5 text-xs font-semibold text-[var(--accent)] transition-all hover:bg-[var(--accent-soft)] md:flex"

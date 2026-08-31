@@ -259,7 +259,7 @@ function RegisterPage() {
             {/* Plans link */}
             <p className="mt-3 text-center">
               <Link
-                to="/ofertas"
+                to="/ofertas5"
                 className="text-xs font-medium text-gray-400 transition-colors hover:text-[#EE4D2D] dark:text-[var(--muted)] dark:hover:text-[var(--accent)]"
               >
                 Ver planos e preços →
