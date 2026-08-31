@@ -15,6 +15,12 @@ export type AffiliateProduct = {
   rating?: number;
   sales?: number;
   isNew?: boolean;
+  /** true = retirado do catálogo ativo (comissão baixa). Continua servindo
+   *  quem já afiliou — só sai da descoberta (Catálogo, busca, filtros,
+   *  seletor de produto do Vídeo IA). Nunca remover a entrada em si: `n` é
+   *  referenciado por public.user_affiliate_products e
+   *  public.panel_product_stats. */
+  retired?: boolean;
 };
 
 export const affiliateProducts: AffiliateProduct[] = [
@@ -28,6 +34,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     commissionBRL: 1.68,
     shopeeUrl: "https://s.shopee.com.br/5VUAWHk8A0",
     image: "/produtos-afiliado/001.webp",
+    retired: true,
   },
   {
     id: "af-002",
@@ -39,6 +46,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     commissionBRL: 2.99,
     shopeeUrl: "https://s.shopee.com.br/5LAkJZuj3t",
     image: "/produtos-afiliado/002.webp",
+    retired: true,
   },
   {
     id: "af-003",
@@ -61,6 +69,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     commissionBRL: 2.39,
     shopeeUrl: "https://s.shopee.com.br/9V0JEMOyip",
     image: "/produtos-afiliado/004.webp",
+    retired: true,
   },
   {
     id: "af-005",
@@ -72,6 +81,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     commissionBRL: 1.65,
     shopeeUrl: "https://s.shopee.com.br/8pkcR5Fb6v",
     image: "/produtos-afiliado/005.webp",
+    retired: true,
   },
   {
     id: "af-006",
@@ -83,6 +93,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     commissionBRL: 3.7,
     shopeeUrl: "https://s.shopee.com.br/3g2WHWAD1q",
     image: "/produtos-afiliado/006.webp",
+    retired: true,
   },
   {
     id: "af-007",
@@ -94,6 +105,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     commissionBRL: 3.07,
     shopeeUrl: "https://s.shopee.com.br/30mpU7Ub0a",
     image: "/produtos-afiliado/007.webp",
+    retired: true,
   },
   {
     id: "af-008",
@@ -105,6 +117,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     commissionBRL: 2.27,
     shopeeUrl: "https://s.shopee.com.br/9042d3f2qO",
     image: "/produtos-afiliado/008.webp",
+    retired: true,
   },
   {
     id: "af-009",
@@ -116,6 +129,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     commissionBRL: 0.72,
     shopeeUrl: "https://s.shopee.com.br/2VqYsJwuSz",
     image: "/produtos-afiliado/009.webp",
+    retired: true,
   },
   {
     id: "af-010",
@@ -127,6 +141,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     commissionBRL: 4.46,
     shopeeUrl: "https://s.shopee.com.br/19DtS4loJ",
     image: "/produtos-afiliado/010.webp",
+    retired: true,
   },
   {
     id: "af-011",
@@ -160,6 +175,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     commissionBRL: 7.64,
     shopeeUrl: "https://s.shopee.com.br/3B61eq7N8N",
     image: "/produtos-afiliado/013.webp",
+    retired: true,
   },
   {
     id: "af-014",
@@ -171,6 +187,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     commissionBRL: 4.47,
     shopeeUrl: "https://s.shopee.com.br/5fnMclJMD8",
     image: "/produtos-afiliado/014.webp",
+    retired: true,
   },
   {
     id: "af-015",
@@ -182,6 +199,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     commissionBRL: 2.92,
     shopeeUrl: "https://s.shopee.com.br/1LeNSbdbME",
     image: "/produtos-afiliado/015.webp",
+    retired: true,
   },
   {
     id: "af-016",
@@ -193,6 +211,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     commissionBRL: 2.06,
     shopeeUrl: "https://s.shopee.com.br/9KgezClAgX",
     image: "/produtos-afiliado/016.webp",
+    retired: true,
   },
   {
     id: "af-017",
@@ -204,6 +223,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     commissionBRL: 8.46,
     shopeeUrl: "https://s.shopee.com.br/8Ko7lsABTs",
     image: "/produtos-afiliado/017.webp",
+    retired: true,
   },
   {
     id: "af-018",
@@ -215,6 +235,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     commissionBRL: 7.92,
     shopeeUrl: "https://s.shopee.com.br/1Vxnd3x1Yh",
     image: "/produtos-afiliado/018.webp",
+    retired: true,
   },
   {
     id: "af-019",
@@ -226,6 +247,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     commissionBRL: 2.51,
     shopeeUrl: "https://s.shopee.com.br/9fJVLxIf4l",
     image: "/produtos-afiliado/019.webp",
+    retired: true,
   },
   {
     id: "af-020",
@@ -248,6 +270,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     commissionBRL: 8.07,
     shopeeUrl: "https://s.shopee.com.br/8fQQUPV2OV",
     image: "/produtos-afiliado/021.webp",
+    retired: true,
   },
   {
     id: "af-022",
@@ -259,6 +282,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     commissionBRL: 1.5,
     shopeeUrl: "https://s.shopee.com.br/70ICV5mFFu",
     image: "/produtos-afiliado/022.webp",
+    retired: true,
   },
   {
     id: "af-023",
@@ -270,6 +294,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     commissionBRL: 2.22,
     shopeeUrl: "https://s.shopee.com.br/LlIYdtVk0",
     image: "/produtos-afiliado/023.webp",
+    retired: true,
   },
   {
     id: "af-024",
@@ -281,6 +306,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     commissionBRL: 5.99,
     shopeeUrl: "https://s.shopee.com.br/60PfIvc8Gl",
     image: "/produtos-afiliado/024.webp",
+    retired: true,
   },
   {
     id: "af-025",
@@ -292,6 +318,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     commissionBRL: 3.04,
     shopeeUrl: "https://s.shopee.com.br/2LWMvuaxaS",
     image: "/produtos-afiliado/025.webp",
+    retired: true,
   },
   {
     id: "af-026",
@@ -303,6 +330,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     commissionBRL: 5.26,
     shopeeUrl: "https://s.shopee.com.br/50X86jgEVL",
     image: "/produtos-afiliado/026.webp",
+    retired: true,
   },
   {
     id: "af-027",
@@ -314,6 +342,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     commissionBRL: 2.51,
     shopeeUrl: "https://s.shopee.com.br/8V70H5Y9yH",
     image: "/produtos-afiliado/027.webp",
+    retired: true,
   },
   {
     id: "af-028",
@@ -325,6 +354,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     commissionBRL: 4.2,
     shopeeUrl: "https://s.shopee.com.br/9pcNrPFsvi",
     image: "/produtos-afiliado/028.webp",
+    retired: true,
   },
   {
     id: "af-029",
@@ -336,6 +366,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     commissionBRL: 1.48,
     shopeeUrl: "https://s.shopee.com.br/18SAngxVI",
     image: "/produtos-afiliado/029.webp",
+    retired: true,
   },
   {
     id: "af-030",
@@ -347,6 +378,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     commissionBRL: 2.87,
     shopeeUrl: "https://s.shopee.com.br/1qa6Jwg9tn",
     image: "/produtos-afiliado/030.webp",
+    retired: true,
   },
   {
     id: "af-031",
@@ -358,6 +390,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     commissionBRL: 4.29,
     shopeeUrl: "https://s.shopee.com.br/3B5J3pvjMX",
     image: "/produtos-afiliado/031.webp",
+    retired: true,
   },
   {
     id: "af-032",
@@ -369,6 +402,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     commissionBRL: 0.51,
     shopeeUrl: "https://s.shopee.com.br/4LHGRYFX35",
     image: "/produtos-afiliado/032.webp",
+    retired: true,
   },
   {
     id: "af-033",
@@ -380,6 +414,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     commissionBRL: 6,
     shopeeUrl: "https://s.shopee.com.br/5q64Dc45p6",
     image: "/produtos-afiliado/033.webp",
+    retired: true,
   },
   {
     id: "af-034",
@@ -391,6 +426,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     commissionBRL: 0.6,
     shopeeUrl: "https://s.shopee.com.br/7fXiOulWvp",
     image: "/produtos-afiliado/034.webp",
+    retired: true,
   },
   {
     id: "af-035",
@@ -402,6 +438,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     commissionBRL: 1.5,
     shopeeUrl: "https://s.shopee.com.br/AAF3Mnut1O",
     image: "/produtos-afiliado/035.webp",
+    retired: true,
   },
   {
     id: "af-036",
@@ -413,6 +450,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     commissionBRL: 0.75,
     shopeeUrl: "https://s.shopee.com.br/8ATyxp4UX6",
     image: "/produtos-afiliado/036.webp",
+    retired: true,
   },
   {
     id: "af-037",
@@ -424,6 +462,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     commissionBRL: 0.66,
     shopeeUrl: "https://s.shopee.com.br/2BCloWlKYS",
     image: "/produtos-afiliado/037.webp",
+    retired: true,
   },
   {
     id: "af-038",
@@ -435,6 +474,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     commissionBRL: 0.72,
     shopeeUrl: "https://s.shopee.com.br/2g92P3wQAp",
     image: "/produtos-afiliado/038.webp",
+    retired: true,
   },
   {
     id: "af-039",
@@ -446,6 +486,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     commissionBRL: 1.38,
     shopeeUrl: "https://s.shopee.com.br/6ffBAIginJ",
     image: "/produtos-afiliado/039.webp",
+    retired: true,
   },
   {
     id: "af-040",
@@ -457,6 +498,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     commissionBRL: 0.81,
     shopeeUrl: "https://s.shopee.com.br/6AiuXpmH5z",
     image: "/produtos-afiliado/040.webp",
+    retired: true,
   },
   {
     id: "af-041",
@@ -468,6 +510,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     commissionBRL: 3.04,
     shopeeUrl: "https://s.shopee.com.br/8fQ19wtv9c",
     image: "/produtos-afiliado/041.webp",
+    retired: true,
   },
   {
     id: "af-042",
@@ -479,6 +522,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     commissionBRL: 6.89,
     shopeeUrl: "https://s.shopee.com.br/9pbyY38UpQ",
     image: "/produtos-afiliado/042.webp",
+    retired: true,
   },
   {
     id: "af-043",
@@ -490,6 +534,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     commissionBRL: 8.97,
     shopeeUrl: "https://s.shopee.com.br/3LOUo4Kdy4",
     image: "/produtos-afiliado/043.webp",
+    retired: true,
   },
   {
     id: "af-044",
@@ -501,6 +546,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     commissionBRL: 3.42,
     shopeeUrl: "https://s.shopee.com.br/4VaSC2Fu1R",
     image: "/produtos-afiliado/044.webp",
+    retired: true,
   },
   {
     id: "af-045",
@@ -523,6 +569,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     commissionBRL: 9.44,
     shopeeUrl: "https://s.shopee.com.br/2VpNoDwV4M",
     image: "/produtos-afiliado/046.webp",
+    retired: true,
   },
   {
     id: "af-047",
@@ -534,6 +581,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     commissionBRL: 3.61,
     shopeeUrl: "https://s.shopee.com.br/6pyF2umYkP",
     image: "/produtos-afiliado/047.webp",
+    retired: true,
   },
   {
     id: "af-048",
@@ -545,6 +593,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     commissionBRL: 2.1,
     shopeeUrl: "https://s.shopee.com.br/5q5hqnivzd",
     image: "/produtos-afiliado/048.webp",
+    retired: true,
   },
   {
     id: "af-049",
@@ -567,6 +616,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     commissionBRL: 1.8,
     shopeeUrl: "https://s.shopee.com.br/8fPtDuJw2T",
     image: "/produtos-afiliado/050.webp",
+    retired: true,
   },
   {
     id: "af-051",
@@ -579,6 +629,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/9V0HrS45cf",
     image: "/produtos-afiliado/051.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-052",
@@ -591,6 +642,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/6L3G5NeCqs",
     image: "/produtos-afiliado/052.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-053",
@@ -603,6 +655,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/AKZOqXypYL",
     image: "/produtos-afiliado/053.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-054",
@@ -615,6 +668,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/AAFye6pZEB",
     image: "/produtos-afiliado/054.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-055",
@@ -627,6 +681,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/5fnZHYvtli",
     image: "/produtos-afiliado/055.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-056",
@@ -639,6 +694,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/70Iwrsgmge",
     image: "/produtos-afiliado/056.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-057",
@@ -675,6 +731,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/30mmKj9bFq",
     image: "/produtos-afiliado/059.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-060",
@@ -687,6 +744,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/W5RLwoIL2",
     image: "/produtos-afiliado/060.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-061",
@@ -699,6 +757,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/8pkZHA7rcZ",
     image: "/produtos-afiliado/061.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-062",
@@ -711,6 +770,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/19AkpURM2",
     image: "/produtos-afiliado/062.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-063",
@@ -735,6 +795,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/2qTM7dPLvM",
     image: "/produtos-afiliado/064.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-065",
@@ -747,6 +808,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/9fJgG7sICN",
     image: "/produtos-afiliado/065.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-066",
@@ -759,6 +821,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/2g9vvC7QXC",
     image: "/produtos-afiliado/066.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-067",
@@ -771,6 +834,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/50XqhR8UFy",
     image: "/produtos-afiliado/067.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-068",
@@ -795,6 +859,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/gOoIu0Htf",
     image: "/produtos-afiliado/069.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-070",
@@ -807,6 +872,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/4AygTGoZxW",
     image: "/produtos-afiliado/070.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-071",
@@ -819,6 +885,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/80BP2FtCV8",
     image: "/produtos-afiliado/071.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-072",
@@ -831,6 +898,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/9V0Cot59sX",
     image: "/produtos-afiliado/072.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-073",
@@ -843,6 +911,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/8pkW1YWFTM",
     image: "/produtos-afiliado/073.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-074",
@@ -855,6 +924,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/9fJd0mx1XQ",
     image: "/produtos-afiliado/074.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-075",
@@ -867,6 +937,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/7VF8Qk6kaL",
     image: "/produtos-afiliado/075.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-076",
@@ -891,6 +962,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/6L3B1B78sp",
     image: "/produtos-afiliado/077.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-078",
@@ -903,6 +975,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/5q6uPuzn9D",
     image: "/produtos-afiliado/078.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-079",
@@ -915,6 +988,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/9fJZpqAk26",
     image: "/produtos-afiliado/079.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-080",
@@ -939,6 +1013,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/20u8haLh6F",
     image: "/produtos-afiliado/081.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-082",
@@ -951,6 +1026,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/5fnR468zUP",
     image: "/produtos-afiliado/082.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-083",
@@ -963,6 +1039,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/8fR2dYGmj5",
     image: "/produtos-afiliado/083.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-084",
@@ -975,6 +1052,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/6AjhesxFzu",
     image: "/produtos-afiliado/084.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-085",
@@ -987,6 +1065,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/4LI3TKCNqM",
     image: "/produtos-afiliado/085.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-086",
@@ -999,6 +1078,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/70IoeB4Xm9",
     image: "/produtos-afiliado/086.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-087",
@@ -1011,6 +1091,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/AKZGbvJ0gJ",
     image: "/produtos-afiliado/087.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-088",
@@ -1023,6 +1104,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/194IrpAGE",
     image: "/produtos-afiliado/088.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-089",
@@ -1035,6 +1117,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/70InXrts6d",
     image: "/produtos-afiliado/089.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-090",
@@ -1047,6 +1130,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/9KgiK0YGLw",
     image: "/produtos-afiliado/090.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-091",
@@ -1059,6 +1143,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/1LeQn8AK9L",
     image: "/produtos-afiliado/091.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-092",
@@ -1071,6 +1156,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/7fYUKebqGF",
     image: "/produtos-afiliado/092.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-093",
@@ -1107,6 +1193,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/6L36jNtxQh",
     image: "/produtos-afiliado/095.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-096",
@@ -1119,6 +1206,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/30melBzBnE",
     image: "/produtos-afiliado/096.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-097",
@@ -1131,6 +1219,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/qiABADK5b",
     image: "/produtos-afiliado/097.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-098",
@@ -1143,6 +1232,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/2VqOA8LMcD",
     image: "/produtos-afiliado/098.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-099",
@@ -1155,6 +1245,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/5VTy4pxffb",
     image: "/produtos-afiliado/099.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-100",
@@ -1167,6 +1258,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/2VqMVHT8gp",
     image: "/produtos-afiliado/100.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-101",
@@ -1179,6 +1271,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/9ANGRM3Wpg",
     image: "/produtos-afiliado/101.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-102",
@@ -1191,6 +1284,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/7prsiCT1Wl",
     image: "/produtos-afiliado/102.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-103",
@@ -1203,6 +1297,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/1qafYu0rD0",
     image: "/produtos-afiliado/103.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-104",
@@ -1227,6 +1322,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/8pkKyqvCPv",
     image: "/produtos-afiliado/105.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-106",
@@ -1239,6 +1335,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/1LeK2y3tui",
     image: "/produtos-afiliado/106.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-107",
@@ -1251,6 +1348,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/5q6jP92WvN",
     image: "/produtos-afiliado/107.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-108",
@@ -1263,6 +1361,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/4VbLoWGaTK",
     image: "/produtos-afiliado/108.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-109",
@@ -1287,6 +1386,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/7prnm2IyKc",
     image: "/produtos-afiliado/110.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-111",
@@ -1299,6 +1399,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/903l9p4rAm",
     image: "/produtos-afiliado/111.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-112",
@@ -1311,6 +1412,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/3g2EnwRBBW",
     image: "/produtos-afiliado/112.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-113",
@@ -1323,6 +1425,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/50XcOItKGD",
     image: "/produtos-afiliado/113.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-114",
@@ -1347,6 +1450,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/5LAPWVKU0M",
     image: "/produtos-afiliado/115.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-116",
@@ -1359,6 +1463,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/4AyS7sfRVQ",
     image: "/produtos-afiliado/116.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-117",
@@ -1371,6 +1476,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/40f1vNgndC",
     image: "/produtos-afiliado/117.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-118",
@@ -1395,6 +1501,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/8AUasmXGOD",
     image: "/produtos-afiliado/119.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-120",
@@ -1443,6 +1550,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/5LAOOrQydU",
     image: "/produtos-afiliado/123.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-124",
@@ -1527,6 +1635,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/1VxdngNqMX",
     image: "/produtos-afiliado/130.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-131",
@@ -1551,6 +1660,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/1BKnOhynmH",
     image: "/produtos-afiliado/132.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-133",
@@ -1563,6 +1673,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/8KnxvoY2Bz",
     image: "/produtos-afiliado/133.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-134",
@@ -1575,6 +1686,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/9KgV7Z6wuh",
     image: "/produtos-afiliado/134.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-135",
@@ -1587,6 +1699,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/60Q39Mlv3I",
     image: "/produtos-afiliado/135.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-136",
@@ -1599,6 +1712,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/AAFc6y1VZI",
     image: "/produtos-afiliado/136.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-137",
@@ -1611,6 +1725,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/8V7O7pnTGv",
     image: "/produtos-afiliado/137.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-138",
@@ -1635,6 +1750,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/1gH2KeX48J",
     image: "/produtos-afiliado/139.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-140",
@@ -1647,6 +1763,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/20tsjAOK08",
     image: "/produtos-afiliado/140.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-141",
@@ -1659,6 +1776,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/7pre2iG8eN",
     image: "/produtos-afiliado/141.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-142",
@@ -1671,6 +1789,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/1BKk6Mv8lr",
     image: "/produtos-afiliado/142.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-143",
@@ -1683,6 +1802,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/4fucGgwk9R",
     image: "/produtos-afiliado/143.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-144",
@@ -1707,6 +1827,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/gOTV8RBs9",
     image: "/produtos-afiliado/145.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-146",
@@ -1719,6 +1840,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/9AN1ch8Tgy",
     image: "/produtos-afiliado/146.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-147",
@@ -1731,6 +1853,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/AKYz0mA3ID",
     image: "/produtos-afiliado/147.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-148",
@@ -1743,6 +1866,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/6pz6qEqbNc",
     image: "/produtos-afiliado/148.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-149",
@@ -1755,6 +1879,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/9AN1cPSwqW",
     image: "/produtos-afiliado/149.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-150",
@@ -1767,6 +1892,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/9KgRoT8w8X",
     image: "/produtos-afiliado/150.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-151",
@@ -1779,6 +1905,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/1Le1JAr98K",
     image: "/produtos-afiliado/151.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-152",
@@ -1791,6 +1918,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/5VTaGliOps",
     image: "/produtos-afiliado/152.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-153",
@@ -1815,6 +1943,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/LlU6tsf1i",
     image: "/produtos-afiliado/154.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-155",
@@ -1827,6 +1956,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/3g1w4w9xk0",
     image: "/produtos-afiliado/155.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-156",
@@ -1839,6 +1969,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/40emTUAJBZ",
     image: "/produtos-afiliado/156.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-157",
@@ -1851,6 +1982,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/2LWYUMLV4P",
     image: "/produtos-afiliado/157.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-158",
@@ -1863,6 +1995,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/9zvzcL9Vds",
     image: "/produtos-afiliado/158.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-159",
@@ -1875,6 +2008,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/AUsGD5JgDR",
     image: "/produtos-afiliado/159.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-160",
@@ -1887,6 +2021,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/9zvzc7VawH",
     image: "/produtos-afiliado/160.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-161",
@@ -1899,6 +2034,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/1BKXLbHe9t",
     image: "/produtos-afiliado/161.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-162",
@@ -1935,6 +2071,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/9KgF3T7XMz",
     image: "/produtos-afiliado/164.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-165",
@@ -1947,6 +2084,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/4LHZ35Vl5y",
     image: "/produtos-afiliado/165.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-166",
@@ -1971,6 +2109,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/80ArOhk4nj",
     image: "/produtos-afiliado/167.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-168",
@@ -1983,6 +2122,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/4qDpcm3QYo",
     image: "/produtos-afiliado/168.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-169",
@@ -1995,6 +2135,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/9AMomfjwOG",
     image: "/produtos-afiliado/169.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-170",
@@ -2019,6 +2160,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/40eeM8khwa",
     image: "/produtos-afiliado/171.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-172",
@@ -2031,6 +2173,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/8AUDJhjIdX",
     image: "/produtos-afiliado/172.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-173",
@@ -2043,6 +2186,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/9pcRIaczzW",
     image: "/produtos-afiliado/173.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-174",
@@ -2055,6 +2199,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/8fQTuCB09k",
     image: "/produtos-afiliado/174.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-175",
@@ -2091,6 +2236,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/9pcRHjYyMm",
     image: "/produtos-afiliado/177.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-178",
@@ -2103,6 +2249,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/6L2Z7EsJP0",
     image: "/produtos-afiliado/178.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-179",
@@ -2175,6 +2322,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/gOAtVvNwu",
     image: "/produtos-afiliado/184.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-185",
@@ -2199,6 +2347,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/7AbbH5ohcc",
     image: "/produtos-afiliado/186.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-187",
@@ -2247,6 +2396,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/2LWLVVXfw9",
     image: "/produtos-afiliado/190.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-191",
@@ -2259,6 +2409,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/18Qj1uCnl",
     image: "/produtos-afiliado/191.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-192",
@@ -2295,6 +2446,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/6pykr00nzn",
     image: "/produtos-afiliado/194.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-195",
@@ -2307,6 +2459,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/9zvkkVK8Sq",
     image: "/produtos-afiliado/195.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-196",
@@ -2319,6 +2472,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/LlFEdxQZq",
     image: "/produtos-afiliado/196.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-197",
@@ -2331,6 +2485,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/7VEPlfrNZW",
     image: "/produtos-afiliado/197.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-198",
@@ -2343,6 +2498,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/8KnWl7T3jn",
     image: "/produtos-afiliado/198.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-199",
@@ -2367,6 +2523,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/50X4mapqdO",
     image: "/produtos-afiliado/200.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-201",
@@ -2379,6 +2536,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/8fQN9FIsB7",
     image: "/produtos-afiliado/201.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-202",
@@ -2391,6 +2549,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/18OpDVKQz",
     image: "/produtos-afiliado/202.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-203",
@@ -2403,6 +2562,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/6VLsZ4wZa6",
     image: "/produtos-afiliado/203.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-204",
@@ -2415,6 +2575,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/1BKMDAJUvh",
     image: "/produtos-afiliado/204.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-205",
@@ -2427,6 +2588,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/5fmgoHY0zy",
     image: "/produtos-afiliado/205.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-206",
@@ -2451,6 +2613,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/9pcFlcBvsr",
     image: "/produtos-afiliado/207.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-208",
@@ -2463,6 +2626,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/5fmgnrPosQ",
     image: "/produtos-afiliado/208.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-209",
@@ -2475,6 +2639,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/1Vx7q75CeV",
     image: "/produtos-afiliado/209.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-210",
@@ -2511,6 +2676,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/18K35DNiw",
     image: "/produtos-afiliado/212.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-213",
@@ -2523,6 +2689,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/5AqQCU0XF7",
     image: "/produtos-afiliado/213.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-214",
@@ -2535,6 +2702,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/AKYWLqJhQB",
     image: "/produtos-afiliado/214.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-215",
@@ -2547,6 +2715,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/Ll8ssulHP",
     image: "/produtos-afiliado/215.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-216",
@@ -2559,6 +2728,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/4LHHbcRqaP",
     image: "/produtos-afiliado/216.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-217",
@@ -2571,6 +2741,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/7KutApk1zi",
     image: "/produtos-afiliado/217.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-218",
@@ -2583,6 +2754,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/9zveLbluZJ",
     image: "/produtos-afiliado/218.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-219",
@@ -2607,6 +2779,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/80AZxhBgNH",
     image: "/produtos-afiliado/220.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-221",
@@ -2619,6 +2792,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/5VTEyoWs47",
     image: "/produtos-afiliado/221.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-222",
@@ -2643,6 +2817,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/6pycYskHy4",
     image: "/produtos-afiliado/223.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-224",
@@ -2655,6 +2830,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/7AbSxDcglA",
     image: "/produtos-afiliado/224.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-225",
@@ -2667,6 +2843,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/AKYRxdDEAp",
     image: "/produtos-afiliado/225.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-226",
@@ -2679,6 +2856,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/8pjeAd1pWL",
     image: "/produtos-afiliado/226.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-227",
@@ -2703,6 +2881,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/BRfpuOmTU",
     image: "/produtos-afiliado/228.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-229",
@@ -2715,6 +2894,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/9pcBLZunvh",
     image: "/produtos-afiliado/229.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-230",
@@ -2727,6 +2907,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/9zvbXnnb1O",
     image: "/produtos-afiliado/230.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-231",
@@ -2739,6 +2920,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/1Vx3PwUCvr",
     image: "/produtos-afiliado/231.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-232",
@@ -2787,6 +2969,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/5q62X7dnqz",
     image: "/produtos-afiliado/235.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-236",
@@ -2811,6 +2994,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/6ff9VYFUoh",
     image: "/produtos-afiliado/237.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-238",
@@ -2823,6 +3007,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/1BKCqNBBLg",
     image: "/produtos-afiliado/238.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-239",
@@ -2847,6 +3032,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/5q62Nq2WNW",
     image: "/produtos-afiliado/240.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-241",
@@ -2859,6 +3045,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/AUrrveCwdt",
     image: "/produtos-afiliado/241.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-242",
@@ -2871,6 +3058,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/1gGTP1zprc",
     image: "/produtos-afiliado/242.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-243",
@@ -2883,6 +3071,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/4AxoNX5sGR",
     image: "/produtos-afiliado/243.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-244",
@@ -2907,6 +3096,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/9032qW4M6H",
     image: "/produtos-afiliado/245.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-246",
@@ -2919,6 +3109,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/3Vi6HuFgEu",
     image: "/produtos-afiliado/246.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-247",
@@ -2931,6 +3122,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/110lJ9F4iB",
     image: "/produtos-afiliado/247.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-248",
@@ -2943,6 +3135,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/4fu3fnZREA",
     image: "/produtos-afiliado/248.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-249",
@@ -2955,6 +3148,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/50Wu4GjVJR",
     image: "/produtos-afiliado/249.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-250",
@@ -2967,6 +3161,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     shopeeUrl: "https://s.shopee.com.br/AUrqbCJoq1",
     image: "/produtos-afiliado/250.webp",
     rating: 5,
+    retired: true,
   },
   {
     id: "af-251",
@@ -3058,6 +3253,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     image: "/produtos-afiliado/257.webp",
     sales: 0,
     isNew: true,
+    retired: true,
   },
   {
     id: "af-258",
@@ -3201,6 +3397,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     image: "/produtos-afiliado/268.webp",
     sales: 34,
     isNew: true,
+    retired: true,
   },
   {
     id: "af-269",
@@ -3227,6 +3424,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     image: "/produtos-afiliado/270.webp",
     sales: 93,
     isNew: true,
+    retired: true,
   },
   {
     id: "af-271",
@@ -3331,6 +3529,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     image: "/produtos-afiliado/278.webp",
     sales: 215,
     isNew: true,
+    retired: true,
   },
   {
     id: "af-279",
@@ -3344,6 +3543,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     image: "/produtos-afiliado/279.webp",
     sales: 216,
     isNew: true,
+    retired: true,
   },
   {
     id: "af-280",
@@ -3474,6 +3674,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     image: "/produtos-afiliado/289.webp",
     sales: 225,
     isNew: true,
+    retired: true,
   },
   {
     id: "af-290",
@@ -3500,6 +3701,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     image: "/produtos-afiliado/291.webp",
     sales: 1,
     isNew: true,
+    retired: true,
   },
   {
     id: "af-292",
@@ -3539,6 +3741,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     image: "/produtos-afiliado/294.webp",
     sales: 0,
     isNew: true,
+    retired: true,
   },
   {
     id: "af-295",
@@ -3552,6 +3755,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     image: "/produtos-afiliado/295.webp",
     sales: 45,
     isNew: true,
+    retired: true,
   },
   {
     id: "af-296",
@@ -3578,6 +3782,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     image: "/produtos-afiliado/297.webp",
     sales: 196,
     isNew: true,
+    retired: true,
   },
   {
     id: "af-298",
@@ -3617,6 +3822,7 @@ export const affiliateProducts: AffiliateProduct[] = [
     image: "/produtos-afiliado/300.webp",
     sales: 170,
     isNew: true,
+    retired: true,
   },
 ];
 

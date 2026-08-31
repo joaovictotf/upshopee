@@ -29,14 +29,19 @@ const SUB_TABS: Array<{ id: SubTab; label: string }> = [
   { id: "meus", label: "Meus produtos" },
 ];
 
+// Produtos aposentados (comissão baixa) saem da descoberta — Catálogo, busca
+// e filtros — mas continuam servindo quem já afiliou via `affiliateByN`
+// (lib/my-affiliate-products.ts), que lê o array completo, sem este filtro.
+const activeAffiliateProducts = affiliateProducts.filter((p) => !p.retired);
+
 const catalog: CatalogItem[] = [
   ...products.map((product) => ({ kind: "legacy" as const, product })),
-  ...affiliateProducts.map((product) => ({ kind: "affiliate" as const, product })),
+  ...activeAffiliateProducts.map((product) => ({ kind: "affiliate" as const, product })),
 ];
 
 const allCategories = [
   ...categories,
-  ...Array.from(new Set(affiliateProducts.map((p) => p.category))).filter(
+  ...Array.from(new Set(activeAffiliateProducts.map((p) => p.category))).filter(
     (c) => !categories.includes(c),
   ),
 ];
