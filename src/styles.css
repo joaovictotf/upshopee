@@ -420,3 +420,46 @@
     height: 22px;
   }
 }
+
+/* ── Gold "new batch" card highlight (ProductCard.tsx) ────────────────────
+   Marks the products imported 2026-08-31 (n 301-500) for one week — see
+   NEW_BATCH_HIGHLIGHT_UNTIL in ProductCard.tsx for the cutoff. Gold is
+   deliberately NOT a design token: it's scoped to these two classes only,
+   never added to :root/.dark, so it can't leak into anything else.
+   `div.product-card-gold` (element + class) keeps the box-shadow override
+   unambiguous over the card's own `shadow-[var(--shadow-card)]` utility,
+   regardless of stylesheet ordering. */
+div.product-card-gold {
+  --gold: #c9971a;
+  --gold-ring: rgba(201, 151, 26, 0.25);
+  --gold-glow: 0 0 16px rgba(201, 151, 26, 0.24);
+  border-color: var(--gold);
+  box-shadow: var(--shadow-card), 0 0 0 1px var(--gold-ring);
+}
+div.product-card-gold:hover {
+  border-color: var(--gold);
+  box-shadow: var(--shadow-elevated), 0 0 0 1px var(--gold-ring);
+}
+.dark div.product-card-gold {
+  --gold: #e8b84b;
+  --gold-ring: rgba(232, 184, 75, 0.32);
+  --gold-glow: 0 0 22px rgba(232, 184, 75, 0.36);
+}
+/* Static frame above always applies; only the pulse itself is gated —
+   reduced motion still gets the gold card, just without the animation. */
+@media (prefers-reduced-motion: no-preference) {
+  div.product-card-gold {
+    animation: product-card-gold-pulse 3.6s ease-in-out infinite;
+  }
+}
+@keyframes product-card-gold-pulse {
+  0%, 100% { box-shadow: var(--shadow-card), 0 0 0 1px var(--gold-ring); }
+  50% { box-shadow: var(--shadow-elevated), var(--gold-glow), 0 0 0 1px var(--gold-ring); }
+}
+
+/* Badge variant for the same highlight — inherits --gold from the ancestor
+   .product-card-gold card, with a fallback in case it's ever used alone. */
+.product-card-gold-badge {
+  border-color: var(--gold, #c9971a);
+  color: var(--gold, #c9971a);
+}

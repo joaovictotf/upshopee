@@ -62,3 +62,31 @@ export function spDateKey(at: number = Date.now()): string {
     parts.find((p) => p.type === type)?.value ?? "";
   return `${get("year")}-${get("month")}-${get("day")}`;
 }
+
+/**
+ * Real epoch ms of a given America/Sao_Paulo wall-clock moment (month is
+ * 1-indexed, unlike Date.UTC). Use this — never a bare `new Date(...)`
+ * comparison — for any "this stops being true after <SP date/time>" cutoff:
+ * `new Date("2026-09-07")` parses as UTC midnight, which is a different
+ * instant than SP midnight, so a visitor in another timezone would see the
+ * cutoff fire at the wrong moment.
+ *
+ * `spEquivalentNow(at)` reads the SP wall-clock digits at real instant `at`
+ * and re-encodes them as if they were UTC — a fixed, currently-constant
+ * shift (SP has had no DST since 2019). Feeding it our own `target` gives
+ * back that shift directly, without hardcoding the "-03:00" offset: at a
+ * true SP instant, `target - spEquivalentNow(target)` collapses to exactly
+ * that shift, so adding it back to `target` recovers the real epoch ms.
+ */
+export function spInstantMs(
+  year: number,
+  month: number,
+  day: number,
+  hour = 0,
+  minute = 0,
+  second = 0,
+): number {
+  const target = Date.UTC(year, month - 1, day, hour, minute, second);
+  const offsetMs = target - spEquivalentNow(target);
+  return target + offsetMs;
+}

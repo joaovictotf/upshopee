@@ -3,6 +3,7 @@ import type { Product } from "../../lib/mock/products";
 import type { AffiliateProduct } from "../../lib/mock/affiliate-products";
 import { brl } from "../../lib/format";
 import { supabase } from "../../integrations/supabase/client";
+import { spInstantMs } from "../../lib/timeWindow";
 
 export type CatalogItem =
   | { kind: "legacy"; product: Product }
@@ -39,27 +40,63 @@ function scoreFor(id: string): number {
 
 const AFFILIATE_BADGES = ["Em alta", "Mais vendido", "Alta conversão", "Tendência", "Oportunidade"];
 
-/** Real Shopee sales needed for "Alta procura" on the new batch (n 251-300).
+/** Real Shopee sales needed for "Alta procura" on the n 251-300 batch.
  *  ≥150 marks the top 15 of the 50 (median is 43) so the badge stays a
  *  signal, not wallpaper. Only the new products carry a real `sales` count —
  *  everything else keeps the deterministic pseudo-random badge below. */
 const HIGH_DEMAND_MIN_SALES = 150;
 
-type CardBadge = { label: string; accent: boolean };
+/** The 200 products imported 2026-08-31 (n 301..500) get the gold "new
+ *  batch" frame + "Novo produto"/"Alta comissão" badges for exactly one
+ *  week. After this instant they render as ordinary catalog cards — no
+ *  code change, no deploy. Move this one line to change the cutoff. */
+const NEW_BATCH_HIGHLIGHT_UNTIL = spInstantMs(2026, 9, 7, 0, 0, 0);
+const NEW_BATCH_N_MIN = 301;
+const NEW_BATCH_N_MAX = 500;
 
-function badgesFor(item: CatalogItem): CardBadge[] {
+/** The 50 products n 251..300 (the older `isNew` flag) got this same
+ *  one-week treatment when they landed on 2026-08-05. This cutoff is
+ *  deliberately already in the past, so their "Produto novo"/"Alta
+ *  procura" badges and accent border stay retired without touching the
+ *  data — `isNew` is still true on those rows, it just no longer renders. */
+const OLD_BATCH_HIGHLIGHT_UNTIL = spInstantMs(2026, 8, 12, 0, 0, 0);
+
+/** Card frame/badges for the current 200-product batch — gold, expires. */
+function isGoldHighlighted(item: CatalogItem, now: number): boolean {
+  return (
+    item.kind === "affiliate" &&
+    item.product.n >= NEW_BATCH_N_MIN &&
+    item.product.n <= NEW_BATCH_N_MAX &&
+    now < NEW_BATCH_HIGHLIGHT_UNTIL
+  );
+}
+
+/** Card frame/badges for the older `isNew` batch — accent orange, expired. */
+function isOldNewHighlighted(item: CatalogItem, now: number): boolean {
+  return item.kind === "affiliate" && item.product.isNew === true && now < OLD_BATCH_HIGHLIGHT_UNTIL;
+}
+
+type CardBadge = { label: string; tone: "gold" | "accent" | "plain" };
+
+function badgesFor(item: CatalogItem, now: number): CardBadge[] {
   if (item.kind === "legacy")
-    return [{ label: item.product.tags[0] ?? item.product.category, accent: false }];
-  if (item.product.isNew) {
-    const badges: CardBadge[] = [{ label: "Produto novo", accent: true }];
+    return [{ label: item.product.tags[0] ?? item.product.category, tone: "plain" }];
+  if (isGoldHighlighted(item, now)) {
+    return [
+      { label: "Novo produto", tone: "gold" },
+      { label: "Alta comissão", tone: "gold" },
+    ];
+  }
+  if (isOldNewHighlighted(item, now)) {
+    const badges: CardBadge[] = [{ label: "Produto novo", tone: "accent" }];
     if ((item.product.sales ?? 0) >= HIGH_DEMAND_MIN_SALES)
-      badges.push({ label: "Alta procura", accent: false });
+      badges.push({ label: "Alta procura", tone: "plain" });
     return badges;
   }
   return [
     {
       label: AFFILIATE_BADGES[fnv1a(item.product.id + ":badge") % AFFILIATE_BADGES.length],
-      accent: false,
+      tone: "plain",
     },
   ];
 }
@@ -113,23 +150,37 @@ export function ProductCard({
   onAffiliated?: (product: AffiliateProduct) => void;
 }) {
   const { id, name, category, image } = item.product;
-  const isNew = item.kind === "affiliate" && item.product.isNew === true;
+  const now = Date.now();
+  const goldHighlighted = isGoldHighlighted(item, now);
+  const oldHighlighted = isOldNewHighlighted(item, now);
+  // Independent of whether the visual highlight has expired — this is only
+  // the scroll target for NewProductsAnnouncement's one-time popup about the
+  // n 251-300 batch, keyed off the same flag it always was.
+  const isDataNewProduct = item.kind === "affiliate" && item.product.isNew === true;
   const commission = item.kind === "affiliate" ? item.product.commissionBRL : item.product.estimatedCommission;
   const commissionPct =
     item.kind === "affiliate"
       ? item.product.commissionPct
       : Math.round((item.product.estimatedCommission / item.product.suggestedPrice) * 100);
+  // Staggers the gold pulse per card (0-3.59s into its 3.6s cycle) so a grid
+  // of 200 highlighted cards doesn't breathe in lockstep like a slot machine.
+  const goldStyle = goldHighlighted
+    ? { animationDelay: `${(fnv1a(id + ":gold-delay") % 3600) / 1000}s` }
+    : undefined;
 
   return (
     <div
-      data-new-product={isNew ? "true" : undefined}
+      data-new-product={isDataNewProduct ? "true" : undefined}
+      style={goldStyle}
       // New products get an accent frame — border + hairline ring around the
       // whole card. Soft opacities so 50 of them in a 300-card grid read as a
       // quiet tint, not a wall of orange competing with the CTA button.
       className={`group flex flex-col overflow-hidden rounded-2xl border bg-[var(--surface)] shadow-[var(--shadow-card)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-elevated)] ${
-        isNew
-          ? "border-[var(--accent)]/40 ring-1 ring-[var(--accent)]/20 hover:border-[var(--accent)]/60"
-          : "border-[var(--border)] hover:border-[var(--accent)]/35"
+        goldHighlighted
+          ? "product-card-gold"
+          : oldHighlighted
+            ? "border-[var(--accent)]/40 ring-1 ring-[var(--accent)]/20 hover:border-[var(--accent)]/60"
+            : "border-[var(--border)] hover:border-[var(--accent)]/35"
       }`}
     >
       {/* Image */}
@@ -146,16 +197,18 @@ export function ProductCard({
           }}
           className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.04]"
         />
-        {/* Stacked so "Produto novo" + "Alta procura" never overflow the
-            ~150px-wide card of a 320px two-column grid. */}
+        {/* Stacked so two badges never overflow the ~150px-wide card of a
+            320px two-column grid. */}
         <div className="absolute left-2 top-2 flex max-w-[85%] flex-col items-start gap-1">
-          {badgesFor(item).map(({ label, accent }) => (
+          {badgesFor(item, now).map(({ label, tone }) => (
             <span
               key={label}
               className={`max-w-full truncate rounded-full border bg-[var(--surface)]/90 px-2 py-0.5 text-[10px] font-semibold backdrop-blur-sm ${
-                accent
-                  ? "border-[var(--accent)]/50 text-[var(--accent)]"
-                  : "border-[var(--border)]/70 text-[var(--text)]"
+                tone === "gold"
+                  ? "product-card-gold-badge"
+                  : tone === "accent"
+                    ? "border-[var(--accent)]/50 text-[var(--accent)]"
+                    : "border-[var(--border)]/70 text-[var(--text)]"
               }`}
             >
               {label}
