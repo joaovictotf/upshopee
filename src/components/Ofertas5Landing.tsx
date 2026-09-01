@@ -182,7 +182,7 @@ const faq = [
   ],
   [
     "Existe garantia?",
-    "Sim. Você tem 7 dias para testar. Se a plataforma não fizer sentido para você, pode solicitar o reembolso dentro desse prazo.",
+    "Sim. Você tem 7 dias, a partir da confirmação da compra, para testar a plataforma. Se não fizer sentido para você, pode solicitar o reembolso dentro desse prazo, sem burocracia.",
   ],
   [
     "Como recebo os dois anos de Google AI Pro?",
@@ -435,6 +435,23 @@ const CSS = `
 .o5x .platform-note{ display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 22px; color: #8c8f95; font-size: .65rem; text-align: center; }
 .o5x .platform-note svg{ flex: none; color: #a5a7ab; }
 
+.o5x .platform-carousel-wrap{ display: none; }
+.o5x .platform-carousel-viewport{ position: relative; min-height: 96px; }
+.o5x .platform-carousel-slide{ position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; opacity: 0; transform: scale(.96); transition: opacity .5s ease, transform .5s ease; pointer-events: none; }
+.o5x .platform-carousel-slide.active{ position: relative; opacity: 1; transform: scale(1); pointer-events: auto; }
+.o5x .platform-carousel-slide .platform-chip{ width: 100%; max-width: 280px; height: 84px; justify-content: center; }
+.o5x .platform-carousel-dots{ display: flex; align-items: center; justify-content: center; gap: 2px; margin-top: 14px; }
+.o5x .platform-carousel-dots button{ width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border: 0; padding: 0; background: transparent; }
+.o5x .platform-carousel-dots button::after{ content: ""; width: 8px; height: 8px; border-radius: 50%; background: #ddd9d2; transition: background .2s ease, transform .2s ease; }
+.o5x .platform-carousel-dots button.active::after{ background: var(--orange); transform: scale(1.4); }
+.o5x .platform-carousel-static{ display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.o5x .platform-carousel-static .platform-chip{ min-width: 0; flex: 1 1 140px; height: 64px; padding: 0 14px; }
+
+@media (max-width: 640px) {
+  .o5x .platform-marquee{ display: none; }
+  .o5x .platform-carousel-wrap{ display: block; margin-top: 38px; }
+}
+
 .o5x .narrow-head{ max-width: 780px; margin-bottom: 58px; }
 .o5x .narrow-head > p:last-child, .o5x .centered-head > p:last-child{ max-width: 700px; color: var(--muted); font-size: 1.05rem; line-height: 1.7; }
 .o5x .comparison-grid{ display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
@@ -501,7 +518,7 @@ const CSS = `
 .o5x .partnership-seal{ display: inline-flex; align-items: center; gap: 8px; width: fit-content; margin-bottom: 22px; padding: 8px 14px; border: 1px solid #e7e5e1; border-radius: 999px; color: var(--muted); background: #faf9f7; font-size: .66rem; font-weight: 850; letter-spacing: .11em; }
 .o5x .partnership-seal svg{ flex: none; color: var(--orange); }
 .o5x .google-partnership-grid{ display: grid; grid-template-columns: 1.05fr .95fr; column-gap: 64px; row-gap: 40px; align-items: start; grid-template-areas: "copy compare" "cta compare"; }
-.o5x .google-copy{ grid-area: copy; min-width: 0; }
+.o5x .google-copy{ grid-area: copy; min-width: 0; display: flex; flex-direction: column; }
 .o5x .google-cta-block{ grid-area: cta; min-width: 0; }
 .o5x .google-compare-card{ grid-area: compare; min-width: 0; }
 .o5x .google-copy h2{ max-width: 560px; }
@@ -511,7 +528,7 @@ const CSS = `
 .o5x .partnership-x{ color: #c7c4bd; font-size: 1.1rem; font-weight: 700; }
 .o5x .brand-logo{ position: relative; display: inline-flex; align-items: center; justify-content: center; }
 .o5x .brand-logo img{ display: block; width: 100%; height: 100%; object-fit: contain; }
-.o5x .brand-logo-fallback{ display: none; align-items: center; justify-content: center; width: 100%; height: 100%; color: var(--ink-2); font-size: 1.02rem; font-weight: 800; letter-spacing: -.02em; white-space: nowrap; }
+.o5x .brand-logo-fallback{ display: none; position: absolute; inset: 0; align-items: center; justify-content: center; color: var(--ink-2); font-size: 1.02rem; font-weight: 800; letter-spacing: -.02em; white-space: nowrap; }
 .o5x .google-benefit-list{ display: grid; gap: 14px; margin: 0 0 32px; padding: 0; list-style: none; }
 .o5x .google-benefit-list li{ display: flex; align-items: center; gap: 10px; color: #454951; font-size: .92rem; font-weight: 650; }
 .o5x .google-benefit-list li svg{ flex: none; color: var(--orange); }
@@ -543,6 +560,12 @@ const CSS = `
 
 @media (max-width: 820px) {
   .o5x .google-partnership-grid{ grid-template-columns: 1fr; grid-template-areas: "copy" "compare" "cta"; row-gap: 36px; }
+  .o5x .google-copy .partnership-seal{ order: 1; }
+  .o5x .google-copy .google-partnership-logos{ order: 2; }
+  .o5x .google-copy > .eyebrow{ order: 3; margin-top: 4px; }
+  .o5x .google-copy h2{ order: 4; }
+  .o5x .google-copy > p:not(.eyebrow){ order: 5; }
+  .o5x .google-copy .google-benefit-list{ order: 6; }
   .o5x .google-compare-card{ padding: 30px 26px; }
   .o5x .google-compare-highlight{ padding: 22px; }
 }
@@ -559,31 +582,17 @@ const CSS = `
 
 .o5x .pricing-section{ background: var(--paper); }.o5x .pricing-grid{ max-width: 940px; display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 50px; }.o5x .price-card{ position: relative; display: flex; flex-direction: column; padding: 38px; border: 1px solid var(--line); border-radius: 22px; background: #fff; }.o5x .price-card.featured{ border-color: #ed9f8a; box-shadow: 0 24px 60px rgba(55,34,25,.1); }.o5x .recommended{ position: absolute; left: 28px; top: -13px; padding: 7px 12px; border-radius: 7px; color: #fff; background: var(--orange); font-size: .58rem; font-weight: 850; letter-spacing: .11em; }.o5x .plan-top{ display: flex; justify-content: space-between; margin-bottom: 26px; font-size: .65rem; font-weight: 800; letter-spacing: .1em; }.o5x .plan-top span{ color: var(--orange); }.o5x .plan-top em{ color: #96989c; font-style: normal; font-weight: 600; letter-spacing: 0; }.o5x .price-card h3{ margin: 0 0 7px; font-size: 1.55rem; }.o5x .plan-description{ margin-bottom: 28px; color: var(--muted); font-size: .87rem; }.o5x .price-line{ display: flex; align-items: end; gap: 6px; }.o5x .price-line strong{ font-size: 3.15rem; line-height: 1; letter-spacing: -.06em; }.o5x .price-line span{ color: var(--muted); font-size: .86rem; }.o5x .billing-note{ margin: 10px 0 26px; color: #878a90; font-size: .72rem; }.o5x .price-card ul{ flex: 1; display: grid; gap: 13px; margin: 0 0 30px; padding: 25px 0 0; border-top: 1px solid var(--line); list-style: none; }.o5x .price-card li{ display: flex; align-items: center; gap: 10px; color: #53575e; font-size: .84rem; }.o5x .price-card li svg{ color: var(--orange); }.o5x .price-button{ width: 100%; }.o5x .payment-note{ max-width: 940px; display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 25px; color: #777a80; font-size: .75rem; }.o5x .payment-note svg{ color: var(--orange); }.o5x .payment-note strong{ color: #4d5157; }
 
-.o5x .guarantee-section{ padding-top: 20px; background: var(--paper); }
-.o5x .guarantee-card{ position: relative; display: grid; grid-template-columns: 210px 1fr .7fr; align-items: center; gap: 54px; padding: 62px; border: 1px solid #efb6a7; border-radius: 28px; background: linear-gradient(135deg,#fff 0%,#fff9f6 100%); box-shadow: 0 28px 70px rgba(92,49,35,.08); overflow: hidden; animation: guaranteeCardPulse 3.4s ease-in-out infinite; }
-.o5x .guarantee-card::before{ content: ""; position: absolute; z-index: 0; inset: -80% auto -80% -45%; width: 30%; background: linear-gradient(90deg,transparent,rgba(255,255,255,.92),transparent); transform: rotate(18deg); animation: guaranteeSweep 4.4s ease-in-out infinite; pointer-events: none; }
-.o5x .guarantee-card::after{ content: "7"; position: absolute; right: -26px; bottom: -130px; color: rgba(238,77,45,.035); font-size: 30rem; line-height: 1; font-weight: 900; pointer-events: none; }
-.o5x .guarantee-seal{ position: relative; z-index: 1; width: 190px; aspect-ratio: 1; display: grid; place-items: center; padding: 28px; border: 1px solid #ef9f8b; border-radius: 50%; color: var(--orange); background: #fff; box-shadow: inset 0 0 0 9px var(--orange-soft),0 18px 45px rgba(238,77,45,.12); text-align: center; animation: guaranteeFloat 2.8s ease-in-out infinite; }
-.o5x .guarantee-seal::before, .o5x .guarantee-seal::after{ content: ""; position: absolute; width: 12px; height: 12px; border-radius: 50%; background: var(--orange); }
-.o5x .guarantee-seal::before{ top: 15px; animation: guaranteeDot 1.5s ease-in-out infinite; }.o5x .guarantee-seal::after{ bottom: 15px; animation: guaranteeDot 1.5s .75s ease-in-out infinite; }
-.o5x .guarantee-seal > div{ display: flex; align-items: end; justify-content: center; gap: 5px; line-height: .82; }
-.o5x .guarantee-seal > div span{ font-size: 4.6rem; font-weight: 900; letter-spacing: -.08em; animation: guaranteeNumber 2.8s ease-in-out infinite; }
-.o5x .guarantee-seal > div strong{ padding-bottom: 5px; font-size: .7rem; letter-spacing: .1em; }
-.o5x .guarantee-seal p{ margin: 12px 0 0; font-size: .61rem; line-height: 1.35; font-weight: 850; letter-spacing: .12em; }
-.o5x .guarantee-content{ position: relative; z-index: 1; }
-.o5x .guarantee-content h2{ margin-bottom: 17px; font-size: clamp(2rem,3.2vw,3rem); }
-.o5x .guarantee-content h2 span{ color: var(--orange); }
-.o5x .guarantee-content > p:not(.eyebrow){ max-width: 650px; margin-bottom: 23px; color: var(--muted); line-height: 1.7; }
-.o5x .guarantee-points{ display: grid; gap: 10px; margin-bottom: 27px; }
-.o5x .guarantee-points span{ display: flex; align-items: center; gap: 9px; color: #54585f; font-size: .78rem; font-weight: 650; }
-.o5x .guarantee-points svg{ flex: none; color: var(--green); }
-.o5x .guarantee-content .button{ min-height: 50px; }
-.o5x .guarantee-steps{ position: relative; z-index: 1; display: grid; gap: 17px; padding: 26px; border: 1px solid #eee3de; border-radius: 18px; background: rgba(255,255,255,.78); }
-.o5x .guarantee-steps > div{ display: grid; grid-template-columns: 30px 1fr; column-gap: 11px; }
-.o5x .guarantee-steps span{ grid-row: 1 / 3; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 8px; color: var(--orange); background: var(--orange-soft); font-size: .55rem; font-weight: 850; }
-.o5x .guarantee-steps strong{ font-size: .75rem; }
-.o5x .guarantee-steps small{ margin-top: 4px; color: #92949a; font-size: .63rem; line-height: 1.4; }
-.o5x .guarantee-steps > i{ width: 1px; height: 15px; margin: -9px 0 -9px 14px; background: #ebc9c0; }
+.o5x .guarantee-section{ padding: 90px 0; background: var(--paper); border-top: 1px solid var(--line); }
+.o5x .guarantee-panel{ display: grid; grid-template-columns: 190px 1fr; align-items: center; gap: 56px; padding: 56px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: #fff; box-shadow: var(--shadow-sm); }
+.o5x .guarantee-badge{ display: flex; flex-direction: column; align-items: center; justify-content: center; width: 190px; aspect-ratio: 1; border: 1px solid #f1c3b7; border-radius: 50%; background: var(--orange-soft); text-align: center; }
+.o5x .guarantee-badge span{ font-size: 3.4rem; font-weight: 900; line-height: 1; color: var(--orange); letter-spacing: -.04em; }
+.o5x .guarantee-badge strong{ margin-top: 8px; color: var(--orange-dark); font-size: .68rem; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; line-height: 1.4; }
+.o5x .guarantee-info h2{ margin-bottom: 16px; }
+.o5x .guarantee-info h2 span{ color: var(--orange); }
+.o5x .guarantee-info > p:not(.eyebrow){ max-width: 620px; margin-bottom: 24px; color: var(--muted); font-size: 1rem; line-height: 1.72; }
+.o5x .guarantee-list{ display: grid; gap: 12px; margin: 0 0 30px; padding: 0; list-style: none; }
+.o5x .guarantee-list li{ display: flex; align-items: center; gap: 10px; color: #454951; font-size: .9rem; font-weight: 620; }
+.o5x .guarantee-list li svg{ flex: none; color: var(--orange); }
 
 .o5x .faq-section{ background: #fff; }.o5x .faq-layout{ display: grid; grid-template-columns: .7fr 1.3fr; gap: 90px; }.o5x .faq-intro{ position: sticky; top: 140px; align-self: start; }.o5x .faq-intro > p:last-child{ max-width: 350px; color: var(--muted); line-height: 1.65; }.o5x .faq-list{ border-top: 1px solid var(--line); }.o5x .faq-item{ border-bottom: 1px solid var(--line); }.o5x .faq-item > button{ width: 100%; min-height: 78px; display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 18px 4px; border: 0; color: var(--ink); background: transparent; font-size: .97rem; font-weight: 720; text-align: left; }.o5x .faq-item > button svg{ flex: none; color: var(--orange); transition: transform .22s ease; }.o5x .faq-item.open > button svg{ transform: rotate(180deg); }.o5x .faq-answer{ display: grid; grid-template-rows: 0fr; transition: grid-template-rows .25s ease; }.o5x .faq-answer > p{ min-height: 0; overflow: hidden; margin: 0; color: var(--muted); font-size: .9rem; line-height: 1.72; }.o5x .faq-item.open .faq-answer{ grid-template-rows: 1fr; }.o5x .faq-item.open .faq-answer > p{ padding: 0 35px 24px 4px; }
 
@@ -593,11 +602,6 @@ const CSS = `
 
 .o5x .mobile-sticky{ display: none; }
 @keyframes o5x-platformLoop { to { transform: translateX(calc(-50% - 7px)); } }
-@keyframes o5x-guaranteeCardPulse { 0%,100% { box-shadow: 0 28px 70px rgba(92,49,35,.08); border-color: #efb6a7; } 50% { box-shadow: 0 32px 90px rgba(238,77,45,.18); border-color: #ee876f; } }
-@keyframes o5x-guaranteeSweep { 0%,22% { left: -45%; opacity: 0; } 38% { opacity: 1; } 62%,100% { left: 125%; opacity: 0; } }
-@keyframes o5x-guaranteeFloat { 0%,100% { transform: translateY(0) scale(1); box-shadow: inset 0 0 0 9px var(--orange-soft),0 18px 45px rgba(238,77,45,.12); } 50% { transform: translateY(-9px) scale(1.035); box-shadow: inset 0 0 0 9px #ffe8df,0 28px 62px rgba(238,77,45,.24); } }
-@keyframes o5x-guaranteeNumber { 0%,100% { transform: scale(1); } 50% { transform: scale(1.08); } }
-@keyframes o5x-guaranteeDot { 0%,100% { transform: scale(.72); opacity: .5; } 50% { transform: scale(1.35); opacity: 1; box-shadow: 0 0 0 8px rgba(238,77,45,.1); } }
 @keyframes o5x-heroCtaBreath { 0%,100% { box-shadow: 0 10px 24px rgba(238,77,45,.22); } 50% { box-shadow: 0 16px 38px rgba(238,77,45,.38); } }
 @keyframes o5x-heroCtaSweep { 0%,30% { left: -30%; opacity: 0; } 42% { opacity: 1; } 62%,100% { left: 125%; opacity: 0; } }
 @keyframes o5x-scrollNudge { 0%,100% { transform: translateY(0); } 50% { transform: translateY(4px); } }
@@ -607,7 +611,7 @@ const CSS = `
   .o5x .hero{ min-height: clamp(650px,calc(100svh - 120px),800px); padding: 108px 0 42px; }.o5x .hero h1{ font-size: clamp(3.7rem,8vw,5.8rem); }
   .o5x .desktop-nav{ gap: 22px; }.o5x .trust-items{ grid-template-columns: repeat(3,1fr); padding: 14px 0; }.o5x .trust-items span{ border-right: 0; }
   .o5x .journey-layout{ gap: 60px; }.o5x .video-grid{ gap: 50px; }.o5x .bento-grid{ grid-template-columns: repeat(3,1fr); }.o5x .feature-large{ grid-column: span 2; }.o5x .proof-grid{ grid-template-columns: 1fr; gap: 35px; }.o5x .hub-channel.whatsapp, .o5x .hub-channel.video{ left: 5%; }.o5x .hub-channel.facebook, .o5x .hub-channel.copy{ right: 5%; }
-  .o5x .remotion-showcase{ grid-template-columns: 1.25fr .75fr; }.o5x .remotion-copy{ left: 34px; bottom: 34px; }.o5x .guarantee-card{ grid-template-columns: 180px 1fr; gap: 38px; padding: 48px; }.o5x .guarantee-seal{ width: 170px; }.o5x .guarantee-steps{ grid-column: 1 / -1; grid-template-columns: 1fr auto 1fr auto 1fr; align-items: center; }.o5x .guarantee-steps > i{ width: 32px; height: 1px; margin: 0; }}
+  .o5x .remotion-showcase{ grid-template-columns: 1.25fr .75fr; }.o5x .remotion-copy{ left: 34px; bottom: 34px; }.o5x .guarantee-panel{ gap: 40px; padding: 44px; }}
 
 @media (max-width: 820px) {
   .o5x .container{ width: min(100% - 36px, 720px); }.o5x .section{ padding: 82px 0; }.o5x .desktop-nav{ display: none; }.o5x .menu-button{ display: flex; }.o5x .nav-actions .button{ display: none; }
@@ -617,9 +621,9 @@ const CSS = `
   .o5x .why-section{ padding: 60px 0 82px; }.o5x .why-heading{ grid-template-columns: 1fr; gap: 18px; }.o5x .why-heading .eyebrow{ grid-column: auto; }.o5x .why-heading > p:last-child{ margin: 0; }.o5x .why-grid{ grid-template-columns: 1fr; }.o5x .why-card{ min-height: 0; display: grid; grid-template-columns: 52px 1fr; align-items: start; gap: 18px; }.o5x .why-number{ right: 22px; }
   .o5x .comparison-grid, .o5x .journey-layout, .o5x .video-grid, .o5x .faq-layout{ grid-template-columns: 1fr; }.o5x .journey-intro, .o5x .faq-intro{ position: static; }.o5x .journey-layout{ gap: 50px; }.o5x .video-grid{ gap: 55px; }.o5x .faq-layout{ gap: 45px; }
   .o5x .remotion-showcase{ grid-template-columns: 1fr; }.o5x .remotion-stage{ min-height: 460px; }.o5x .remotion-side{ grid-template-columns: 34px 1fr 34px 1fr 34px 1fr; gap: 12px; padding: 25px; }.o5x .remotion-side > div{ padding: 0; }.o5x .demo-frame-wrap .app-screen{ padding: 28px; }.o5x .distribution-hub{ height: 620px; }.o5x .hub-channel.whatsapp{ left: 6%; top: 10%; }.o5x .hub-channel.facebook{ right: 6%; top: 10%; }.o5x .hub-channel.video{ left: 6%; bottom: 10%; }.o5x .hub-channel.copy{ right: 6%; bottom: 10%; }
-  .o5x .feature-head{ align-items: start; flex-direction: column; gap: 20px; }.o5x .bento-grid{ grid-template-columns: repeat(2,1fr); }.o5x .feature-large{ grid-column: span 2; }.o5x .feature-tall{ grid-row: auto; min-height: 320px; }.o5x .proof-steps{ flex-wrap: wrap; }.o5x .pricing-grid{ grid-template-columns: 1fr; max-width: 560px; }.o5x .guarantee-card{ grid-template-columns: 150px 1fr; }.o5x .guarantee-seal{ width: 145px; }.o5x .guarantee-seal > div span{ font-size: 3.7rem; }.o5x .guarantee-content .button{ width: 100%; }.o5x .guarantee-steps{ grid-column: 1 / -1; }
+  .o5x .feature-head{ align-items: start; flex-direction: column; gap: 20px; }.o5x .bento-grid{ grid-template-columns: repeat(2,1fr); }.o5x .feature-large{ grid-column: span 2; }.o5x .feature-tall{ grid-row: auto; min-height: 320px; }.o5x .proof-steps{ flex-wrap: wrap; }.o5x .pricing-grid{ grid-template-columns: 1fr; max-width: 560px; }.o5x .guarantee-panel{ grid-template-columns: 1fr; justify-items: center; padding: 40px 30px; gap: 28px; text-align: center; }.o5x .guarantee-list{ width: fit-content; margin: 0 auto 30px; text-align: left; }.o5x .guarantee-info .button{ width: 100%; }
   .o5x .footer-main{ flex-direction: column; }.o5x .footer-main nav{ flex-wrap: wrap; }.o5x .footer-bottom{ grid-template-columns: 1fr; gap: 18px; }.o5x .footer-bottom p{ margin: 0; }
-  .o5x .mobile-sticky{ position: fixed; z-index: 90; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 10px 10px 10px 16px; border: 1px solid #34373b; border-radius: 15px; color: #fff; background: rgba(18,20,23,.95); box-shadow: 0 14px 40px rgba(0,0,0,.25); backdrop-filter: blur(12px); transform: translateY(140%); transition: transform .3s ease, opacity .2s ease; }.o5x .mobile-sticky.visible{ opacity: calc(1 - var(--pricing-visible)); transform: translateY(0); }.o5x .mobile-sticky span small, .o5x .mobile-sticky span strong{ display: block; }.o5x .mobile-sticky span small{ color: #9da2a8; font-size: .57rem; }.o5x .mobile-sticky span strong{ margin-top: 2px; font-size: .9rem; }.o5x .mobile-sticky button{ height: 42px; display: flex; align-items: center; gap: 6px; padding: 0 14px; border: 0; border-radius: 9px; color: #fff; background: var(--orange); font-size: .67rem; font-weight: 850; letter-spacing: .06em; }}
+  .o5x .mobile-sticky{ position: fixed; z-index: 90; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 10px 10px 10px 16px; border: 1px solid #34373b; border-radius: 15px; color: #fff; background: rgba(18,20,23,.95); box-shadow: 0 14px 40px rgba(0,0,0,.25); backdrop-filter: blur(12px); transform: translateY(140%); transition: transform .3s ease, opacity .2s ease; }.o5x .mobile-sticky.visible{ opacity: calc(1 - var(--pricing-visible)); transform: translateY(0); }.o5x .mobile-sticky span small, .o5x .mobile-sticky span strong{ display: block; }.o5x .mobile-sticky span small{ color: #9da2a8; font-size: .57rem; }.o5x .mobile-sticky span strong{ margin-top: 2px; font-size: .9rem; }.o5x .mobile-sticky button{ height: 44px; display: flex; align-items: center; gap: 6px; padding: 0 14px; border: 0; border-radius: 9px; color: #fff; background: var(--orange); font-size: .67rem; font-weight: 850; letter-spacing: .06em; }}
 
 @media (max-width: 560px) {
   .o5x .container{ width: calc(100% - 36px); }.o5x .section{ padding: 68px 0; }.o5x h2{ font-size: 2.35rem; }.o5x .site-header, .o5x .nav-wrap{ height: 66px; }.o5x .brand-lockup img{ width: 33px; height: 33px; }
@@ -634,7 +638,7 @@ const CSS = `
   .o5x .distribution-hub{ height: auto; display: grid; gap: 10px; padding: 18px; }.o5x .distribution-hub::before{ display: none; }.o5x .hub-center, .o5x .hub-channel{ position: static; width: 100%; min-width: 0; transform: none; }.o5x .hub-center{ order: -1; }.o5x .hub-channel{ padding: 13px; }
   .o5x .bento-grid{ grid-template-columns: 1fr; }.o5x .feature-large{ grid-column: auto; min-height: 510px; }.o5x .feature-tall{ min-height: 380px; }.o5x .feature-card{ min-height: 230px; }
   .o5x .proof-steps{ display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }.o5x .proof-steps > div{ padding: 12px; border: 1px solid var(--line); border-radius: 9px; }.o5x .proof-steps svg{ display: none; }
-  .o5x .price-card{ padding: 31px 24px; }.o5x .price-line strong{ font-size: 2.8rem; }.o5x .payment-note{ align-items: start; }.o5x .guarantee-section{ padding-top: 0; }.o5x .guarantee-card{ grid-template-columns: 1fr; padding: 34px 23px; gap: 31px; }.o5x .guarantee-seal{ width: 154px; margin: 0 auto; }.o5x .guarantee-content h2{ font-size: 2.05rem; }.o5x .guarantee-content > p:not(.eyebrow){ font-size: .9rem; }.o5x .guarantee-points span{ align-items: flex-start; }.o5x .guarantee-steps{ grid-column: auto; grid-template-columns: 1fr; }.o5x .guarantee-steps > i{ width: 1px; height: 15px; margin: -9px 0 -9px 14px; }.o5x .independent-note .container{ align-items: flex-start; padding: 24px 0; }
+  .o5x .price-card{ padding: 31px 24px; }.o5x .price-line strong{ font-size: 2.8rem; }.o5x .payment-note{ align-items: start; }.o5x .guarantee-section{ padding: 64px 0; }.o5x .guarantee-panel{ padding: 32px 22px; gap: 24px; }.o5x .guarantee-badge{ width: 130px; }.o5x .guarantee-badge span{ font-size: 2.5rem; }.o5x .guarantee-info h2{ font-size: 2.05rem; }.o5x .guarantee-info > p:not(.eyebrow){ font-size: .9rem; }.o5x .independent-note .container{ align-items: flex-start; padding: 24px 0; }
   .o5x .final-cta{ padding: 90px 0 120px; }.o5x .final-cta h2{ font-size: 2.35rem; }.o5x .final-cta .button{ width: 100%; }.o5x .final-trust{ flex-wrap: wrap; }.o5x .footer-main nav{ display: grid; grid-template-columns: 1fr 1fr; }}
 
 @media (prefers-reduced-motion: reduce) {
@@ -649,8 +653,26 @@ export function Ofertas5Landing({ config }: { config: Ofertas5LandingConfig }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [stickyVisible, setStickyVisible] = useState(false);
+  const [platformIndex, setPlatformIndex] = useState(0);
+  const [reducedMotion, setReducedMotion] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const pricingRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setReducedMotion(query.matches);
+    const onChange = (event: MediaQueryListEvent) => setReducedMotion(event.matches);
+    query.addEventListener("change", onChange);
+    return () => query.removeEventListener("change", onChange);
+  }, []);
+
+  useEffect(() => {
+    if (reducedMotion) return;
+    const timer = window.setInterval(() => {
+      setPlatformIndex((current) => (current + 1) % platforms.length);
+    }, 2600);
+    return () => window.clearInterval(timer);
+  }, [reducedMotion]);
 
   useEffect(() => {
     const onScroll = () => setStickyVisible(window.scrollY > window.innerHeight * 0.72);
@@ -749,9 +771,6 @@ export function Ofertas5Landing({ config }: { config: Ofertas5LandingConfig }) {
               </button>
             </div>
             <div className="trust-mini">
-              <span>
-                <Icon name="shield" size={16} /> 7 dias de garantia
-              </span>
               <span>
                 <Icon name="check" size={16} /> Acesso imediato
               </span>
@@ -852,6 +871,68 @@ export function Ofertas5Landing({ config }: { config: Ofertas5LandingConfig }) {
               ))}
             </div>
           </div>
+          <div className="platform-carousel-wrap">
+            {reducedMotion ? (
+              <div
+                className="platform-carousel-static"
+                aria-label="Plataformas usadas na estratégia"
+              >
+                {platforms.map((platform) => (
+                  <div className={`platform-chip ${platform.className}`} key={platform.name}>
+                    <span>
+                      <img
+                        src={platform.logo}
+                        width="32"
+                        height="32"
+                        alt={`Logo ${platform.name}`}
+                      />
+                    </span>
+                    <strong>{platform.name}</strong>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div
+                className="platform-carousel"
+                role="group"
+                aria-label="Plataformas usadas na estratégia"
+              >
+                <div className="platform-carousel-viewport">
+                  {platforms.map((platform, index) => (
+                    <div
+                      className={`platform-carousel-slide ${index === platformIndex ? "active" : ""}`}
+                      key={platform.name}
+                      aria-hidden={index !== platformIndex}
+                    >
+                      <div className={`platform-chip ${platform.className}`}>
+                        <span>
+                          <img
+                            src={platform.logo}
+                            width="32"
+                            height="32"
+                            alt={`Logo ${platform.name}`}
+                          />
+                        </span>
+                        <strong>{platform.name}</strong>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="platform-carousel-dots">
+                  {platforms.map((platform, index) => (
+                    <button
+                      key={platform.name}
+                      type="button"
+                      className={index === platformIndex ? "active" : ""}
+                      aria-label={`Ver ${platform.name}`}
+                      aria-current={index === platformIndex}
+                      onClick={() => setPlatformIndex(index)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
           <div className="container platform-note">
             <Icon name="shield" size={15} />
             <span>
@@ -928,8 +1009,20 @@ export function Ofertas5Landing({ config }: { config: Ofertas5LandingConfig }) {
                 <span className="partnership-x" aria-hidden="true">
                   ×
                 </span>
-                <BrandLogo src="/brands/google-logo.svg" alt="Google" name="Google" />
-                <BrandLogo src="/brands/gemini-logo.svg" alt="Google Gemini" name="Gemini" />
+                <BrandLogo
+                  src="/brands/google-logo.svg"
+                  alt="Google"
+                  name="Google"
+                  width={118}
+                  height={38}
+                />
+                <BrandLogo
+                  src="/brands/gemini-logo.svg"
+                  alt="Google Gemini"
+                  name="Gemini"
+                  width={34}
+                  height={34}
+                />
               </div>
               <h2 id="google-partnership-title">
                 2 anos de Google AI Pro.
@@ -1090,63 +1183,43 @@ export function Ofertas5Landing({ config }: { config: Ofertas5LandingConfig }) {
         </section>
 
         <section className="section guarantee-section">
-          <div className="container guarantee-card">
-            <div className="guarantee-seal">
-              <div>
-                <span>7</span>
-                <strong>DIAS</strong>
-              </div>
-              <p>
-                GARANTIA
+          <div className="container guarantee-panel">
+            <div className="guarantee-badge">
+              <span>7</span>
+              <strong>
+                dias de
                 <br />
-                DE SATISFAÇÃO
-              </p>
+                garantia
+              </strong>
             </div>
-            <div className="guarantee-content">
-              <p className="eyebrow">VOCÊ DECIDE DEPOIS DE USAR</p>
+            <div className="guarantee-info">
+              <p className="eyebrow">SEM RISCO PARA VOCÊ</p>
               <h2>
-                Entre, explore e teste
+                7 dias para testar.
                 <br />
-                <span>sem assumir o risco.</span>
+                <span>Sem risco, sem burocracia.</span>
               </h2>
               <p>
-                Você tem 7 dias para conhecer a UpShopee por dentro, testar as ferramentas e avaliar
-                se ela faz sentido para sua estratégia. Se não fizer, solicite o reembolso dentro do
-                prazo da garantia.
+                Você tem 7 dias, a partir da confirmação da compra, para explorar a UpShopee por
+                completo. Se não fizer sentido para você, basta solicitar o reembolso dentro desse
+                prazo — sem burocracia.
               </p>
-              <div className="guarantee-points">
-                <span>
-                  <Icon name="check" size={16} /> Acesso liberado após a confirmação
-                </span>
-                <span>
-                  <Icon name="check" size={16} /> Sete dias para conhecer a plataforma
-                </span>
-                <span>
-                  <Icon name="check" size={16} /> Reembolso dentro do prazo da garantia
-                </span>
-              </div>
+              <ul className="guarantee-list">
+                <li>
+                  <Icon name="check" size={16} /> Acesso total liberado assim que a compra é
+                  confirmada
+                </li>
+                <li>
+                  <Icon name="check" size={16} /> 7 dias corridos para testar todas as ferramentas
+                </li>
+                <li>
+                  <Icon name="check" size={16} /> Reembolso mediante solicitação dentro do prazo,
+                  sem burocracia
+                </li>
+              </ul>
               <button className="button button-primary" onClick={() => goToCheckout("vitalicio")}>
                 COMEÇAR COM 7 DIAS DE GARANTIA <Icon name="arrow" />
               </button>
-            </div>
-            <div className="guarantee-steps">
-              <div>
-                <span>01</span>
-                <strong>Escolha seu plano</strong>
-                <small>Mensal ou acesso vitalício.</small>
-              </div>
-              <i />
-              <div>
-                <span>02</span>
-                <strong>Acesse a plataforma</strong>
-                <small>Explore as ferramentas na prática.</small>
-              </div>
-              <i />
-              <div>
-                <span>03</span>
-                <strong>Decida com tranquilidade</strong>
-                <small>Você está coberto pelo prazo informado.</small>
-              </div>
             </div>
           </div>
         </section>
