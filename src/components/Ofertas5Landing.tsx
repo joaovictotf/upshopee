@@ -184,6 +184,10 @@ const faq = [
     "Existe garantia?",
     "Sim. Você tem 7 dias para testar. Se a plataforma não fizer sentido para você, pode solicitar o reembolso dentro desse prazo.",
   ],
+  [
+    "Como recebo os dois anos de Google AI Pro?",
+    "Depois da confirmação da compra do acesso vitalício, você recebe as orientações para ativar os 24 meses do Google AI Pro. O benefício inclui 5 TB de armazenamento e acesso ampliado ao Gemini, conforme as regras de ativação e elegibilidade da parceria.",
+  ],
 ];
 
 function Logo({ compact = false }: { compact?: boolean }) {
@@ -191,6 +195,44 @@ function Logo({ compact = false }: { compact?: boolean }) {
     <span className="brand-lockup">
       <img src="/upshope/logo.webp" width="40" height="40" alt="" />
       {!compact && <span>UpShopee</span>}
+    </span>
+  );
+}
+
+/**
+ * Logotipo de marca parceira com fallback em texto. Os arquivos de
+ * /brands/google-logo.svg e /brands/gemini-logo.svg ainda não existem no
+ * projeto — o onError troca a imagem quebrada pelo nome da marca, no mesmo
+ * espaço, sem gerar layout shift quando os arquivos forem adicionados.
+ */
+function BrandLogo({
+  src,
+  alt,
+  name,
+  width = 116,
+  height = 30,
+}: {
+  src: string;
+  alt: string;
+  name: string;
+  width?: number;
+  height?: number;
+}) {
+  return (
+    <span className="brand-logo" style={{ width, height }}>
+      <img
+        src={src}
+        alt={alt}
+        width={width}
+        height={height}
+        onError={(event) => {
+          const img = event.currentTarget;
+          img.style.display = "none";
+          const fallback = img.nextElementSibling as HTMLElement | null;
+          if (fallback) fallback.style.display = "flex";
+        }}
+      />
+      <span className="brand-logo-fallback">{name}</span>
     </span>
   );
 }
@@ -454,6 +496,66 @@ const CSS = `
 .o5x .text-preview{ display: grid; gap: 10px; margin-top: 32px; padding: 17px; border: 1px solid #e7e3dd; border-radius: 13px; background: #faf9f6; }.o5x .text-preview span{ color: #85888e; font-size: .63rem; font-weight: 700; }.o5x .text-preview i{ height: 7px; border-radius: 5px; background: #dfdcd6; }.o5x .text-preview i:nth-child(3){ width: 84%; }.o5x .text-preview i:nth-child(4){ width: 62%; }.o5x .text-preview button{ display: flex; align-items: center; justify-content: center; gap: 6px; padding: 9px; border: 0; border-radius: 7px; color: #fff; background: var(--orange); font-size: .6rem; font-weight: 750; }
 
 .o5x .workflow-proof{ padding: 95px 0; background: #fff; }.o5x .proof-grid{ display: grid; grid-template-columns: 1fr 1.3fr; align-items: center; gap: 70px; }.o5x .proof-grid h2{ margin-bottom: 0; font-size: clamp(2rem, 3.5vw, 3rem); }.o5x .proof-steps{ display: flex; align-items: center; justify-content: space-between; gap: 6px; }.o5x .proof-steps > div{ display: flex; align-items: center; gap: 8px; color: var(--orange); }.o5x .proof-steps span{ color: #aaa9a5; font-size: .57rem; }.o5x .proof-steps strong{ color: var(--ink); font-size: .78rem; }.o5x .proof-steps svg{ margin-left: 8px; color: #c4c1bc; }
+
+.o5x .google-partnership{ background: #fff; border-bottom: 1px solid var(--line); }
+.o5x .partnership-seal{ display: inline-flex; align-items: center; gap: 8px; width: fit-content; margin-bottom: 22px; padding: 8px 14px; border: 1px solid #e7e5e1; border-radius: 999px; color: var(--muted); background: #faf9f7; font-size: .66rem; font-weight: 850; letter-spacing: .11em; }
+.o5x .partnership-seal svg{ flex: none; color: var(--orange); }
+.o5x .google-partnership-grid{ display: grid; grid-template-columns: 1.05fr .95fr; column-gap: 64px; row-gap: 40px; align-items: start; grid-template-areas: "copy compare" "cta compare"; }
+.o5x .google-copy{ grid-area: copy; min-width: 0; }
+.o5x .google-cta-block{ grid-area: cta; min-width: 0; }
+.o5x .google-compare-card{ grid-area: compare; min-width: 0; }
+.o5x .google-copy h2{ max-width: 560px; }
+.o5x .google-copy > p:not(.eyebrow){ max-width: 520px; margin-bottom: 30px; color: var(--muted); font-size: 1.03rem; line-height: 1.72; }
+.o5x .google-partnership-logos{ display: flex; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 28px; }
+.o5x .google-partnership-logos .brand-lockup{ font-size: 1rem; }
+.o5x .partnership-x{ color: #c7c4bd; font-size: 1.1rem; font-weight: 700; }
+.o5x .brand-logo{ position: relative; display: inline-flex; align-items: center; justify-content: center; }
+.o5x .brand-logo img{ display: block; width: 100%; height: 100%; object-fit: contain; }
+.o5x .brand-logo-fallback{ display: none; align-items: center; justify-content: center; width: 100%; height: 100%; color: var(--ink-2); font-size: 1.02rem; font-weight: 800; letter-spacing: -.02em; white-space: nowrap; }
+.o5x .google-benefit-list{ display: grid; gap: 14px; margin: 0 0 32px; padding: 0; list-style: none; }
+.o5x .google-benefit-list li{ display: flex; align-items: center; gap: 10px; color: #454951; font-size: .92rem; font-weight: 650; }
+.o5x .google-benefit-list li svg{ flex: none; color: var(--orange); }
+.o5x .google-cta-note{ margin: 14px 0 0; color: var(--muted-2); font-size: .76rem; }
+.o5x .google-compare-card{ padding: 38px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: #faf9f7; box-shadow: var(--shadow-sm); }
+.o5x .google-compare-kicker{ display: block; margin-bottom: 22px; color: var(--muted-2); font-size: .68rem; font-weight: 850; letter-spacing: .13em; }
+.o5x .google-compare-row{ display: flex; align-items: baseline; justify-content: space-between; gap: 14px; color: #4d5157; font-size: .92rem; font-weight: 700; }
+.o5x .google-compare-row strong{ font-size: 1.15rem; }
+.o5x .google-compare-row strong em{ margin-left: 3px; color: var(--muted-2); font-size: .74rem; font-style: normal; font-weight: 650; }
+.o5x .google-compare-yearly{ margin: 8px 0 0; color: var(--muted-2); font-size: .78rem; }
+.o5x .google-compare-divider{ display: flex; align-items: center; gap: 12px; margin: 26px 0; color: var(--muted-2); font-size: .64rem; font-weight: 850; letter-spacing: .12em; }
+.o5x .google-compare-divider::before, .o5x .google-compare-divider::after{ content: ""; flex: 1; height: 1px; background: var(--line); }
+.o5x .google-compare-highlight{ padding: 26px; border: 1px solid #efb6a7; border-radius: 16px; background: #fff; }
+.o5x .google-compare-highlight-kicker{ display: block; margin-bottom: 10px; color: var(--orange); font-size: .66rem; font-weight: 850; letter-spacing: .11em; }
+.o5x .google-compare-highlight strong{ display: block; font-size: 2.4rem; letter-spacing: -.05em; }
+.o5x .google-compare-highlight > p{ margin: 4px 0 20px; color: var(--muted); font-size: .84rem; }
+.o5x .google-compare-highlight ul{ display: grid; gap: 11px; margin: 0; padding: 20px 0 0; border-top: 1px solid var(--line); list-style: none; }
+.o5x .google-compare-highlight li{ display: flex; align-items: center; gap: 9px; color: #454951; font-size: .84rem; }
+.o5x .google-compare-highlight li svg{ flex: none; color: var(--orange); }
+.o5x .google-compare-closing{ margin: 22px 0 0; color: var(--muted-2); font-size: .78rem; line-height: 1.55; }
+.o5x .google-legal-note{ margin-top: 46px; padding-top: 26px; border-top: 1px solid var(--line); }
+.o5x .google-legal-note p{ max-width: 900px; margin: 0; color: var(--muted-2); font-size: .72rem; line-height: 1.6; }
+.o5x .google-perk-badge{ display: inline-flex; align-items: center; gap: 7px; width: fit-content; max-width: 100%; margin-bottom: 20px; padding: 7px 12px; border: 1px solid #f0bcae; border-radius: 8px; color: var(--orange-dark); background: var(--orange-soft); font-size: .6rem; font-weight: 850; letter-spacing: .09em; }
+.o5x .google-perk-badge svg{ flex: none; }
+
+@media (max-width: 1100px) {
+  .o5x .google-partnership-grid{ column-gap: 48px; }
+}
+
+@media (max-width: 820px) {
+  .o5x .google-partnership-grid{ grid-template-columns: 1fr; grid-template-areas: "copy" "compare" "cta"; row-gap: 36px; }
+  .o5x .google-compare-card{ padding: 30px 26px; }
+  .o5x .google-compare-highlight{ padding: 22px; }
+}
+
+@media (max-width: 560px) {
+  .o5x .partnership-seal{ font-size: .62rem; padding: 7px 12px; white-space: normal; text-align: center; }
+  .o5x .google-partnership-logos{ gap: 12px 14px; }
+  .o5x .google-compare-card{ padding: 26px 20px; }
+  .o5x .google-compare-highlight{ padding: 18px; }
+  .o5x .google-compare-highlight strong{ font-size: 2.05rem; }
+  .o5x .google-cta-block .button{ width: 100%; }
+  .o5x .google-perk-badge{ white-space: normal; }
+}
 
 .o5x .pricing-section{ background: var(--paper); }.o5x .pricing-grid{ max-width: 940px; display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 50px; }.o5x .price-card{ position: relative; display: flex; flex-direction: column; padding: 38px; border: 1px solid var(--line); border-radius: 22px; background: #fff; }.o5x .price-card.featured{ border-color: #ed9f8a; box-shadow: 0 24px 60px rgba(55,34,25,.1); }.o5x .recommended{ position: absolute; left: 28px; top: -13px; padding: 7px 12px; border-radius: 7px; color: #fff; background: var(--orange); font-size: .58rem; font-weight: 850; letter-spacing: .11em; }.o5x .plan-top{ display: flex; justify-content: space-between; margin-bottom: 26px; font-size: .65rem; font-weight: 800; letter-spacing: .1em; }.o5x .plan-top span{ color: var(--orange); }.o5x .plan-top em{ color: #96989c; font-style: normal; font-weight: 600; letter-spacing: 0; }.o5x .price-card h3{ margin: 0 0 7px; font-size: 1.55rem; }.o5x .plan-description{ margin-bottom: 28px; color: var(--muted); font-size: .87rem; }.o5x .price-line{ display: flex; align-items: end; gap: 6px; }.o5x .price-line strong{ font-size: 3.15rem; line-height: 1; letter-spacing: -.06em; }.o5x .price-line span{ color: var(--muted); font-size: .86rem; }.o5x .billing-note{ margin: 10px 0 26px; color: #878a90; font-size: .72rem; }.o5x .price-card ul{ flex: 1; display: grid; gap: 13px; margin: 0 0 30px; padding: 25px 0 0; border-top: 1px solid var(--line); list-style: none; }.o5x .price-card li{ display: flex; align-items: center; gap: 10px; color: #53575e; font-size: .84rem; }.o5x .price-card li svg{ color: var(--orange); }.o5x .price-button{ width: 100%; }.o5x .payment-note{ max-width: 940px; display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 25px; color: #777a80; font-size: .75rem; }.o5x .payment-note svg{ color: var(--orange); }.o5x .payment-note strong{ color: #4d5157; }
 
@@ -814,6 +916,90 @@ export function Ofertas5Landing({ config }: { config: Ofertas5LandingConfig }) {
           </div>
         </section>
 
+        <section className="section google-partnership" aria-labelledby="google-partnership-title">
+          <div className="container google-partnership-grid">
+            <div className="google-copy">
+              <div className="partnership-seal">
+                <Icon name="shield" size={14} /> PARCERIA OFICIAL
+              </div>
+              <p className="eyebrow">BENEFÍCIO EXCLUSIVO DA PARCERIA</p>
+              <div className="google-partnership-logos">
+                <Logo compact={false} />
+                <span className="partnership-x" aria-hidden="true">
+                  ×
+                </span>
+                <BrandLogo src="/brands/google-logo.svg" alt="Google" name="Google" />
+                <BrandLogo src="/brands/gemini-logo.svg" alt="Google Gemini" name="Gemini" />
+              </div>
+              <h2 id="google-partnership-title">
+                2 anos de Google AI Pro.
+                <br />
+                <span>Incluídos no seu acesso.</span>
+              </h2>
+              <p>
+                Ao adquirir o acesso vitalício da UpShopee, você recebe 24 meses de Google AI Pro
+                sem mensalidade adicional — com 5 TB de armazenamento e acesso ampliado ao Gemini
+                para criar vídeos com inteligência artificial.
+              </p>
+              <ul className="google-benefit-list">
+                {[
+                  "24 meses incluídos",
+                  "5 TB de armazenamento",
+                  "Acesso ampliado ao Gemini",
+                  "Geração de vídeos com IA",
+                ].map((item) => (
+                  <li key={item}>
+                    <Icon name="check" size={16} />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <aside className="google-compare-card">
+              <span className="google-compare-kicker">COMPARE O VALOR</span>
+              <div className="google-compare-row">
+                <span>Google AI Pro · 5 TB</span>
+                <strong>
+                  R$ 96,99<em>/mês</em>
+                </strong>
+              </div>
+              <p className="google-compare-yearly">R$ 1.163,88 em 12 meses</p>
+              <div className="google-compare-divider">
+                <span>NA OFERTA UPSHOPEE</span>
+              </div>
+              <div className="google-compare-highlight">
+                <span className="google-compare-highlight-kicker">ACESSO VITALÍCIO</span>
+                <strong>R$ 259</strong>
+                <p>Pagamento único</p>
+                <ul>
+                  <li>
+                    <Icon name="check" size={15} /> UpShopee com acesso vitalício
+                  </li>
+                  <li>
+                    <Icon name="check" size={15} /> 24 meses de Google AI Pro incluídos
+                  </li>
+                </ul>
+              </div>
+              <p className="google-compare-closing">
+                Uma compra. A plataforma completa e dois anos do benefício Google.
+              </p>
+            </aside>
+            <div className="google-cta-block">
+              <button className="button button-primary" onClick={() => goToCheckout("vitalicio")}>
+                GARANTIR UPSHOPEE + GEMINI <Icon name="arrow" />
+              </button>
+              <p className="google-cta-note">Ativação orientada após a confirmação da compra.</p>
+            </div>
+          </div>
+          <div className="container google-legal-note">
+            <p>
+              Benefício disponível na oferta vitalícia, sujeito às regras de ativação e
+              elegibilidade da parceria. Preço público de referência do Google consultado em
+              31/08/2026 e sujeito a alteração.
+            </p>
+          </div>
+        </section>
+
         <section className="section pricing-section" id="planos" ref={pricingRef}>
           <div className="container centered-head">
             <p className="eyebrow">PLANOS</p>
@@ -857,6 +1043,9 @@ export function Ofertas5Landing({ config }: { config: Ofertas5LandingConfig }) {
             </article>
             <article className="price-card featured">
               <div className="recommended">ACESSO VITALÍCIO</div>
+              <div className="google-perk-badge">
+                <Icon name="spark" size={13} /> BENEFÍCIO GOOGLE INCLUSO
+              </div>
               <div className="plan-top">
                 <span>VITALÍCIO</span>
                 <em>Pagamento único</em>
@@ -870,6 +1059,7 @@ export function Ofertas5Landing({ config }: { config: Ofertas5LandingConfig }) {
               <ul>
                 {[
                   "Tudo do plano mensal",
+                  "24 meses de Google AI Pro (5 TB)",
                   "Criar persona e script com IA",
                   "Templates e ferramentas de vídeo",
                   "Imagem UGC ilimitada",
