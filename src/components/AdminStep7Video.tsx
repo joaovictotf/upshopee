@@ -8,28 +8,65 @@ import type { ProductInfo, StyleConfig, GeneratedContent } from "./Step7GeminiCh
 
 type VideoEntry = { name: string; description: string; videoPath: string };
 
-const ALL_VIDEOS: Record<string, VideoEntry[]> = {
-  figurinha: [
-    { name: "Pacote de Figurinhas da Copa 2026", description: "Estilo Cinematográfico", videoPath: "/videos/admin-video-1.mp4" },
-  ],
-  toalha: [
-    { name: "Toalha do Brasil", description: "Estilo Unboxing · Tom Casual", videoPath: "/videos/admin-video-2.mp4" },
-    { name: "Toalha do Brasil — Versão Alternativa", description: "Estilo Unboxing · Tom Entusiasmado", videoPath: "/videos/admin-video-3.mp4" },
-  ],
-  album: [
-    { name: "Álbum da Copa do Mundo 2026", description: "Estilo Demonstração", videoPath: "/videos/admin-video-4.mp4" },
-  ],
-};
+const norm = (s: string) =>
+  s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+// Ordered top to bottom: first rule whose `match` string is contained in the
+// normalized product name wins. Order matters — see the collisions called
+// out where this list is built (carrinho vs prateleira, quadro vs album,
+// prateleira vs toalha).
+const VIDEO_RULES: { match: string[]; videos: VideoEntry[] }[] = [
+  {
+    match: ["hermetic"],
+    videos: [{ name: "Kit 2 Potes de Vidro Hermético 640ml", description: "Estilo Demonstração", videoPath: "/videos/admin-video-pote-vidro-hermetico.mp4" }],
+  },
+  {
+    match: ["carrinho organizador"],
+    videos: [{ name: "Carrinho Organizador de Aço Multiuso", description: "Estilo Demonstração", videoPath: "/videos/admin-video-carrinho-organizador.mp4" }],
+  },
+  {
+    match: ["prateleira", "nicho"],
+    videos: [{ name: "Prateleira de Canto Reto Nicho", description: "Estilo Demonstração", videoPath: "/videos/admin-video-prateleira-canto.mp4" }],
+  },
+  {
+    match: ["oculos de sol"],
+    videos: [{ name: "Óculos de Sol Redondo Premium", description: "Estilo Unboxing · Tom Casual", videoPath: "/videos/admin-video-oculos-redondo.mp4" }],
+  },
+  {
+    match: ["quadro"],
+    videos: [{ name: "Quadros Decorativos Jogos Preto e Branco", description: "Estilo Demonstração", videoPath: "/videos/admin-video-quadros-jogos.mp4" }],
+  },
+  {
+    match: ["wide leg"],
+    videos: [{ name: "Calça Wide Leg Jeans Pantalona", description: "Estilo Unboxing · Tom Casual", videoPath: "/videos/admin-video-calca-wide-leg.mp4" }],
+  },
+  {
+    match: ["toalha"],
+    videos: [
+      { name: "Toalha do Brasil", description: "Estilo Unboxing · Tom Casual", videoPath: "/videos/admin-video-2.mp4" },
+      { name: "Toalha do Brasil — Versão Alternativa", description: "Estilo Unboxing · Tom Entusiasmado", videoPath: "/videos/admin-video-3.mp4" },
+    ],
+  },
+  {
+    match: ["figurinha"],
+    videos: [{ name: "Pacote de Figurinhas da Copa 2026", description: "Estilo Cinematográfico", videoPath: "/videos/admin-video-1.mp4" }],
+  },
+  {
+    match: ["album"],
+    videos: [{ name: "Álbum da Copa do Mundo 2026", description: "Estilo Demonstração", videoPath: "/videos/admin-video-4.mp4" }],
+  },
+];
+
+const FALLBACK_VIDEO: VideoEntry = { name: "Pacote de Figurinhas da Copa 2026", description: "Estilo Cinematográfico", videoPath: "/videos/admin-video-1.mp4" };
 
 function detectVideo(productName: string, variant: number): VideoEntry {
-  const n = productName.toLowerCase();
-  if (n.includes("toalha")) {
-    const list = ALL_VIDEOS.toalha;
-    return list[Math.min(variant, list.length - 1)];
+  const n = norm(productName);
+  for (const rule of VIDEO_RULES) {
+    if (rule.match.some((m) => n.includes(m))) {
+      return rule.videos[Math.min(variant, rule.videos.length - 1)];
+    }
   }
-  if (n.includes("album") || n.includes("álbum")) return ALL_VIDEOS.album[0];
-  if (n.includes("figurinha")) return ALL_VIDEOS.figurinha[0];
-  return ALL_VIDEOS.figurinha[0];
+  return FALLBACK_VIDEO;
 }
 
 // ── 10 generation phases, shown at 4-second intervals (40s total) ──
