@@ -11,17 +11,36 @@
  * air fryer e um top de academia não podem cair na mesma cena, e as duas telas
  * precisam concordar sobre em que nicho um produto está.
  *
+ * ESTILO, VOZ e TOM (etapa 4 do Vídeo IA) mudam o prompt de verdade — não é só
+ * anexar o nome do estilo no fim de um texto genérico:
+ *   - style muda a ESTRUTURA (o que acontece em cada segundo dos 8) e o "Style
+ *     beat" (como a cena nichada — settings/subjects/actions de SCENES — é
+ *     encenada). "Antes e depois" narra um antes e um depois; "Unboxing" abre
+ *     uma embalagem; "Problema e solução" mostra o problema primeiro.
+ *   - voice decide se existe locução (feminina/masculina) ou se o vídeo é
+ *     mudo (sem-voz — nesse caso o prompt diz isso explicitamente).
+ *   - tone muda COMO essa voz fala (ou, sem voz, a energia física da cena).
+ *
  * O texto gerado é em INGLÊS de propósito: ele é colado numa IA de vídeo. Só a
  * interface em volta é em português.
  */
 
 import { deburr, inferProductContext } from "./copy-engine";
 
+export type VideoVoiceId = "feminina" | "masculina" | "sem-voz";
+export type VideoToneId = "formal" | "casual" | "entusiasmado" | "urgente" | "emocional";
+
 export type VideoPromptInput = {
   name: string;
   category: string;
   /** Opcional. Quando existe, ajusta só o acabamento de produção do vídeo. */
   price?: number;
+  /** Id de STYLE_OPTIONS (dashboard.video-ia.tsx). Inválido/ausente cai no padrão. */
+  style?: string;
+  /** VOICE_OPTIONS. Inválido/ausente cai em "feminina". */
+  voice?: string;
+  /** TONE_OPTIONS. Inválido/ausente cai em "casual". */
+  tone?: string;
 };
 
 // ─── Cenas por nicho ─────────────────────────────────────────────────────────
@@ -436,23 +455,6 @@ const LIGHTING = [
   "window light mixed with a lamp switched on nearby, cosy and lived-in",
 ];
 
-const VOICE = [
-  "relaxed and conversational, like talking to a friend",
-  "casual and unscripted, short sentences, no announcer energy",
-  "calm and direct, speaking over the action rather than to the lens",
-  "speaking while using the product, pausing naturally, breathing audible",
-  "enthusiastic but believable, a slightly faster pace, never shouting",
-  "quiet and confidential, as if letting the viewer in on something",
-];
-
-const STRUCTURE = [
-  "12 to 15 seconds: hook in the first second, one clear demonstration, quick payoff",
-  "15 to 20 seconds: two seconds of problem, eight of product, the rest on the result",
-  "around 15 seconds, one continuous take with no cuts at all",
-  "18 to 22 seconds in three tight beats — before, during, after",
-  "10 to 12 seconds, fast: straight into the product, one benefit, done",
-];
-
 /** Só o acabamento muda com o preço. Sem preço, cai no conjunto neutro. */
 const FINISH = {
   budget: [
@@ -472,21 +474,261 @@ const FINISH = {
   ],
 };
 
+// ─── Estilo (ETAPA 4) ─────────────────────────────────────────────────────────
+//
+// Cada estilo define DUAS coisas, e as duas mudam de verdade entre estilos:
+//   structures — a linha "Duration and structure": como os 8 segundos se
+//                dividem em beats. Sempre EXATAMENTE 8 segundos — é limite
+//                técnico da IA de vídeo, não sugestão de ritmo.
+//   beat       — a linha "Style beat": como a cena NICHADA (settings/subjects/
+//                actions de SCENES, escolhidos por pick()) é encenada dentro
+//                desse estilo. É aqui que "antes e depois" vira de fato duas
+//                metades, "unboxing" vira de fato uma abertura de embalagem
+//                etc. — nunca só o nome do estilo colado num texto genérico.
+//
+// IDs batem com STYLE_OPTIONS em dashboard.video-ia.tsx. Estilo desconhecido
+// (ou ausente) cai em "produto-destaque".
+
+type StyleDef = {
+  structures: string[];
+  beat: (scene: SceneBlocks, noun: string) => string;
+};
+
+const STYLE_DEFS: Record<string, StyleDef> = {
+  "produto-destaque": {
+    structures: [
+      "Exactly 8 seconds, one continuous take, no cuts: the product is the subject of every single frame from second 0.",
+      "Exactly 8 seconds built entirely around the product: it is in frame, centred and lit, for the full 8 seconds without a single cutaway.",
+    ],
+    beat: (scene, noun) =>
+      `Style beat: nothing else competes for attention — ${noun} stays centred and in focus the entire 8 seconds while ${pick(scene.subjects)} turns it slowly so every side and detail reads on camera.`,
+  },
+  "oferta-rapida": {
+    structures: [
+      "Exactly 8 seconds, cut fast: the product is on screen within the first second, and the pace never slows down before the cut.",
+      "Exactly 8 seconds of urgent pacing: quick reveal, quick use, quick payoff — every beat lands inside a couple of seconds each.",
+    ],
+    beat: (scene, noun) =>
+      `Style beat: everything moves quickly and with urgency — ${pick(scene.subjects)} grabs ${noun} and ${pick(scene.actions)}, all compressed into the 8 seconds like there is no time to waste.`,
+  },
+  "problema-solucao": {
+    structures: [
+      "Exactly 8 seconds split in two: seconds 0 to 3 show the problem, unresolved and visible on the person's face; seconds 3 to 8 show the product ending it.",
+      "Exactly 8 seconds, problem first: roughly the first third is the frustration, the rest is the product fixing it in real time.",
+    ],
+    beat: (scene, noun) =>
+      `Style beat: it opens on the problem — ${pick(scene.subjects)}, visibly bothered, in ${pick(scene.settings)}, with no product in sight — and only then brings in ${noun}, at which point ${pick(scene.actions)}.`,
+  },
+  demonstracao: {
+    structures: [
+      "Exactly 8 seconds of straightforward hands-on use, start to finish, in one real-time take.",
+      "Exactly 8 seconds: the product is picked up, used exactly as intended, and the result is visible before the cut.",
+    ],
+    beat: (scene, noun) =>
+      `Style beat: plain, honest demonstration — ${pick(scene.subjects)} in ${pick(scene.settings)}, and ${pick(scene.actions)}, nothing more staged than that.`,
+  },
+  unboxing: {
+    structures: [
+      "Exactly 8 seconds: seconds 0 to 2 the package is opened, seconds 2 to 5 the product is lifted out and revealed, seconds 5 to 8 a first close look at it.",
+      "Exactly 8 seconds built entirely around the reveal: package, opening, product — in that order, filling the whole clip.",
+    ],
+    beat: (scene, noun) =>
+      `Style beat: the video is the unboxing — ${pick(scene.subjects)} opens the packaging on camera in ${pick(scene.settings)}, and the first real look at ${noun} is the emotional peak of the clip.`,
+  },
+  ugc: {
+    structures: [
+      "Exactly 8 seconds shot like an ordinary customer's own phone footage: a little shaky, imperfectly framed, nothing produced about it.",
+      "Exactly 8 seconds that never look planned: raw, handheld, the kind of clip someone posts without a second take.",
+    ],
+    beat: (scene, noun) =>
+      `Style beat: it reads as user-generated, not an ad — ${pick(scene.subjects)} in ${pick(scene.settings)}, filming themselves using ${noun} the way a real customer would, imperfections left in.`,
+  },
+  cinematografico: {
+    structures: [
+      "Exactly 8 seconds, deliberately paced: a slow push-in and soft light, the product treated like the hero of a small commercial — still cut to exactly 8 seconds, no lingering past it.",
+      "Exactly 8 seconds of careful, considered movement: nothing rushed, but nothing wasted either — every second earns its place.",
+    ],
+    beat: (scene, noun) =>
+      `Style beat: calm and premium in feel — ${pick(scene.subjects)} handles ${noun} in ${pick(scene.settings)} with unhurried, deliberate movement, the camera drifting rather than cutting.`,
+  },
+  achadinho: {
+    structures: [
+      "Exactly 8 seconds with discovery energy: opens like the person just found this and can't quite believe it, then shows why.",
+      "Exactly 8 seconds built around a genuine 'I can't believe I found this' reaction, product revealed within the first two seconds.",
+    ],
+    beat: (scene, noun) =>
+      `Style beat: pure discovery — ${pick(scene.subjects)} reacts like they just found ${noun} by accident and has to show someone, then ${pick(scene.actions)}.`,
+  },
+  "antes-depois": {
+    structures: [
+      "Exactly 8 seconds in two clear halves: seconds 0 to 4 are the BEFORE state, unresolved and plainly visible; seconds 4 to 8 are the AFTER state with the product already applied and the result impossible to miss.",
+      "Exactly 8 seconds, split down the middle: half the clip is the problem as it stood, half is the same moment fixed.",
+    ],
+    beat: (scene, noun) =>
+      `Style beat: BEFORE — ${pick(scene.subjects)} in ${pick(scene.settings)}, dealing with the problem ${noun} fixes, no product visible yet. AFTER — the exact same setting, but now ${pick(scene.actions)}, and the difference is obvious without a word needing to explain it.`,
+  },
+  narracao: {
+    structures: [
+      "Exactly 8 seconds built around the spoken explanation: the visual stays simple and steady on purpose so the voice carries the video.",
+      "Exactly 8 seconds where the visual supports, not competes: one clean shot, the explanation doing the real work.",
+    ],
+    beat: (scene, noun) =>
+      `Style beat: the visual is intentionally uncluttered — ${pick(scene.subjects)} holds ${noun} steady in ${pick(scene.settings)} while the explanation plays over it, no fast cuts to distract from it.`,
+  },
+  promocao: {
+    structures: [
+      "Exactly 8 seconds built for a limited-time push: the product is shown fast, then handled with the same urgency as something about to run out.",
+      "Exactly 8 seconds of offer energy: quick reveal, confident handling, the pace itself implying this will not last.",
+    ],
+    beat: (scene, noun) =>
+      `Style beat: everything about the pacing says limited time — ${pick(scene.subjects)} moves with real urgency using ${noun}, the energy doing the selling since no price or countdown graphic is allowed on screen.`,
+  },
+  "comparacao-precos": {
+    structures: [
+      "Exactly 8 seconds contrasting value entirely through action: the old way, then this one, back to back, no on-screen numbers needed.",
+      "Exactly 8 seconds built as a side-by-side: roughly half shows the old solution, half shows this product doing it better.",
+    ],
+    beat: (scene, noun) =>
+      `Style beat: the comparison is physical, not written — ${pick(scene.subjects)} shows the old, harder way first, then switches to ${noun} and ${pick(scene.actions)}, letting the difference speak for itself.`,
+  },
+  "review-produto": {
+    structures: [
+      "Exactly 8 seconds like a fast, honest verdict: the person tests it on camera and lands on a clear opinion before the cut.",
+      "Exactly 8 seconds of real testing and a real reaction, ending on a definite take — worth it or not.",
+    ],
+    beat: (scene, noun) =>
+      `Style beat: it plays like a genuine review — ${pick(scene.subjects)} tests ${noun} in ${pick(scene.settings)}, and the face sells the verdict as much as the words do.`,
+  },
+  "rotina-dia": {
+    structures: [
+      "Exactly 8 seconds folded into an ordinary moment of the day: the product appears mid-routine, used naturally, like the camera just happened to catch it.",
+      "Exactly 8 seconds shot like a slice of a normal day, not a staged ad — the product is just part of what is already happening.",
+    ],
+    beat: (scene, noun) =>
+      `Style beat: nothing about it looks set up for the camera — ${pick(scene.subjects)} is in the middle of an ordinary moment in ${pick(scene.settings)}, and ${noun} just happens to be part of it as ${pick(scene.actions)}.`,
+  },
+  "closeup-detalhe": {
+    structures: [
+      "Exactly 8 seconds shot entirely in close-up: the camera never pulls back to a wide shot, staying on the product's texture and mechanism the whole time.",
+      "Exactly 8 seconds of macro framing only — surface, seams, material, moving parts, filling the frame from the first second to the last.",
+    ],
+    beat: (scene, noun) =>
+      `Style beat: the camera stays tight the entire clip — ${pick(scene.subjects)}'s hands fill the frame around ${noun}, the shot lingering on texture and finish rather than pulling back to show the whole scene.`,
+  },
+  "reacao-real": {
+    structures: [
+      "Exactly 8 seconds locked on the person's face: the product stays at the edge of frame while the genuine reaction is the whole point.",
+      "Exactly 8 seconds built around one honest reaction, camera close on the face from start to finish.",
+    ],
+    beat: (scene, noun) =>
+      `Style beat: the face is the frame — ${pick(scene.subjects)} reacts to ${noun} in ${pick(scene.settings)} with a real, unscripted expression, hands and product visible only at the edge of the shot.`,
+  },
+};
+
+const DEFAULT_STYLE_ID = "produto-destaque";
+
+function resolveStyle(styleId?: string): StyleDef {
+  return (styleId && STYLE_DEFS[styleId]) || STYLE_DEFS[DEFAULT_STYLE_ID];
+}
+
+// ─── Voz e tom (ETAPA 4) ───────────────────────────────────────────────────
+//
+// voice decide SE existe locução; tone decide COMO ela soa (ou, sem voz, a
+// energia física da cena). As duas juntas produzem a linha "Voice:" —
+// nunca um texto solto desconectado do que a pessoa escolheu na etapa 4.
+
+const TONE_IDS: VideoToneId[] = ["formal", "casual", "entusiasmado", "urgente", "emocional"];
+const DEFAULT_TONE: VideoToneId = "casual";
+
+function resolveTone(tone?: string): VideoToneId {
+  return TONE_IDS.includes(tone as VideoToneId) ? (tone as VideoToneId) : DEFAULT_TONE;
+}
+
+function resolveVoice(voice?: string): VideoVoiceId {
+  if (voice === "masculina" || voice === "sem-voz") return voice;
+  return "feminina";
+}
+
+/** Como a voz FALA em cada tom, quando existe voz. Duas variantes por tom. */
+const SPOKEN_TONE_LINES: Record<VideoToneId, string[]> = {
+  formal: [
+    "measured and polished, complete sentences, no slang, sounding trustworthy",
+    "composed and professional, clear diction, not rushed",
+  ],
+  casual: [
+    "relaxed and conversational, like chatting with a friend, occasional casual phrasing",
+    "easygoing and natural, unscripted-sounding, comfortable pace",
+  ],
+  entusiasmado: [
+    "energetic and upbeat, fast-paced enthusiasm, genuine excitement audible",
+    "bright and lively, a big smile audible in the voice, high energy throughout",
+  ],
+  urgente: [
+    "pushing pace, urgent tone that creates real pressure to act now",
+    "fast and insistent, the kind of voice that makes you not want to wait",
+  ],
+  emocional: [
+    "warm and heartfelt, a slightly emotional delivery, genuine feeling in every word",
+    "soft and sincere, voice catching slightly with real emotion",
+  ],
+};
+
+/** Sem voz, o tom vira energia física/expressão — nunca some do prompt. */
+const SILENT_TONE_LINES: Record<VideoToneId, string[]> = {
+  formal: [
+    "composed and measured body language, deliberate and unhurried movements",
+    "controlled, professional demeanour, no exaggerated gestures",
+  ],
+  casual: [
+    "relaxed, easygoing body language, natural and unposed movements",
+    "comfortable and unbothered energy, like they are not performing for the camera",
+  ],
+  entusiasmado: [
+    "visibly excited energy, quick movements and a genuine smile carrying the whole scene",
+    "big, unmistakable enthusiasm shown entirely through expression and movement",
+  ],
+  urgente: [
+    "fast, purposeful movements that read as urgency, no wasted motion",
+    "quick and decisive body language, the pace itself creating pressure",
+  ],
+  emocional: [
+    "soft, genuine emotion visible on the face, unhurried and heartfelt movements",
+    "warm, tender body language, a small emotional reaction caught on camera",
+  ],
+};
+
+function voiceLine(voice: VideoVoiceId, tone: VideoToneId): string {
+  if (voice === "sem-voz") {
+    return `Voice: NO narration and no spoken dialogue anywhere in this video — completely silent of speech. The story is told only through action and expression: ${pick(SILENT_TONE_LINES[tone])}.`;
+  }
+  const gender = voice === "masculina" ? "male" : "female";
+  return `Voice: exactly one single ${gender} voice speaking Brazilian Portuguese, ${pick(SPOKEN_TONE_LINES[tone])}.`;
+}
+
 /**
  * Regras que TODO prompt carrega, sempre, palavra por palavra. É bloco fixo de
  * propósito: são requisitos do produto, não variação criativa. Sortear a
  * redação delas só criaria chance de uma sair ambígua.
+ *
+ * A regra de voz muda com `voice`: com locução, exige voz única; sem voz,
+ * proíbe qualquer locução — as duas nunca podem coexistir no mesmo prompt.
  */
-const HARD_RULES = [
-  "Hard requirements (all mandatory):",
-  "- Vertical 9:16 video, framed to be posted as a story or a reel.",
-  "- Photorealistic. Real footage: real skin texture, real fabric, real reflections, natural imperfections. Not animated, not 3D, not illustrated, not stylised.",
-  "- A real human being on camera, physically handling and using the product.",
-  "- The single voice speaks Brazilian Portuguese.",
-  "- NO on-screen text of any kind: no captions, no subtitles, no titles, no logos, no watermarks, no price tags, no graphics.",
-  "- NO background music, no soundtrack, no jingle, no sound effects.",
-  "- ONE human voice only: a single speaker, no second voice, no dialogue between two people, no choir, no layered or overlapping voices.",
-].join("\n");
+function hardRules(voice: VideoVoiceId): string {
+  const voiceRule =
+    voice === "sem-voz"
+      ? "- NO narration, no spoken dialogue, no voice-over of any kind. This is a silent video — the product and the action carry it alone."
+      : "- ONE human voice only: a single speaker, speaking Brazilian Portuguese, no second voice, no dialogue between two people, no choir, no layered or overlapping voices.";
+  return [
+    "Hard requirements (all mandatory):",
+    "- EXACTLY 8 SECONDS total length. This is a hard limit of the video AI generating this clip — the entire scene, every beat, must fit inside 8 seconds. Do not describe anything that needs more time.",
+    "- Vertical 9:16 video, framed to be posted as a story or a reel.",
+    "- Photorealistic. Real footage: real skin texture, real fabric, real reflections, natural imperfections. Not animated, not 3D, not illustrated, not stylised.",
+    "- A real human being on camera, physically handling and using the product.",
+    "- NO on-screen text of any kind: no captions, no subtitles, no titles, no logos, no watermarks, no price tags, no graphics.",
+    "- NO background music, no soundtrack, no jingle, no sound effects.",
+    voiceRule,
+  ].join("\n");
+}
 
 // ─── Montagem ────────────────────────────────────────────────────────────────
 
@@ -520,28 +762,32 @@ function resolveScene(name: string, category: string): SceneBlocks {
 function build(input: VideoPromptInput): string {
   const name = input.name.trim() || "the product";
   const scene = resolveScene(name, input.category ?? "");
+  const styleDef = resolveStyle(input.style);
+  const voice = resolveVoice(input.voice);
+  const tone = resolveTone(input.tone);
 
   return [
     "Vertical short-form product video, photorealistic.",
     "",
     `Product: "${name}" — ${scene.noun}.`,
-    `Duration and structure: ${pick(STRUCTURE)}.`,
+    `Duration and structure: ${pick(styleDef.structures)}`,
     "",
     `Scene: ${pick(scene.settings)}.`,
     `Person: ${pick(scene.subjects)}.`,
-    `Action: the person ${pick(scene.actions)}.`,
+    styleDef.beat(scene, scene.noun),
     `Camera: ${pick(CAMERA)}.`,
     `Lighting: ${pick(LIGHTING)}.`,
-    `Voice: one single human voice, ${pick(VOICE)}.`,
+    voiceLine(voice, tone),
     `Production feel: ${pick(finishPool(input.price))}.`,
     "",
-    HARD_RULES,
+    hardRules(voice),
   ].join("\n");
 }
 
 /**
- * Gera um prompt de vídeo em inglês, nichado no produto. Cada chamada sorteia
- * blocos novos, então clicar de novo devolve outro prompt — isso é intencional.
+ * Gera um prompt de vídeo em inglês, nichado no produto e configurado pelo
+ * estilo/voz/tom da etapa 4. Cada chamada sorteia blocos novos, então clicar
+ * de novo devolve outro prompt — isso é intencional.
  *
  * @param avoid prompts gerados recentemente. Se o sorteio cair num deles, refaz
  *              até achar um inédito.

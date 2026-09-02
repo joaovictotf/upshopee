@@ -12,7 +12,7 @@ import {
   Search, Upload, X, ChevronLeft, ArrowRight, Check, Loader2, Star,
   Camera, Package, Image, Info, Sparkles, Copy, Send,
   Wand2, RotateCw, Shirt, Zap, Lightbulb, ShoppingBag, Play, Trophy,
-  Gem, Scissors, Eye, Volume2, Video,
+  Gem, Scissors, Eye, Volume2, Video, ZoomIn, Smile,
 } from "lucide-react";
 import { products as mockProducts } from "../lib/mock/products";
 import type { AffiliateProduct } from "../lib/mock/affiliate-products";
@@ -213,6 +213,8 @@ const STYLE_OPTIONS = [
   { id: "comparacao-precos", label: "Comparação de preços", icon: Gem, desc: "Mostra a vantagem de preço e custo-benefício" },
   { id: "review-produto", label: "Review do produto", icon: Eye, desc: "Avaliação completa com teste, prós e contras" },
   { id: "rotina-dia", label: "Rotina / Dia a dia", icon: Camera, desc: "Produto integrado na rotina diária, estilo vlog" },
+  { id: "closeup-detalhe", label: "Close-up de detalhe", icon: ZoomIn, desc: "Câmera fecha no produto o vídeo inteiro, textura em foco" },
+  { id: "reacao-real", label: "Reação real", icon: Smile, desc: "Foco no rosto reagindo ao produto, sem preocupação estética" },
 ];
 
 const VOICE_OPTIONS = [
@@ -1128,9 +1130,20 @@ function VideoIaPage() {
     url: productInfo.url || undefined,
   }), [productInfo]);
 
-  const withOfflinePrompt = useCallback((content: GeneratedContent): GeneratedContent => {
+  /* Recebe o `cfg` explícito em vez de ler `styleConfig` do closure: em
+     handleRegenerate com variante (curta/comercial/natural), setStyleConfig
+     ainda não terminou de aplicar quando o prompt offline é montado — sem o
+     parâmetro, o prompt sairia no estilo antigo enquanto o roteiro da Edge
+     Function já reflete o novo. */
+  const withOfflinePrompt = useCallback((content: GeneratedContent, cfg: StyleConfig): GeneratedContent => {
     const final_prompt = generateVideoPrompt(
-      { name: productInfo.name, category: productInfo.category },
+      {
+        name: productInfo.name,
+        category: productInfo.category,
+        style: cfg.style,
+        voice: cfg.voiceType,
+        tone: cfg.tone,
+      },
       recentPromptsRef.current,
     );
     recentPromptsRef.current = [final_prompt, ...recentPromptsRef.current].slice(0, 8);
@@ -1164,7 +1177,7 @@ function VideoIaPage() {
         });
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.error || `Erro ${res.status} ao gerar conteúdo`);
-      const content = withOfflinePrompt(data.content);
+      const content = withOfflinePrompt(data.content, styleConfig);
       setGeneratedContent(content);
       await saveProjectWithContent(content);
       toast.success("Conteúdo gerado com sucesso!");
@@ -1198,7 +1211,7 @@ function VideoIaPage() {
         });
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.error || "Erro ao gerar");
-      const content = withOfflinePrompt(data.content);
+      const content = withOfflinePrompt(data.content, variantStyle);
       setGeneratedContent(content);
       await saveProjectWithContent(content);
       toast.success("Nova versão gerada!");
