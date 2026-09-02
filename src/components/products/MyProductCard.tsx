@@ -9,63 +9,16 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription } from "../ui/dia
 
 const SORA = { fontFamily: "'Sora', sans-serif" } as const;
 
-/** Quantos pacotes anteriores ficam na memória do card para alimentar o `avoid`
- *  de generateContent. Oito cobre a sessão de quem clica várias vezes seguidas
- *  procurando uma versão que gostou, sem segurar texto à toa. */
+/** Quantas legendas anteriores ficam na memória do card para alimentar o
+ *  `avoid` de generateContent. Oito cobre a sessão de quem clica várias vezes
+ *  seguidas procurando uma versão que gostou, sem segurar texto à toa. */
 const HISTORY_SIZE = 8;
 
 type GeneratedContent = ReturnType<typeof generateContent>;
 
-/** Bloco de texto gerado + seu botão de copiar. Cada peça vai para um campo
- *  diferente (legenda, título do vídeo, comentário), por isso cada uma copia
- *  sozinha — copiar as três juntas obrigaria o usuário a editar no celular. */
-function ContentField({
-  label,
-  value,
-  multiline,
-}: {
-  label: string;
-  value: string;
-  multiline?: boolean;
-}) {
-  const [copied, setCopied] = useState(false);
-
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(value);
-      setCopied(true);
-      toast.success(`${label} copiado`);
-      window.setTimeout(() => setCopied(false), 1500);
-    } catch {
-      toast.error("Não foi possível copiar. Selecione o texto e copie na mão.");
-    }
-  };
-
-  return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-2.5">
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">
-          {label}
-        </p>
-        <button
-          type="button"
-          onClick={copy}
-          className="inline-flex h-7 shrink-0 items-center gap-1 rounded-full border border-[var(--border)] bg-[var(--surface)] px-2 text-[11px] font-semibold text-[var(--text)] transition-colors hover:border-[var(--accent)]/40 hover:text-[var(--accent)]"
-        >
-          {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-          {copied ? "Copiado" : "Copiar"}
-        </button>
-      </div>
-      <p
-        className={`mt-1.5 break-words text-xs leading-relaxed text-[var(--text)] ${
-          multiline ? "whitespace-pre-line" : ""
-        }`}
-      >
-        {value}
-      </p>
-    </div>
-  );
-}
+/** Shopee Video só aceita 150 caracteres — mesmo limite de product-insights.ts,
+ *  repetido aqui só para o contador visual, sem importar constante interna. */
+const CAPTION_MAX_LENGTH = 150;
 
 export function MyProductCard({
   product,
@@ -82,6 +35,7 @@ export function MyProductCard({
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [removing, setRemoving] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [captionCopied, setCaptionCopied] = useState(false);
 
   // Dado de mercado do PRODUTO. Determinístico e estável dentro do dia de São
   // Paulo, então pode ser calculado a cada render sem piscar número na tela.
@@ -95,9 +49,19 @@ export function MyProductCard({
       history,
     );
     setContent(next);
-    setHistory((prev) =>
-      [`${next.titulo}\n${next.descricao}\n${next.hashtags}`, ...prev].slice(0, HISTORY_SIZE),
-    );
+    setHistory((prev) => [next.caption, ...prev].slice(0, HISTORY_SIZE));
+  };
+
+  const copyCaption = async () => {
+    if (!content) return;
+    try {
+      await navigator.clipboard.writeText(content.caption);
+      setCaptionCopied(true);
+      toast.success("Legenda copiada");
+      window.setTimeout(() => setCaptionCopied(false), 1500);
+    } catch {
+      toast.error("Não foi possível copiar. Selecione o texto e copie na mão.");
+    }
   };
 
   const copyAffiliateLink = async () => {
@@ -193,12 +157,25 @@ export function MyProductCard({
         </p>
       </div>
 
-      {/* ── Conteúdo gerado ── */}
+      {/* ── Legenda gerada — uma só, pronta pra colar no Shopee Video ── */}
       {content && (
-        <div className="flex flex-col gap-2">
-          <ContentField label="Hashtags" value={content.hashtags} />
-          <ContentField label="Título do vídeo" value={content.titulo} />
-          <ContentField label="Descrição" value={content.descricao} multiline />
+        <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-2.5">
+          <div className="flex items-start gap-2">
+            <p className="min-w-0 flex-1 break-words text-xs leading-relaxed text-[var(--text)]">
+              {content.caption}
+            </p>
+            <button
+              type="button"
+              onClick={copyCaption}
+              className="flex h-7 shrink-0 items-center gap-1 rounded-full border border-[var(--border)] bg-[var(--surface)] px-2 text-[11px] font-semibold text-[var(--text)] transition-colors hover:border-[var(--accent)]/40 hover:text-[var(--accent)]"
+            >
+              {captionCopied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+              {captionCopied ? "Copiado" : "Copiar"}
+            </button>
+          </div>
+          <p className="mt-1.5 text-right text-[10px] tabular-nums text-[var(--muted)]">
+            {content.caption.length}/{CAPTION_MAX_LENGTH}
+          </p>
         </div>
       )}
 
@@ -212,7 +189,7 @@ export function MyProductCard({
           className="flex h-10 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-[var(--accent)] px-3 text-xs font-semibold text-white transition-all hover:bg-[var(--accent-2)] active:scale-[0.98] sm:text-sm"
         >
           {content ? <RefreshCw className="h-3.5 w-3.5" /> : <Sparkles className="h-3.5 w-3.5" />}
-          Gerar conteúdo
+          {content ? "Gerar outra" : "Gerar legenda"}
         </button>
 
         <button

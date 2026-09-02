@@ -220,162 +220,79 @@ export function productSales(
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// PARTE 2 — GERADOR DE CONTEÚDO (hashtags + título + legenda)
+// PARTE 2 — GERADOR DE CONTEÚDO (legenda única pronta pra colar)
 // ═══════════════════════════════════════════════════════════════════════════
 //
-// Uma chamada devolve as três peças montadas JUNTAS, a partir de um mesmo
-// "ângulo" sorteado (descoberta / resolve / preço / público). É isso que faz o
-// pacote parecer uma peça só: se o título é de preço, a legenda abre falando
-// de preço e a hashtag de ângulo é #precinho. Gerar as três separadamente daria
-// três textos que não se olham.
+// O Shopee Video só aceita 150 caracteres de legenda — confirmado ao vivo
+// pelo Juam. Por isso a saída é UMA string só (gancho + produto + hashtags
+// já fundidos), nunca três blocos separados: nada aqui existe pra ser editado
+// e recombinado depois, existe pra ser colado direto no campo da Shopee.
+//
+// Montagem é GULOSA e o limite é aplicado em código, não só na escolha dos
+// textos-fonte: gancho + nome sempre cabem folgado (o pior caso dá long
+// bem abaixo de 150), e hashtags entram uma a uma só enquanto ainda cabem —
+// nunca gera e depois torce pra caber. `hardTruncate` no fim é a rede de
+// segurança para o caso patológico que a montagem gulosa não previu.
 //
 // Aqui o Math.random() é CORRETO — ao contrário da Parte 1. Texto de divulgação
-// repetido é o que cai em filtro de spam; cada clique tem que sair diferente.
+// repetido é o que cai em filtro de spam; cada clique tem que sair diferente,
+// gancho e hashtags juntos, nunca só uma parte.
 //
 // Benefício e público vêm de inferProductContext (src/lib/mock/
 // divulgation-templates.ts) — o mapa palavra-chave → contexto que já existe no
 // projeto. Nenhum segundo mapa é definido neste arquivo.
 //
 // ┌─ REGRA DE GRAMÁTICA QUE NÃO PODE SER QUEBRADA ─────────────────────────┐
-// │ 1. NUNCA colocar artigo antes de {NOME}. O nome vem do catálogo e pode  │
-// │    ter qualquer gênero — "esse Camisa" e "essa Açucareiro" quebram. Só  │
-// │    posições sem artigo: início de frase, depois de dois-pontos, travessão│
-// │    ou "Produto:". Mesma regra do copy-engine.                           │
-// │ 2. {beneficio} só entra DEPOIS de dois-pontos ou como frase inteira. Os │
-// │    valores do mapa misturam infinitivo ("Economizar até 90% na conta de │
-// │    luz") com sintagma nominal ("Estilo e conforto por preço justo") —   │
-// │    "Entrega economizar até 90%" não existe em português.                │
-// │ 3. {publico} só em posição preposicionada ("pra {publico}", "com        │
-// │    {publico}"). Como sujeito quebra a concordância: "Crianças e família │
-// │    vai amar".                                                            │
+// │ NUNCA colocar artigo antes de {NOME}. O nome vem do catálogo e pode ter │
+// │ qualquer gênero — "esse Camisa" e "essa Açucareiro" quebram. Só         │
+// │ posições sem artigo: início de frase, depois de verbo, preposição ou    │
+// │ dois-pontos. Mesma regra do copy-engine.                                │
+// │ {publico} só em posição preposicionada ("pra {publico}"). Como sujeito  │
+// │ quebra a concordância: "Crianças e família vai amar".                   │
 // └─────────────────────────────────────────────────────────────────────────┘
+
+/** Shopee Video: 150 caracteres, contando hashtags. Limite duro — nunca um
+ *  caractere a mais sai desta função. */
+const CAPTION_MAX_LENGTH = 150;
 
 const ANGLES = ["descoberta", "resolve", "preco", "publico"] as const;
 type Angle = (typeof ANGLES)[number];
 
-/** Títulos: gancho falado para Shopee Video, Reels e TikTok — não nome de produto. */
-const TITLES: Record<Angle, string[]> = {
+/** Ganchos CURTOS — a legenda inteira tem 150 caracteres pra caber gancho,
+ *  produto E hashtags, então nada aqui pode ser a frase completa que o
+ *  sistema antigo (TITLES/CAPTION_OPENERS) usava. */
+const HOOK_TEMPLATES: Record<Angle, string[]> = {
   descoberta: [
-    "Eu não sabia que isso existia",
-    "{NOME} — e eu achando que não precisava",
-    "Olha o achadinho de {categoria} que eu encontrei",
-    "Apareceu no meu feed e eu comprei na hora",
-    "{NOME}: o achadinho que eu não esperava",
-    "Passei anos sem saber que isso existia",
-    "Achei isso na Shopee e não consegui deixar passar",
+    "Não sabia que {NOME} existia",
+    "Achei {NOME} sem nem procurar",
+    "Olha o que eu achei: {NOME}",
+    "{NOME} apareceu no meu feed",
+    "Virei fã de {NOME} na hora",
   ],
   resolve: [
-    "{NOME} resolveu um problema que eu tinha há anos",
-    "Testei por semanas e não largo mais",
-    "Isso aqui resolveu um perrengue que eu tinha todo dia",
-    "{NOME} — testei antes pra você não errar",
-    "Comprei sem esperar nada e me surpreendeu",
-    "{NOME}: usei todo dia por um mês",
-    "Achei que era exagero da internet. Não era",
+    "{NOME} resolveu meu perrengue",
+    "Testei {NOME} e aprovei",
+    "Uso {NOME} todo dia agora",
+    "{NOME}: testado e aprovado",
+    "{NOME} virou essencial aqui",
   ],
   preco: [
-    "Paguei {preco} e valeu cada centavo",
-    "{NOME} por {preco} — como assim?",
-    "Quanto você acha que custa? Tá {preco}",
-    "Gastei {preco} e resolvi de vez",
-    "{preco} nisso aqui e eu faria de novo",
-    "Achei por {preco} e quase não acreditei",
-    "{NOME} tá {preco} — corre ver",
+    "{NOME} por {preco}? Vale",
+    "Paguei {preco} em {NOME}",
+    "{NOME} tá {preco}, corre",
+    "{preco} em {NOME} e valeu",
+    "{NOME} custando {preco}",
   ],
   publico: [
-    "Isso aqui é pra {publico}",
-    "Marca aqui alguém que precisa disso",
+    "Separei {NOME} pra {publico}",
     "{NOME} é pra {publico}",
-    "Separei um achadinho de {categoria} pra {publico}",
-    "Se isso aqui é a sua praia, presta atenção",
-    "Tem nome e endereço: é pra {publico}",
-    "O tipo de coisa que faz diferença pra {publico}",
+    "{NOME}: ideal pra {publico}",
+    "Guardei {NOME} pra {publico}",
+    "{NOME} pensado pra {publico}",
   ],
 };
 
-/** Fecho do título. A string vazia é uma opção real — nem todo gancho pede emoji. */
-const TITLE_TAILS = ["", " 👀", " 🔥", " 😳", " ✨"];
-
-/** Primeira linha da legenda — é ela que amarra a legenda ao ângulo do título. */
-const CAPTION_OPENERS: Record<Angle, string[]> = {
-  descoberta: [
-    "Eu não sabia que isso existia até essa semana.",
-    "Tava rolando o feed e apareceu isso aqui 👀",
-    "Achadinho novo e já virou favorito.",
-    "Achei isso na Shopee e vim correndo mostrar.",
-    "Não era nem isso que eu tava procurando, mas olha no que deu.",
-  ],
-  resolve: [
-    "Comprei sem esperar muita coisa e me surpreendi.",
-    "Usei por umas semanas antes de vir indicar.",
-    "Isso aqui resolveu um perrengue que eu tinha há tempos.",
-    "Testei de verdade pra poder falar com propriedade.",
-    "Vim contar como foi depois de usar bastante.",
-  ],
-  preco: [
-    "O preço disso aqui me pegou de surpresa.",
-    "Paguei bem menos do que eu imaginava.",
-    "O custo-benefício desse aqui tá difícil de bater.",
-    "Não é porque é barato — é porque vale o que custa.",
-    "Preço bom eu não guardo só pra mim.",
-  ],
-  publico: [
-    "Esse aqui eu separei com uma pessoa específica na cabeça.",
-    "Se isso aqui é a sua praia, senta que lá vem indicação.",
-    "Marca alguém que ia gostar disso.",
-    "Tem gente que precisa ver isso hoje.",
-    "Já sei exatamente quem vai gostar desse aqui.",
-  ],
-};
-
-/** Nenhuma variante usa artigo antes de {NOME} — ver regra 1 no cabeçalho. */
-const PRODUCT_LINES = [
-  "{NOME}.",
-  "Produto: {NOME}.",
-  "Se chama {NOME}.",
-  "{NOME} — direto da Shopee.",
-  "Nome pra procurar lá: {NOME}.",
-];
-
-/** {beneficio} sempre depois de dois-pontos ou como frase inteira — regra 2. */
-const BENEFIT_LINES = [
-  "O ponto forte: {beneficio}.",
-  "{Beneficio}.",
-  "Na prática, o que você leva é isso: {beneficio}.",
-  "O que pesa a favor: {beneficio}.",
-  "Vale pelo que entrega: {beneficio}.",
-  "Resumo honesto: {beneficio}.",
-];
-
-/** {publico} sempre preposicionado — regra 3. */
-const AUDIENCE_LINES = [
-  "Perfeito pra {publico}.",
-  "Se é pra {publico}, pode ir tranquilo.",
-  "Indico de olho fechado pra {publico}.",
-  "Feito pra {publico}.",
-  "Combina demais com {publico}.",
-];
-
-const PRICE_LINES = [
-  "Tá {preco} no momento.",
-  "Preço de hoje: {preco}.",
-  "Saindo por {preco}.",
-  "{preco} — e o preço muda direto, então confere.",
-  "Paguei {preco}.",
-];
-
-/** Sem link como parâmetro, o CTA é o do formato vídeo: bio, comentário, direct. */
-const CTAS = [
-  "Link na bio 👇",
-  "Deixei o link fixado no perfil.",
-  "Link no primeiro comentário.",
-  'Comenta "quero" que eu te mando o link.',
-  "Salva esse aqui pra não perder depois.",
-  "Chama no direct que eu mando o link.",
-  "Tá tudo no link da bio, corre lá.",
-];
-
-/** Tags largas — alcance. Entram sempre duas, distintas. */
+/** Tags largas — alcance. Uma entra por legenda, sorteada. */
 const BROAD_TAGS = [
   "#achadinhos",
   "#achadinhosdashopee",
@@ -427,14 +344,6 @@ const TAG_STOPWORDS = new Set([
 
 function pick<T>(arr: readonly T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
-}
-
-/** Dois itens DISTINTOS do array, em ordem aleatória. Exige length >= 2. */
-function pickTwo<T>(arr: readonly T[]): [T, T] {
-  const i = Math.floor(Math.random() * arr.length);
-  let j = Math.floor(Math.random() * (arr.length - 1));
-  if (j >= i) j += 1;
-  return [arr[i], arr[j]];
 }
 
 const deburr = (s: string) => s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
@@ -536,10 +445,10 @@ type ContentInput = {
   price?: number;
 };
 
+/** Uma legenda só, pronta pra colar no Shopee Video — nunca mais de
+ *  CAPTION_MAX_LENGTH caracteres, hashtags incluídas. */
 type GeneratedContent = {
-  hashtags: string;
-  titulo: string;
-  descricao: string;
+  caption: string;
 };
 
 /**
@@ -566,11 +475,26 @@ function contextFor(name: string, category: string) {
   return inferProductContext(name);
 }
 
+/**
+ * Corta no limite sem quebrar palavra no meio nem sobrar pontuação solta.
+ * Rede de segurança só: a montagem gulosa em build() já para de acrescentar
+ * hashtag antes de estourar o limite, então isto normalmente não entra em
+ * ação — existe para o caso patológico (nome de produto no teto dos 34
+ * caracteres de shortName + gancho de preço) que a montagem gulosa não previu.
+ */
+function hardTruncate(text: string, maxLength: number): string {
+  if (text.length <= maxLength) return text;
+  let cut = text.slice(0, maxLength);
+  const lastSpace = cut.lastIndexOf(" ");
+  if (lastSpace > 0) cut = cut.slice(0, lastSpace);
+  return cut.replace(TRAILING_CONNECTOR, "").trim();
+}
+
 function build(input: ContentInput): GeneratedContent {
   const rawName = input.name.trim();
   const rawCategory = (input.category || "").trim();
   const context = contextFor(rawName, rawCategory);
-  // Sem categoria no input, a do mapa serve de rótulo para tag e para {categoria}.
+  // Sem categoria no input, a do mapa serve de rótulo pra hashtag de categoria.
   const categoryLabel = rawCategory || context.category;
   const priceText = formatPrice(input.price);
 
@@ -582,74 +506,48 @@ function build(input: ContentInput): GeneratedContent {
 
   const vars: Record<string, string> = {
     NOME: shortName(rawName),
-    categoria: lowerFirst(categoryLabel),
-    beneficio: lowerFirst(context.benefit),
-    Beneficio: upperFirst(context.benefit),
     publico: lowerFirst(context.audience),
     preco: priceText ?? "",
   };
 
-  // ── título ──
-  const titulo = tidy(upperFirst(fill(pick(TITLES[angle]), vars)) + pick(TITLE_TAILS));
+  // ── gancho + produto, já fundidos ──
+  const hook = tidy(upperFirst(fill(pick(HOOK_TEMPLATES[angle]), vars)));
 
-  // ── legenda ──
-  // A linha de público entra em metade dos casos: legenda de tamanho sempre
-  // igual entrega que é montada por template.
-  const audience = Math.random() < 0.5 ? fill(pick(AUDIENCE_LINES), vars) : null;
-  const price = priceText ? fill(pick(PRICE_LINES), vars) : null;
-  const blocks = [
-    fill(pick(CAPTION_OPENERS[angle]), vars),
-    fill(pick(PRODUCT_LINES), vars),
-    fill(pick(BENEFIT_LINES), vars),
-    audience,
-    price,
-    pick(CTAS),
-  ];
-  const descricao = tidy(blocks.filter((b): b is string => !!b).join("\n"));
-
-  // ── hashtags ──
+  // ── hashtags: entram uma a uma, só enquanto ainda cabem no limite ──
+  // Ordem por prioridade: a tag do ângulo amarra a hashtag ao gancho (pacote
+  // coeso, mesma ideia do sistema de três blocos antigo); a larga dá alcance;
+  // a de categoria e as do nome só entram se sobrar espaço.
   const catSlug = slugify(categoryLabel) || slugify(context.category);
-  const [broadA, broadB] = pickTwo(BROAD_TAGS);
-  const [patternA, patternB] = pickTwo(CATEGORY_TAG_PATTERNS);
-  const tags = [
-    broadA,
-    broadB,
-    patternA(catSlug),
-    patternB(catSlug),
-    ...nameTags(rawName),
+  const candidateTags = [
     pick(ANGLE_TAGS[angle]),
+    pick(BROAD_TAGS),
+    pick(CATEGORY_TAG_PATTERNS)(catSlug),
+    ...nameTags(rawName),
   ];
-  // Dedup preservando a ordem: a tag de categoria pode coincidir com uma tag do
-  // nome (produto "Kit casa" em categoria "Casa"), e tag repetida na mesma
-  // linha é sinal de texto automático.
-  const hashtags = Array.from(new Set(tags)).slice(0, 8).join(" ");
 
-  return { hashtags, titulo, descricao };
-}
+  const usedTags = new Set<string>();
+  let caption = hook;
+  const MAX_TAGS = 3; // limite de bom-gosto — nada de legenda virando parede de hashtag
+  for (const tag of candidateTags) {
+    if (usedTags.size >= MAX_TAGS || usedTags.has(tag)) continue;
+    const next = `${caption} ${tag}`;
+    if (next.length > CAPTION_MAX_LENGTH) continue; // essa não coube; a próxima pode ser mais curta
+    caption = next;
+    usedTags.add(tag);
+  }
 
-function alreadyUsed(candidate: GeneratedContent, used: Set<string>): boolean {
-  return (
-    used.has(candidate.titulo) ||
-    used.has(candidate.descricao) ||
-    used.has(candidate.hashtags) ||
-    used.has(packageKey(candidate))
-  );
-}
-
-/** Forma canônica do pacote, para o chamador guardar em `avoid` de uma vez só. */
-function packageKey(c: GeneratedContent): string {
-  return `${c.titulo}\n${c.descricao}\n${c.hashtags}`;
+  // Rede de segurança: garante o limite duro mesmo se hook+nome sozinhos
+  // (sem hashtag nenhuma) já estourassem — nunca sai um caractere a mais.
+  return { caption: hardTruncate(caption, CAPTION_MAX_LENGTH) };
 }
 
 /**
- * Gera hashtags + título + legenda de uma vez, montados a partir do mesmo
- * ângulo para o pacote parecer uma peça só. Cada chamada sorteia blocos novos —
- * isso é intencional (ver cabeçalho da Parte 2).
+ * Gera a legenda única do Shopee Video. Cada chamada sorteia gancho E
+ * hashtags de novo — clicar de novo troca o pacote inteiro, nunca só um
+ * pedaço (ver cabeçalho da Parte 2).
  *
- * @param avoid saídas anteriores do próprio usuário. Aceita qualquer uma das
- *              três peças isoladas (título, legenda ou linha de hashtags) ou a
- *              forma canônica "título\nlegenda\nhashtags"; se o sorteio cair em
- *              algo já usado, refaz — até 40 tentativas, como em generateCopy.
+ * @param avoid legendas geradas recentemente. Se o sorteio cair numa delas,
+ *              refaz — até 40 tentativas, como em generateCopy.
  */
 export function generateContent(
   input: ContentInput,
@@ -657,7 +555,7 @@ export function generateContent(
 ): GeneratedContent {
   const used = new Set(avoid);
   let candidate = build(input);
-  for (let attempt = 0; attempt < 40 && alreadyUsed(candidate, used); attempt++) {
+  for (let attempt = 0; attempt < 40 && used.has(candidate.caption); attempt++) {
     candidate = build(input);
   }
   return candidate;
