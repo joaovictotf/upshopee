@@ -13,6 +13,7 @@ import { Route as RegisterRouteImport } from './routes/register'
 import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as PainelRouteImport } from './routes/painel'
 import { Route as PagamentoBloqueadoRouteImport } from './routes/pagamento-bloqueado'
+import { Route as Ofertas9RouteImport } from './routes/ofertas9'
 import { Route as Ofertas8RouteImport } from './routes/ofertas8'
 import { Route as Ofertas7RouteImport } from './routes/ofertas7'
 import { Route as Ofertas6RouteImport } from './routes/ofertas6'
@@ -62,6 +63,11 @@ const PainelRoute = PainelRouteImport.update({
 const PagamentoBloqueadoRoute = PagamentoBloqueadoRouteImport.update({
   id: '/pagamento-bloqueado',
   path: '/pagamento-bloqueado',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const Ofertas9Route = Ofertas9RouteImport.update({
+  id: '/ofertas9',
+  path: '/ofertas9',
   getParentRoute: () => rootRouteImport,
 } as any)
 const Ofertas8Route = Ofertas8RouteImport.update({
@@ -229,6 +235,7 @@ export interface FileRoutesByFullPath {
   '/ofertas6': typeof Ofertas6Route
   '/ofertas7': typeof Ofertas7Route
   '/ofertas8': typeof Ofertas8Route
+  '/ofertas9': typeof Ofertas9Route
   '/pagamento-bloqueado': typeof PagamentoBloqueadoRoute
   '/painel': typeof PainelRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
@@ -263,6 +270,7 @@ export interface FileRoutesByTo {
   '/ofertas6': typeof Ofertas6Route
   '/ofertas7': typeof Ofertas7Route
   '/ofertas8': typeof Ofertas8Route
+  '/ofertas9': typeof Ofertas9Route
   '/pagamento-bloqueado': typeof PagamentoBloqueadoRoute
   '/painel': typeof PainelRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
@@ -300,6 +308,7 @@ export interface FileRoutesById {
   '/ofertas6': typeof Ofertas6Route
   '/ofertas7': typeof Ofertas7Route
   '/ofertas8': typeof Ofertas8Route
+  '/ofertas9': typeof Ofertas9Route
   '/pagamento-bloqueado': typeof PagamentoBloqueadoRoute
   '/painel': typeof PainelRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
@@ -338,6 +347,7 @@ export interface FileRouteTypes {
     | '/ofertas6'
     | '/ofertas7'
     | '/ofertas8'
+    | '/ofertas9'
     | '/pagamento-bloqueado'
     | '/painel'
     | '/redefinir-senha'
@@ -372,6 +382,7 @@ export interface FileRouteTypes {
     | '/ofertas6'
     | '/ofertas7'
     | '/ofertas8'
+    | '/ofertas9'
     | '/pagamento-bloqueado'
     | '/painel'
     | '/redefinir-senha'
@@ -408,6 +419,7 @@ export interface FileRouteTypes {
     | '/ofertas6'
     | '/ofertas7'
     | '/ofertas8'
+    | '/ofertas9'
     | '/pagamento-bloqueado'
     | '/painel'
     | '/redefinir-senha'
@@ -445,6 +457,7 @@ export interface RootRouteChildren {
   Ofertas6Route: typeof Ofertas6Route
   Ofertas7Route: typeof Ofertas7Route
   Ofertas8Route: typeof Ofertas8Route
+  Ofertas9Route: typeof Ofertas9Route
   PagamentoBloqueadoRoute: typeof PagamentoBloqueadoRoute
   PainelRoute: typeof PainelRoute
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
@@ -479,6 +492,13 @@ declare module '@tanstack/react-router' {
       path: '/pagamento-bloqueado'
       fullPath: '/pagamento-bloqueado'
       preLoaderRoute: typeof PagamentoBloqueadoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ofertas9': {
+      id: '/ofertas9'
+      path: '/ofertas9'
+      fullPath: '/ofertas9'
+      preLoaderRoute: typeof Ofertas9RouteImport
       parentRoute: typeof rootRouteImport
     }
     '/ofertas8': {
@@ -776,6 +796,7 @@ const rootRouteChildren: RootRouteChildren = {
   Ofertas6Route: Ofertas6Route,
   Ofertas7Route: Ofertas7Route,
   Ofertas8Route: Ofertas8Route,
+  Ofertas9Route: Ofertas9Route,
   PagamentoBloqueadoRoute: PagamentoBloqueadoRoute,
   PainelRoute: PainelRoute,
   RedefinirSenhaRoute: RedefinirSenhaRoute,
