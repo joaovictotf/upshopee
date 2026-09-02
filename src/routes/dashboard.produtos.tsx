@@ -29,6 +29,21 @@ const SUB_TABS: Array<{ id: SubTab; label: string }> = [
   { id: "meus", label: "Meus produtos" },
 ];
 
+type SortMode = "padrao" | "maior-comissao" | "menor-comissao";
+
+const SORT_OPTIONS: Array<{ id: SortMode; label: string }> = [
+  { id: "padrao", label: "Padrão" },
+  { id: "maior-comissao", label: "Maior comissão" },
+  { id: "menor-comissao", label: "Menor comissão" },
+];
+
+/** Mesma expressão usada em ProductCard.tsx para ler a comissão em R$ dos dois
+ *  formatos de catálogo — não existe um campo `commissionBRL` único porque o
+ *  legado (mock/products.ts) e o afiliado (mock/affiliate-products.ts) nunca
+ *  foram unificados. */
+const commissionOf = (it: CatalogItem) =>
+  it.kind === "affiliate" ? it.product.commissionBRL : it.product.estimatedCommission;
+
 // Produtos aposentados (comissão baixa) saem da descoberta — Catálogo, busca
 // e filtros — mas continuam servindo quem já afiliou via `affiliateByN`
 // (lib/my-affiliate-products.ts), que lê o array completo, sem este filtro.
@@ -122,6 +137,7 @@ function Produtos() {
   const [tab, setTab] = useState<SubTab>("catalogo");
   const [q, setQ] = useState("");
   const [cat, setCat] = useState("Todos");
+  const [sort, setSort] = useState<SortMode>("padrao");
   const [selected, setSelected] = useState<Product | null>(null);
   const [open, setOpen] = useState(false);
   const [rolePickProduct, setRolePickProduct] = useState<Product | null>(null);
@@ -196,13 +212,18 @@ function Produtos() {
         l = l.filter((it) => it.kind === "legacy" && it.product.tags.includes(cat));
       else l = l.filter((it) => it.product.category === cat);
     }
+    // Ordenar por comissão é uma escolha explícita do usuário: ela substitui o
+    // pinned-first, não empilha em cima dele — senão "Maior comissão" mostraria
+    // um produto fixado de comissão baixa antes do campeão de verdade.
+    if (sort === "maior-comissao") return [...l].sort((a, b) => commissionOf(b) - commissionOf(a));
+    if (sort === "menor-comissao") return [...l].sort((a, b) => commissionOf(a) - commissionOf(b));
     return [...l].sort((a, b) => {
       const pa = Number(a.kind === "legacy" && !!a.product.pinned);
       const pb = Number(b.kind === "legacy" && !!b.product.pinned);
       if (pa !== pb) return pb - pa;
       return catalogOrder(a.product.id, windowIndex) - catalogOrder(b.product.id, windowIndex);
     });
-  }, [q, cat, windowIndex]);
+  }, [q, cat, sort, windowIndex]);
 
   return (
     <DashboardShell
@@ -302,24 +323,47 @@ function Produtos() {
               />
             </div>
 
-            {/* Category chips — horizontal scroll on mobile */}
-            <div className="flex flex-nowrap gap-1.5 overflow-x-auto pb-1 lg:flex-wrap scrollbar-none">
-              {allCategories.map((c) => {
-                const active = cat === c;
-                return (
-                  <button
-                    key={c}
-                    onClick={() => setCat(c)}
-                    className={`inline-flex shrink-0 items-center rounded-full px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
-                      active
-                        ? "bg-[var(--accent)] text-white"
-                        : "border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:border-[var(--accent)]/40 hover:text-[var(--text)]"
-                    }`}
-                  >
-                    {c}
-                  </button>
-                );
-              })}
+            <div className="flex flex-col gap-3 lg:items-end">
+              {/* Sort — linha própria para não brigar por espaço com os chips
+                  de categoria, que já rolam horizontalmente no celular. */}
+              <div className="flex shrink-0 items-center gap-1 self-start rounded-full border border-[var(--border)] bg-[var(--surface)] p-1 lg:self-end">
+                {SORT_OPTIONS.map(({ id, label }) => {
+                  const active = sort === id;
+                  return (
+                    <button
+                      key={id}
+                      onClick={() => setSort(id)}
+                      className={`whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold transition-all duration-200 ${
+                        active
+                          ? "bg-[var(--accent)] text-white"
+                          : "text-[var(--muted)] hover:text-[var(--text)]"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Category chips — horizontal scroll on mobile */}
+              <div className="flex flex-nowrap gap-1.5 overflow-x-auto pb-1 lg:flex-wrap scrollbar-none">
+                {allCategories.map((c) => {
+                  const active = cat === c;
+                  return (
+                    <button
+                      key={c}
+                      onClick={() => setCat(c)}
+                      className={`inline-flex shrink-0 items-center rounded-full px-3 py-1.5 text-xs font-medium transition-all duration-200 ${
+                        active
+                          ? "bg-[var(--accent)] text-white"
+                          : "border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:border-[var(--accent)]/40 hover:text-[var(--text)]"
+                      }`}
+                    >
+                      {c}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
