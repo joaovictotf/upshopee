@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { DashboardShell } from "../components/layout/DashboardShell";
 import { useApp } from "../lib/state";
 import { Input } from "../components/ui/input";
@@ -7,102 +7,116 @@ import { Label } from "../components/ui/label";
 import { Switch } from "../components/ui/switch";
 import { Button } from "../components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
-import { Zap, Shield } from "lucide-react";
+import { Camera, Share2, Zap, Shield } from "lucide-react";
 import { toast } from "sonner";
-import { type BankInfo, type BankInfoErrors, loadBankInfo, saveBankInfo, validateBankInfo } from "../lib/bankinfo";
+import { loadProfilePhoto, saveProfilePhoto } from "../lib/profilephoto";
 
 export const Route = createFileRoute("/dashboard/configuracoes")({ component: Config });
 
+const MAX_PHOTO_SIZE = 2 * 1024 * 1024;
+const ACCEPTED_PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"];
+
 function Config() {
-  const { user, isAdmin } = useApp();
-  const [storeName, setStoreName] = useState("Minha Loja Shopee");
-  const [meta, setMeta] = useState("10");
-  const [margem, setMargem] = useState("30");
-  const [taxa, setTaxa] = useState("18");
+  const { user, isAdmin, updateDisplayName } = useApp();
   const [cor, setCor] = useState("Laranja");
   const [notif, setNotif] = useState(true);
-  const [pref, setPref] = useState("RioStock");
 
-  const EMPTY_BANK: BankInfo = { nomeCompleto: "", documento: "", chavePix: "", banco: "", agencia: "", conta: "" };
-  const [bank, setBank] = useState<BankInfo>(() => loadBankInfo(user?.email) ?? EMPTY_BANK);
-  const [bankErrors, setBankErrors] = useState<BankInfoErrors>({});
-  const setBankField = (key: keyof BankInfo) => (e: React.ChangeEvent<HTMLInputElement>) =>
-    setBank((b) => ({ ...b, [key]: e.target.value }));
-  const handleSaveBank = () => {
-    if (!user?.email) return;
-    const trimmed: BankInfo = {
-      nomeCompleto: bank.nomeCompleto.trim(), documento: bank.documento.trim(),
-      chavePix: bank.chavePix.trim(), banco: bank.banco.trim(),
-      agencia: bank.agencia.trim(), conta: bank.conta.trim(),
+  // ═══ PERFIL ═══
+  const [displayName, setDisplayName] = useState(user?.name || "");
+  const [savingName, setSavingName] = useState(false);
+  const [photo, setPhoto] = useState<string | null>(() => loadProfilePhoto(user?.email));
+  const photoInputRef = useRef<HTMLInputElement>(null);
+
+  const handleSaveName = async () => {
+    setSavingName(true);
+    const res = await updateDisplayName(displayName);
+    setSavingName(false);
+    if (!res.ok) { toast.error(res.error || "Não foi possível salvar o nome."); return; }
+    toast.success("Nome atualizado.");
+  };
+
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // permite selecionar o mesmo arquivo de novo depois
+    if (!file || !user?.email) return;
+    if (!ACCEPTED_PHOTO_TYPES.includes(file.type)) {
+      toast.error("Formato não aceito. Use JPG, PNG ou WEBP.");
+      return;
+    }
+    if (file.size > MAX_PHOTO_SIZE) {
+      toast.error("Arquivo muito grande. Máximo 2 MB.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      saveProfilePhoto(user.email, dataUrl);
+      setPhoto(dataUrl);
+      toast.success("Foto de perfil atualizada.");
     };
-    const v = validateBankInfo(trimmed);
-    if (Object.keys(v).length > 0) { setBankErrors(v); toast.error("Verifique os dados bancários."); return; }
-    setBankErrors({});
-    saveBankInfo(user.email, trimmed);
-    setBank(trimmed);
-    toast.success("Dados bancários salvos.");
+    reader.onerror = () => toast.error("Não foi possível ler a imagem. Tente outro arquivo.");
+    reader.readAsDataURL(file);
   };
 
   return (
     <DashboardShell title="Configurações" subtitle="Ajuste as preferências da sua operação.">
       <div className="page-enter grid gap-5 lg:grid-cols-2">
-        {/* ═══ LOJA ═══ */}
-        <SettingsCard title="Loja">
-          <FormField label="Nome da loja">
-            <Input value={storeName} onChange={(e) => setStoreName(e.target.value)} className="h-10 rounded-[12px] border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-card)] focus-visible:ring-[var(--accent)]/30" />
+        {/* ═══ PERFIL ═══ */}
+        <SettingsCard title="Perfil">
+          <div className="flex items-center gap-4">
+            <div className="relative shrink-0">
+              <div className="grid h-16 w-16 place-items-center overflow-hidden rounded-full border border-[var(--border)] bg-[var(--muted-bg)]">
+                {photo ? (
+                  <img src={photo} alt="Foto de perfil" className="h-full w-full object-cover" />
+                ) : (
+                  <span className="text-lg font-bold text-[var(--muted)]">
+                    {(displayName || user?.email || "U").slice(0, 1).toUpperCase()}
+                  </span>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => photoInputRef.current?.click()}
+                aria-label="Alterar foto de perfil"
+                title="Alterar foto de perfil"
+                className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] shadow-[var(--shadow-card)] transition-colors hover:text-[var(--accent)]"
+              >
+                <Camera className="h-3.5 w-3.5" />
+              </button>
+              <input
+                ref={photoInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={handlePhotoSelect}
+              />
+            </div>
+            <div className="min-w-0 space-y-0.5">
+              <p className="text-xs font-medium text-[var(--text)]">Foto de perfil</p>
+              <p className="text-[11px] text-[var(--muted)]">JPG, PNG ou WEBP — máx. 2 MB.</p>
+            </div>
+          </div>
+
+          <FormField label="Nome de exibição">
+            <Input
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              className="h-10 rounded-[12px] border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-card)] focus-visible:ring-[var(--accent)]/30"
+            />
           </FormField>
           <FormField label="E-mail da conta">
             <Input value={user?.email || ""} disabled className="h-10 rounded-[12px] border-[var(--border)] bg-[var(--muted-bg)] text-[var(--muted)]" />
           </FormField>
-          <FormField label="Meta diária de vendas">
-            <Input type="number" value={meta} onChange={(e) => setMeta(e.target.value)} className="h-10 rounded-[12px] border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-card)] focus-visible:ring-[var(--accent)]/30" />
-          </FormField>
-        </SettingsCard>
-
-        {/* ═══ DADOS BANCÁRIOS ═══ */}
-        <SettingsCard title="Dados bancários para recebimento">
-          <p className="text-xs text-[var(--muted)]">
-            Usados para o recebimento das suas comissões. Ficam salvos apenas neste navegador.
-          </p>
-          <BankField label="Nome completo" value={bank.nomeCompleto} onChange={setBankField("nomeCompleto")} error={bankErrors.nomeCompleto} />
-          <BankField label="CPF ou CNPJ" value={bank.documento} onChange={setBankField("documento")} error={bankErrors.documento} inputMode="numeric" />
-          <BankField label="Chave PIX" value={bank.chavePix} onChange={setBankField("chavePix")} error={bankErrors.chavePix} />
-          <BankField label="Banco" value={bank.banco} onChange={setBankField("banco")} error={bankErrors.banco} />
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <BankField label="Agência" value={bank.agencia} onChange={setBankField("agencia")} error={bankErrors.agencia} inputMode="numeric" />
-            <BankField label="Conta" value={bank.conta} onChange={setBankField("conta")} error={bankErrors.conta} />
-          </div>
           <div className="pt-1">
             <Button
               variant="outline"
               className="btn-ghost h-10 text-sm"
-              onClick={handleSaveBank}
+              onClick={handleSaveName}
+              disabled={savingName || !displayName.trim()}
             >
-              Salvar dados bancários
+              {savingName ? "Salvando..." : "Salvar nome"}
             </Button>
           </div>
-        </SettingsCard>
-
-        {/* ═══ PREFERÊNCIAS COMERCIAIS ═══ */}
-        <SettingsCard title="Preferências comerciais">
-          <FormField label="Margem padrão de lucro (%)">
-            <Input type="number" value={margem} onChange={(e) => setMargem(e.target.value)} className="h-10 rounded-[12px] border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-card)] focus-visible:ring-[var(--accent)]/30" />
-          </FormField>
-          <FormField label="Taxa estimada da Shopee (%)">
-            <Input type="number" value={taxa} onChange={(e) => setTaxa(e.target.value)} className="h-10 rounded-[12px] border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-card)] focus-visible:ring-[var(--accent)]/30" />
-          </FormField>
-          <FormField label="Preferência de fornecedores">
-            <Select value={pref} onValueChange={setPref}>
-              <SelectTrigger className="h-10 rounded-[12px] border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-card)] focus-visible:ring-[var(--accent)]/30">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="RioStock">RioStock Distribuidora</SelectItem>
-                <SelectItem value="SP">SP Prime Atacado</SelectItem>
-                <SelectItem value="Auto">Automático (menor preço)</SelectItem>
-              </SelectContent>
-            </Select>
-          </FormField>
         </SettingsCard>
 
         {/* ═══ APARÊNCIA E NOTIFICAÇÕES ═══ */}
@@ -164,6 +178,30 @@ function Config() {
           </SettingsCard>
         )}
 
+        {/* ═══ DIVULGAÇÃO ═══ */}
+        <SettingsCard title="Divulgação" className="lg:col-span-2">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--accent-soft)]">
+              <Share2 className="h-5 w-5 text-[var(--accent)]" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-sm font-medium text-[var(--text)]" style={{ fontFamily: "'Sora', sans-serif" }}>
+                  Indique a UpShopee e ganhe 70%
+                </p>
+                <span className="inline-flex items-center rounded-full bg-[var(--muted-bg)] px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--muted)]">
+                  Em breve
+                </span>
+              </div>
+              <p className="mt-1.5 text-xs leading-relaxed text-[var(--muted)]">
+                Você vai poder indicar a UpShopee para outras pessoas e ganhar 70% de comissão sobre
+                cada indicação. Essa função ainda não está disponível — assim que estiver, o link de
+                indicação aparece aqui.
+              </p>
+            </div>
+          </div>
+        </SettingsCard>
+
         {/* ═══ FOOTER BUTTON ═══ */}
         <div className="lg:col-span-2 flex justify-end pt-2">
           <Button
@@ -182,9 +220,9 @@ function Config() {
 // SHARED COMPONENTS
 // ═══════════════════════════════════════════════════════════════════════
 
-function SettingsCard({ title, children }: { title: string; children: React.ReactNode }) {
+function SettingsCard({ title, children, className }: { title: string; children: React.ReactNode; className?: string }) {
   return (
-    <div className="card-premium space-y-3 p-5">
+    <div className={`card-premium space-y-3 p-5 ${className ?? ""}`}>
       <h3 className="text-sm font-semibold text-[var(--text)]" style={{ fontFamily: "'Sora', sans-serif" }}>{title}</h3>
       {children}
     </div>
@@ -196,20 +234,6 @@ function FormField({ label, children }: { label: string; children: React.ReactNo
     <div className="space-y-1.5">
       <Label className="text-[11px] font-medium text-[var(--muted)]">{label}</Label>
       {children}
-    </div>
-  );
-}
-
-function BankField({ label, error, ...props }: { label: string; error?: string } & React.InputHTMLAttributes<HTMLInputElement>) {
-  return (
-    <div className="space-y-1.5">
-      <Label className="text-[11px] font-medium text-[var(--muted)]">{label}</Label>
-      <Input
-        aria-invalid={!!error}
-        className={`h-10 rounded-[12px] border bg-[var(--surface)] shadow-[var(--shadow-card)] ${error ? "border-red-400 focus-visible:ring-red-300" : "border-[var(--border)] focus-visible:ring-[var(--accent)]/30"}`}
-        {...props}
-      />
-      {error && <p className="text-[11px] font-medium text-red-500">{error}</p>}
     </div>
   );
 }

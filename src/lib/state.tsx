@@ -632,6 +632,7 @@ type Ctx = {
   adminBoostActive: boolean;
   passwordResetRequired: boolean;
   clearPasswordResetRequired: () => Promise<void>;
+  updateDisplayName: (name: string) => Promise<{ ok: boolean; error?: string }>;
   recordLightningClick: () => Promise<{ ok: boolean; error?: string; amount?: number }>;
   resetTodaySales: () => Promise<{ ok: boolean; error?: string }>;
   isTodayReset: boolean;
@@ -2521,8 +2522,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setPasswordResetRequired(false);
   };
 
+  /* Mesmo padrão de clearPasswordResetRequired acima: update direto em
+     `profiles`, permitido pela policy "Users update own profile" (auth.uid() =
+     user_id, migration 20260625000000). full_name é a mesma coluna que login()
+     lê para `user.name` — por isso o setUser local também é necessário: sem
+     ele, o header (DashboardShell) só mostraria o nome novo depois de um
+     reload, quando o profile é buscado de novo. */
+  const updateDisplayName = async (name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) return { ok: false, error: "Informe um nome." };
+    if (!currentUserId) return { ok: false, error: "Sessão não encontrada." };
+    const { error } = await supabase
+      .from("profiles")
+      .update({ full_name: trimmed })
+      .eq("user_id", currentUserId);
+    if (error) return { ok: false, error: error.message };
+    setUser((u) => (u ? { ...u, name: trimmed } : u));
+    return { ok: true };
+  };
+
   return (
-    <C.Provider value={{ user, currentUserId, isAdmin, authReady, login, register, logout, selectedMarketplace, setSelectedMarketplace, data, triggerDemoSale, saveMeuProduto, addSalesOrderForProduct, vendasHoje: vendasHojeStore.values, privacy, setPrivacy, adminPresentationMode, toggleAdminPresentationMode, getCommissionSum, listAccounts, refreshAccounts, approveAccount, rejectAccount, blockAccountPayment, unblockAccountPayment, addManualCommissionToUser, bulkAdminDemoCommissionShopee, approveAllPendingAccounts, adminCreateBoostCampaign, adminCancelBoostCampaign, getActiveBoostByUserId, myActiveBoost, getUserConnectedMarketplaces, getUserProducts, myConnections: isAdmin ? adminDemoMap : myConnections, getApprovedMarketplaces, requestMarketplaceConnection, disconnectMarketplace, getUserConnectionsByEmail, getUserApprovedMarketplaces, validateMarketplaceConnection, rejectMarketplaceConnection, allUserProducts, refreshAllUserProducts, getUserCommissionTotal, validateUserProduct, validateAllPendingProducts, validateUserPendingProducts, validateAllPendingConnections, validateUserPendingConnections, bulkApproveAllProductsAndMakeReady, accountCreatedAt, accountApprovedAt, isDemo, demoExpiresAt, submitWithdrawalRequest, listMyWithdrawalRequests, accountStatus, isPresentationAdmin, hasLightningAccess, adminBoostActive, recordLightningClick, resetTodaySales, isTodayReset, listAllProfiles, grantPresentationAdmin, revokePresentationAdmin, passwordResetRequired, clearPasswordResetRequired }}>
+    <C.Provider value={{ user, currentUserId, isAdmin, authReady, login, register, logout, selectedMarketplace, setSelectedMarketplace, data, triggerDemoSale, saveMeuProduto, addSalesOrderForProduct, vendasHoje: vendasHojeStore.values, privacy, setPrivacy, adminPresentationMode, toggleAdminPresentationMode, getCommissionSum, listAccounts, refreshAccounts, approveAccount, rejectAccount, blockAccountPayment, unblockAccountPayment, addManualCommissionToUser, bulkAdminDemoCommissionShopee, approveAllPendingAccounts, adminCreateBoostCampaign, adminCancelBoostCampaign, getActiveBoostByUserId, myActiveBoost, getUserConnectedMarketplaces, getUserProducts, myConnections: isAdmin ? adminDemoMap : myConnections, getApprovedMarketplaces, requestMarketplaceConnection, disconnectMarketplace, getUserConnectionsByEmail, getUserApprovedMarketplaces, validateMarketplaceConnection, rejectMarketplaceConnection, allUserProducts, refreshAllUserProducts, getUserCommissionTotal, validateUserProduct, validateAllPendingProducts, validateUserPendingProducts, validateAllPendingConnections, validateUserPendingConnections, bulkApproveAllProductsAndMakeReady, accountCreatedAt, accountApprovedAt, isDemo, demoExpiresAt, submitWithdrawalRequest, listMyWithdrawalRequests, accountStatus, isPresentationAdmin, hasLightningAccess, adminBoostActive, recordLightningClick, resetTodaySales, isTodayReset, listAllProfiles, grantPresentationAdmin, revokePresentationAdmin, passwordResetRequired, clearPasswordResetRequired, updateDisplayName }}>
       {children}
     </C.Provider>
   );
