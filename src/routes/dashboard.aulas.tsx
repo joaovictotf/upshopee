@@ -2,14 +2,11 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useApp } from "../lib/state";
 import { supabase } from "../integrations/supabase/client";
-import { DashboardShell } from "../components/layout/DashboardShell";
+import { DashboardShell, ADMIN_DISPLAY_NAME } from "../components/layout/DashboardShell";
 import {
-  Search, Play, Info, Clock, GraduationCap,
-  BarChart3, ShoppingBag, MessageCircle,
-  Clapperboard, Link2, Star, Sparkles, ChevronDown,
-  CheckCircle2, Calendar, Trash2,
+  Play, Lock, GraduationCap, Loader2,
+  CheckCircle2, Calendar, Clock, Trash2, MessageCircle, Award,
 } from "lucide-react";
-import { Input } from "../components/ui/input";
 import { toast } from "sonner";
 import {
   BOOKING_SECTION_ID,
@@ -19,12 +16,25 @@ import {
   parseBookingDate,
   type ClassBooking,
 } from "../lib/class-booking";
+import { useUptubeTrail } from "../hooks/use-uptube-trail";
+import { UptubePlayer } from "../components/uptube/UptubePlayer";
+import { UptubeCertificate } from "../components/uptube/UptubeCertificate";
 
 export const Route = createFileRoute("/dashboard/aulas")({ component: AulasPage });
 
-const COMING_SOON_TOAST = () => toast.info("Aulas em breve!", {
-  description: "Os vídeos serão adicionados em breve. Fique ligado!",
-});
+/* ═══════════════════════════════════════════════════════════════════
+   Recompensa da trilha — WhatsApp do DONO
+   ═══════════════════════════════════════════════════════════════════
+   ⚠️ 5534992043815 NÃO é o número do suporte (5534992017453, usado no
+   WhatsAppSupportButton e no §13 do CLAUDE.md). Este cai direto no Juam,
+   que é quem libera o acesso ao Gemini para quem terminou as 5 aulas.
+   Não unificar com o suporte "para ficar consistente" — são canais
+   diferentes de propósito. */
+const REWARD_WHATSAPP_URL =
+  "https://wa.me/5534992043815?text=Conclu%C3%AD%20as%205%20aulas%20da%20UpShopee%20e%20quero%20entrar%20no%20grupo%20para%20liberar%20o%20acesso%20ao%20Gemini";
+
+/** Âncora do player: abrir uma aula lá de baixo tem que trazer a tela até ela. */
+const UPTUBE_PLAYER_ID = "uptube-player";
 
 /* ═══════════════════════════════════════════════════════════════════
    LIVE CLASS BOOKING — types, helpers, localStorage
@@ -152,248 +162,6 @@ function isWithin30Days(d: Date): boolean {
   return d <= thirtyDaysOut;
 }
 
-/* ═══════════════════════════════════════════════════════════════════
-   CSS Animations — all GPU-accelerated (transform + opacity only)
-   ═══════════════════════════════════════════════════════════════════ */
-const ANIM_CSS = `
-@media (prefers-reduced-motion: no-preference) {
-  /* 1. Float — smooth vertical oscillation */
-  @keyframes a-float {
-    0%, 100% { transform: translateY(0); }
-    50%      { transform: translateY(-8px); }
-  }
-  /* 2. Pulse scale — breathe in/out */
-  @keyframes a-pulse {
-    0%, 100% { transform: scale(1); opacity: 0.6; }
-    50%      { transform: scale(1.15); opacity: 1; }
-  }
-  /* 3. Pulse dot — subtle beat */
-  @keyframes a-dot {
-    0%, 100% { transform: scale(1); opacity: 0.5; }
-    50%      { transform: scale(1.6); opacity: 1; }
-  }
-  /* 4. Orbit — full rotation */
-  @keyframes a-orbit {
-    from { transform: rotate(0deg) translateX(28px) rotate(0deg); }
-    to   { transform: rotate(360deg) translateX(28px) rotate(-360deg); }
-  }
-  /* 5. Ripple — concentric scale + fade */
-  @keyframes a-ripple {
-    0%   { transform: scale(0.4); opacity: 0.8; }
-    100% { transform: scale(1.8); opacity: 0; }
-  }
-  /* 6. Typing dots — sequential opacity */
-  @keyframes a-type {
-    0%, 20%  { opacity: 0.3; transform: translateY(0); }
-    50%      { opacity: 1; transform: translateY(-4px); }
-    80%,100% { opacity: 0.3; transform: translateY(0); }
-  }
-  /* 7. Zoom pulse */
-  @keyframes a-zoom {
-    0%, 100% { transform: scale(1); }
-    50%      { transform: scale(1.12); }
-  }
-  /* 8. Bar grow — staggered scaleY */
-  @keyframes a-bar {
-    0%, 100% { transform: scaleY(0.4); }
-    50%      { transform: scaleY(1); }
-  }
-  /* 9. Fade in/out for connected dot */
-  @keyframes a-fade {
-    0%, 100% { opacity: 0.3; }
-    50%      { opacity: 0.9; }
-  }
-}
-`;
-
-/* ═══════════════════════════════════════════════════════════════════
-   Thumbnail gradients — one per module
-   ═══════════════════════════════════════════════════════════════════ */
-const THUMB_GRADIENTS = [
-  "linear-gradient(135deg, #F4541E 0%, #FF7A45 50%, #1a1a20 100%)",
-  "linear-gradient(160deg, #FF7A45 0%, #F4541E 40%, #2a1a30 100%)",
-  "linear-gradient(145deg, #F4541E 0%, #FFB088 40%, #0a1a28 100%)",
-  "linear-gradient(150deg, #FF7A45 0%, #F4541E 35%, #1a2a18 100%)",
-  "linear-gradient(155deg, #FF7A45 0%, #F4541E 30%, #101a28 100%)",
-  "linear-gradient(135deg, #F4541E 0%, #FFB088 50%, #1a1028 100%)",
-];
-
-/* ═══════════════════════════════════════════════════════════════════
-   Per-module thumbnail icon + animation
-   ═══════════════════════════════════════════════════════════════════ */
-const THUMB_ICONS: Array<{
-  Icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
-  extras: (i: number) => React.ReactNode;
-}> = [
-  /* 0 — Introdução: GraduationCap floating */
-  {
-    Icon: GraduationCap,
-    extras: () => (
-      <>
-        <div className="absolute top-3 right-4 h-2.5 w-2.5 rounded-full bg-white/25" style={{ animation: "a-dot 2s ease-in-out infinite" }} />
-        <div className="absolute bottom-5 left-4 h-2 w-2 rounded-full bg-white/20" style={{ animation: "a-dot 2.4s ease-in-out infinite 0.6s" }} />
-      </>
-    ),
-  },
-  /* 1 — Dashboard: BarChart3 with pulsing bars */
-  {
-    Icon: BarChart3,
-    extras: () => (
-      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-end gap-1 h-8">
-        {[0, 1, 2, 3].map((i) => (
-          <div key={i} className="w-1.5 rounded-t-sm bg-white/30 origin-bottom"
-            style={{ height: `${14 + i * 5}px`, animation: `a-bar ${1.6 + i * 0.15}s ease-in-out infinite ${i * 0.12}s` }} />
-        ))}
-      </div>
-    ),
-  },
-  /* 2 — Produtos: ShoppingBag with orbiting star */
-  {
-    Icon: ShoppingBag,
-    extras: () => (
-      <Star className="absolute h-3.5 w-3.5 text-white/70"
-        style={{
-          animation: "a-orbit 3s linear infinite",
-          top: "50%", left: "50%", marginTop: -7, marginLeft: -7,
-        }} />
-    ),
-  },
-  /* 3 — Grupos: MessageCircle with ripple rings */
-  {
-    Icon: MessageCircle,
-    extras: () => (
-      <>
-        {[0, 1, 2].map((i) => (
-          <div key={i} className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="h-12 w-12 rounded-full border border-white/20"
-              style={{ animation: `a-ripple ${2.2 + i * 0.3}s ease-out infinite ${i * 0.7}s` }} />
-          </div>
-        ))}
-      </>
-    ),
-  },
-  /* 4 — Vídeo IA: Clapperboard with zoom pulse */
-  {
-    Icon: Clapperboard,
-    extras: () => (
-      <>
-        <div className="absolute top-2 right-3 h-2.5 w-2.5 rounded-full bg-white/25" style={{ animation: "a-dot 1.8s ease-in-out infinite" }} />
-        <Sparkles className="absolute top-1 right-7 h-3 w-3 text-white/50" style={{ animation: "a-pulse 2.6s ease-in-out infinite 0.4s" }} />
-      </>
-    ),
-  },
-  /* 5 — Integrações: Link2 with connected dots */
-  {
-    Icon: Link2,
-    extras: () => (
-      <>
-        <div className="absolute top-5 left-8 h-2 w-2 rounded-full bg-white/30" style={{ animation: "a-fade 2s ease-in-out infinite" }} />
-        <div className="absolute top-5 right-8 h-2 w-2 rounded-full bg-white/60" style={{ animation: "a-fade 2s ease-in-out infinite 1s" }} />
-        <div className="absolute top-5 left-1/2 h-px w-8 -translate-x-1/2 bg-white/15" />
-      </>
-    ),
-  },
-];
-
-/* ═══════════════════════════════════════════════════════════════════
-   Thumbnail Component
-   ═══════════════════════════════════════════════════════════════════ */
-
-function AnimatedThumbnail({ mi }: { mi: number }) {
-  const { Icon, extras } = THUMB_ICONS[mi] ?? THUMB_ICONS[0];
-  const gradient = THUMB_GRADIENTS[mi] ?? THUMB_GRADIENTS[0];
-
-  return (
-    <div className="relative h-32 overflow-hidden rounded-t-2xl" style={{ background: gradient }}>
-      {/* Decorative bottom gradient fade */}
-      <div className="absolute inset-x-0 bottom-0 h-1/2 pointer-events-none"
-        style={{ background: "linear-gradient(to top, rgba(0,0,0,0.35), transparent)" }} />
-      {/* Central icon — floating */}
-      <div className="absolute inset-0 flex items-center justify-center"
-        style={{ animation: mi === 5 ? "a-zoom 2.8s ease-in-out infinite" : mi !== 1 && mi !== 3 ? "a-float 3s ease-in-out infinite" : undefined }}>
-        <Icon className="h-12 w-12 text-white/80" />
-      </div>
-      {/* Module-specific extras */}
-      {extras(mi)}
-    </div>
-  );
-}
-
-/* ═══════════════════════════════════════════════════════════════════
-   Modules & Lessons
-   ═══════════════════════════════════════════════════════════════════ */
-interface Lesson {
-  title: string;
-  duration: string;
-}
-
-interface Module {
-  name: string;
-  lessonCount: number;
-  lessons: Lesson[];
-}
-
-const MODULES: Module[] = [
-  {
-    name: "Introdução à UpShopee",
-    lessonCount: 3,
-    lessons: [
-      { title: "Boas-vindas e visão geral da plataforma", duration: "8 min" },
-      { title: "Como navegar no painel principal", duration: "12 min" },
-      { title: "Seu primeiro acesso: configurando o perfil", duration: "6 min" },
-    ],
-  },
-  {
-    name: "Dashboard e Métricas",
-    lessonCount: 4,
-    lessons: [
-      { title: "Entendendo as métricas do painel", duration: "10 min" },
-      { title: "Comissões: como calcular seus ganhos", duration: "14 min" },
-      { title: "Acompanhando vendas em tempo real", duration: "9 min" },
-      { title: "Relatórios e histórico de performance", duration: "11 min" },
-    ],
-  },
-  {
-    name: "Produtos e Catálogo",
-    lessonCount: 5,
-    lessons: [
-      { title: "Explorando o catálogo de produtos", duration: "7 min" },
-      { title: "Como escolher produtos com alta margem", duration: "15 min" },
-      { title: "Gerando anúncios com a IA da UpShopee", duration: "18 min" },
-      { title: "Precificação inteligente: definindo seu lucro", duration: "12 min" },
-      { title: "Fornecedores: escolhendo o melhor custo-benefício", duration: "10 min" },
-    ],
-  },
-  {
-    name: "Grupos de Divulgação",
-    lessonCount: 3,
-    lessons: [
-      { title: "O que são grupos de divulgação", duration: "5 min" },
-      { title: "Criando e gerenciando seus grupos", duration: "9 min" },
-      { title: "Estratégias para divulgar em grupos", duration: "13 min" },
-    ],
-  },
-  {
-    name: "Vídeo IA",
-    lessonCount: 5,
-    lessons: [
-      { title: "Introdução ao Vídeo IA", duration: "6 min" },
-      { title: "Criando seu primeiro vídeo com IA", duration: "20 min" },
-      { title: "Templates e edição rápida", duration: "14 min" },
-      { title: "Dicas para vídeos que convertem", duration: "17 min" },
-      { title: "Publicando no Shopee Video", duration: "9 min" },
-    ],
-  },
-  {
-    name: "Integrações e Afiliados",
-    lessonCount: 3,
-    lessons: [
-      { title: "Conectando sua conta Shopee", duration: "5 min" },
-      { title: "Programa de afiliados: como funciona", duration: "10 min" },
-      { title: "Maximizando ganhos como afiliado", duration: "15 min" },
-    ],
-  },
-];
 
 /* ═══════════════════════════════════════════════════════════════════
    Aviso de atualização das videoaulas — localStorage (1× por aparelho)
@@ -429,9 +197,16 @@ function dismissUpdateNotice() {
    ═══════════════════════════════════════════════════════════════════ */
 
 function AulasPage() {
-  const { currentUserId, user } = useApp();
-  const [q, setQ] = useState("");
-  const [collapsed, setCollapsed] = useState<Set<number>>(new Set());
+  const { currentUserId, user, isAdmin } = useApp();
+
+  /* ═══ Trilha Uptube ═══
+     rows, unlocked e trail_complete vêm PRONTOS do servidor
+     (uptube_my_trail). Nada aqui recalcula cadeado nem conclusão. */
+  const { rows, isLoading: trailLoading, isError: trailError, save, trailComplete, completedCount, total } =
+    useUptubeTrail();
+
+  /** Qual aula está aberta no player. null = mostrando a trilha. */
+  const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
 
   /* ═══ Aviso de atualização das videoaulas ═══ */
   const [showUpdateNotice, setShowUpdateNotice] = useState(false);
@@ -544,10 +319,6 @@ function AulasPage() {
 
   const userId = currentUserId ?? user?.email ?? "guest";
 
-  const handleLessonClick = useCallback(() => {
-    COMING_SOON_TOAST();
-  }, []);
-
   const closeUpdateNotice = useCallback(() => {
     dismissUpdateNotice();
     setShowUpdateNotice(false);
@@ -616,36 +387,66 @@ function AulasPage() {
     toast.info("Agendamento antigo removido deste navegador.");
   }, [userId]);
 
-  const toggleModule = useCallback((idx: number) => {
-    setCollapsed((prev) => {
-      const next = new Set(prev);
-      if (next.has(idx)) next.delete(idx);
-      else next.add(idx);
-      return next;
-    });
-  }, []);
+  /* ═══ Trilha: derivações de EXIBIÇÃO ═══
+     Nada aqui decide o que está liberado — só o que desenhar. */
 
-  const filtered = useMemo(() => {
-    if (!q) return MODULES;
-    const lower = q.toLowerCase();
-    return MODULES
-      .map((m) => ({
-        ...m,
-        lessons: m.lessons.filter(
-          (l) =>
-            l.title.toLowerCase().includes(lower) ||
-            m.name.toLowerCase().includes(lower)
-        ),
-      }))
-      .filter((m) => m.lessons.length > 0);
-  }, [q]);
+  const activeRow = useMemo(
+    () => rows.find((r) => r.video_id === activeVideoId) ?? null,
+    [rows, activeVideoId],
+  );
+
+  /* Se a aula aberta deixar de estar liberada (troca de conta, refetch com
+     outro estado), fecha o player em vez de deixar tocando o que não devia. */
+  useEffect(() => {
+    if (activeVideoId && activeRow && !activeRow.unlocked) setActiveVideoId(null);
+  }, [activeVideoId, activeRow]);
+
+  /* Abriu uma aula: traz o player para a tela. O player fica ACIMA da lista,
+     então clicar na aula 5 no celular deixaria a pessoa olhando para o mesmo
+     lugar sem entender que algo abriu. rAF porque o elemento só existe depois
+     da pintura que este mesmo estado dispara. */
+  useEffect(() => {
+    if (!activeVideoId) return;
+    const id = window.requestAnimationFrame(() => {
+      document.getElementById(UPTUBE_PLAYER_ID)?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+    return () => window.cancelAnimationFrame(id);
+  }, [activeVideoId]);
+
+  /** Nome do aluno para o certificado.
+
+      Mesmo critério do DashboardShell (`isAdmin ? (adminName ||
+      ADMIN_DISPLAY_NAME) : (user?.name || "")`), com uma diferença
+      inevitável: `adminName` é state PRIVADO do DashboardShell — a edição por
+      duplo clique no header vale só naquela sessão e o próprio componente
+      documenta que ao recarregar o admin volta para a identidade fixa. De
+      fora dele, o valor equivalente é sempre ADMIN_DISPLAY_NAME.
+
+      O fallback existe para nunca gerar um certificado em branco nem com a
+      string "undefined" escrita nele. */
+  const studentName = useMemo(() => {
+    const resolved = isAdmin ? ADMIN_DISPLAY_NAME : (user?.name || "");
+    return resolved.trim() || "Aluno UpShopee";
+  }, [isAdmin, user?.name]);
+
+  /** Data da conclusão da trilha: a mais recente entre as 5 aulas. */
+  const trailCompletedAt = useMemo(() => {
+    const times = rows
+      .map((r) => (r.completed_at ? new Date(r.completed_at).getTime() : null))
+      .filter((t): t is number => t !== null && Number.isFinite(t));
+    return times.length > 0 ? new Date(Math.max(...times)) : new Date();
+  }, [rows]);
+
+  const progressPct = total > 0 ? (completedCount / total) * 100 : 0;
 
   return (
     <DashboardShell
       title="Uptube"
       subtitle="Domine a plataforma com cursos gratuitos"
     >
-      <style>{ANIM_CSS}</style>
       <div className="page-enter">
 
         {/* ══════════════════════════════════════════════════════════════
@@ -897,135 +698,209 @@ function AulasPage() {
           )}
         </section>
 
-        {/* ═══ HERO — Featured Module ═══ */}
-        <div className="relative overflow-hidden rounded-2xl p-6 sm:p-8 mb-8"
-          style={{
-            background: "linear-gradient(135deg, rgba(244,84,30,0.18) 0%, rgba(244,84,30,0.04) 50%, rgba(10,10,14,0.6) 100%)",
-            border: "1px solid var(--accent-soft, rgba(244,84,30,0.15))",
-          }}>
-          <div className="absolute -top-20 -right-20 h-64 w-64 rounded-full opacity-20 pointer-events-none"
-            style={{ background: "radial-gradient(circle, var(--accent, #F4541E), transparent 70%)" }} />
+        {/* ══════════════════════════════════════════════════════════════
+            TRILHA UPTUBE — as 5 aulas reais
+            Títulos, ordem, cadeado e conclusão vêm TODOS de
+            uptube_my_trail(). Não existe array de aulas neste arquivo.
+            ══════════════════════════════════════════════════════════════ */}
 
-          <div className="relative">
-            <span className="inline-block rounded-full bg-[var(--accent)]/20 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-[var(--accent)] mb-4">
-              Comece por aqui
-            </span>
-            <h2 className="text-2xl sm:text-3xl font-bold text-[var(--text)] mb-2">
-              Introdução à UpShopee
-            </h2>
-            <p className="text-sm text-[var(--muted)] mb-6">
-              3 aulas · Conheça a plataforma e dê os primeiros passos
+        {trailLoading && (
+          <div className="flex items-center justify-center gap-2 rounded-2xl border border-[var(--border)] bg-[var(--surface)] py-16 text-sm text-[var(--muted)]">
+            <Loader2 className="h-4 w-4 animate-spin" /> Carregando sua trilha...
+          </div>
+        )}
+
+        {trailError && !trailLoading && (
+          <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 text-center">
+            <GraduationCap className="mx-auto mb-3 h-8 w-8 text-[var(--muted)]" />
+            <p className="text-sm font-semibold text-[var(--text)]">
+              Não foi possível carregar as aulas
             </p>
-            <div className="flex flex-wrap gap-3">
-              <button
-                onClick={handleLessonClick}
-                className="inline-flex items-center gap-2 rounded-full bg-[var(--accent)] px-6 py-3 text-sm font-semibold text-white hover:bg-[var(--accent-2)] transition-colors active:scale-[0.98]"
-              >
-                <Play className="h-4 w-4" fill="currentColor" /> Assistir
-              </button>
-              <button
-                onClick={handleLessonClick}
-                className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface)] px-6 py-3 text-sm font-medium text-[var(--muted)] hover:border-[var(--accent)]/40 hover:text-[var(--accent)] transition-colors"
-              >
-                <Info className="h-4 w-4" /> Saiba mais
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* ═══ SEARCH ═══ */}
-        <div className="mb-8">
-          <div className="relative w-full max-w-sm">
-            <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted)]" />
-            <Input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Buscar aulas..."
-              className="h-11 rounded-full border-[var(--border)] bg-[var(--surface)] pl-10 pr-4 text-sm text-[var(--text)] transition-all focus-visible:ring-[var(--accent)]/30 placeholder:text-[var(--muted)]"
-            />
-          </div>
-        </div>
-
-        {/* ═══ MODULE ROWS ═══ */}
-        {filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="mb-4 grid h-16 w-16 place-items-center rounded-full bg-[var(--muted-bg)]">
-              <GraduationCap className="h-8 w-8 text-[var(--muted)]" />
-            </div>
-            <p className="text-sm font-semibold text-[var(--text)]">Nenhuma aula encontrada</p>
             <p className="mt-1 text-xs text-[var(--muted)]">
-              Tente ajustar sua busca ou limpar os filtros.
+              Verifique sua conexão e recarregue a página.
             </p>
-            <button
-              onClick={() => setQ("")}
-              className="mt-4 rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-xs font-medium text-[var(--muted)] hover:border-[var(--accent)]/40 hover:text-[var(--accent)] transition-colors"
-            >
-              Limpar busca
-            </button>
           </div>
-        ) : (
-          <div className="space-y-6">
-            {filtered.map((mod) => {
-              const origIdx = MODULES.findIndex((m) => m.name === mod.name);
-              const isCollapsed = collapsed.has(origIdx);
+        )}
 
-              return (
-                <section key={mod.name}>
-                  {/* Module header — collapsible toggle */}
-                  <button
-                    onClick={() => toggleModule(origIdx)}
-                    className="flex w-full items-center justify-between gap-3 px-1 py-2 text-left hover:text-[var(--accent)] transition-colors group"
-                  >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <h3 className="text-lg font-semibold text-[var(--text)] group-hover:text-[var(--accent)] transition-colors">
-                        {mod.name}
-                      </h3>
-                      <span className="shrink-0 rounded-full bg-[var(--muted-bg)] px-2 py-0.5 text-[11px] font-medium text-[var(--muted)]">
-                        {mod.lessonCount} {mod.lessonCount === 1 ? "aula" : "aulas"}
-                      </span>
-                    </div>
-                    <ChevronDown
-                      className={`h-5 w-5 shrink-0 text-[var(--muted)] group-hover:text-[var(--accent)] transition-transform duration-300 ${isCollapsed ? "" : "rotate-180"}`}
-                    />
-                  </button>
+        {!trailLoading && !trailError && rows.length > 0 && (
+          <>
+            {/* ═══ Progresso ═══ */}
+            <section className="mb-6 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 sm:p-6">
+              <div className="flex flex-wrap items-end justify-between gap-2">
+                <div className="min-w-0">
+                  <h2 className="text-lg sm:text-xl font-bold text-[var(--text)]">
+                    Sua trilha
+                  </h2>
+                  <p className="mt-0.5 text-xs sm:text-sm text-[var(--muted)]">
+                    Assista na ordem — cada aula libera a próxima.
+                  </p>
+                </div>
+                <p className="shrink-0 text-sm font-semibold tabular-nums text-[var(--accent)]">
+                  {completedCount} de {total} concluídas
+                </p>
+              </div>
 
-                  {/* Lessons row — collapsible via max-height */}
-                  <div
-                    className={`overflow-hidden transition-[max-height] duration-400 ease-out ${isCollapsed ? "max-h-0" : "max-h-[600px]"}`}
-                  >
-                    <div className="flex gap-3 overflow-x-auto pb-2 pt-1 md:flex-wrap scrollbar-none">
-                      {mod.lessons.map((lesson, li) => (
-                        <button
-                          key={`${mod.name}-${li}`}
-                          onClick={handleLessonClick}
-                          className="group shrink-0 w-[220px] sm:w-[240px] text-left rounded-2xl border border-[var(--border)] bg-[var(--surface)] overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:border-[var(--accent)]/40 hover:shadow-lg"
-                        >
-                          {/* Animated thumbnail */}
-                          <AnimatedThumbnail mi={origIdx} />
+              <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-[var(--surface-2)] border border-[var(--border)]">
+                <div
+                  className="h-full rounded-full bg-[var(--accent)] transition-[width] duration-500 ease-out"
+                  style={{ width: `${progressPct}%` }}
+                />
+              </div>
+            </section>
 
-                          {/* Duration badge */}
-                          <span className="absolute bottom-[76px] right-2 z-10 rounded-md bg-black/50 px-1.5 py-0.5 text-[10px] font-medium text-white/80 backdrop-blur-sm pointer-events-none">
-                            <Clock className="inline h-3 w-3 mr-0.5 -mt-0.5" />
-                            {lesson.duration}
-                          </span>
+            {/* ═══ Player da aula aberta ═══
+                key={video_id} força um player NOVO ao trocar de aula: refs de
+                teto e de posição nascem zeradas para o vídeo certo, em vez de
+                herdarem as do anterior. */}
+            {activeRow && activeRow.unlocked && (
+              <div id={UPTUBE_PLAYER_ID} className="mb-6 scroll-mt-24">
+                <UptubePlayer
+                  key={activeRow.video_id}
+                  videoId={activeRow.video_id}
+                  youtubeId={activeRow.youtube_id}
+                  title={activeRow.title}
+                  startSec={activeRow.last_sec}
+                  furthestSec={activeRow.furthest_sec}
+                  completedAt={activeRow.completed_at}
+                  onSave={save}
+                  onClose={() => setActiveVideoId(null)}
+                />
+              </div>
+            )}
 
-                          {/* Info */}
-                          <div className="p-3">
-                            <span className="inline-block rounded-md bg-[var(--muted-bg)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--muted)] mb-1.5">
-                              Aula {li + 1}
-                            </span>
-                            <p className="text-sm font-medium text-[var(--text)] line-clamp-1 group-hover:text-[var(--accent)] transition-colors">
-                              {lesson.title}
-                            </p>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
+            {/* ═══ A trilha ═══ */}
+            <ol className="space-y-2">
+              {rows.map((row, idx) => {
+                const done = Boolean(row.completed_at);
+                const locked = !row.unlocked;
+                const isActive = row.video_id === activeVideoId;
+                const isLast = idx === rows.length - 1;
+
+                const marker = (
+                  <div className="flex shrink-0 flex-col items-center self-stretch">
+                    <span
+                      className={`grid h-9 w-9 shrink-0 place-items-center rounded-full text-sm font-bold ${
+                        done
+                          ? "bg-emerald-500 text-white"
+                          : locked
+                            ? "bg-[var(--surface-2)] text-[var(--muted)] border border-[var(--border)]"
+                            : "bg-[var(--accent)] text-white"
+                      }`}
+                    >
+                      {done ? (
+                        <CheckCircle2 className="h-5 w-5" />
+                      ) : locked ? (
+                        <Lock className="h-4 w-4" />
+                      ) : (
+                        row.position
+                      )}
+                    </span>
+                    {!isLast && <span className="mt-1 w-px flex-1 bg-[var(--border)]" />}
                   </div>
-                </section>
-              );
-            })}
-          </div>
+                );
+
+                const body = (
+                  <div className="min-w-0 flex-1 pb-3">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="rounded-md bg-[var(--surface-2)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--muted)]">
+                        Aula {row.position}
+                      </span>
+                      {done && (
+                        <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                          <Award className="h-3 w-3" /> Concluída
+                        </span>
+                      )}
+                    </div>
+
+                    <p
+                      className={`mt-1.5 text-sm font-semibold break-words ${
+                        locked ? "text-[var(--muted)]" : "text-[var(--text)]"
+                      }`}
+                    >
+                      {row.title}
+                    </p>
+
+                    <p className="mt-0.5 text-[11px] text-[var(--muted)]">
+                      {locked
+                        ? "Conclua a aula anterior para liberar"
+                        : done
+                          ? "Rever aula"
+                          : isActive
+                            ? "Assistindo agora"
+                            : "Assistir agora"}
+                    </p>
+                  </div>
+                );
+
+                return (
+                  <li key={row.video_id}>
+                    {locked ? (
+                      /* Bloqueada: <div>, não <button>. Sem onClick, sem foco,
+                         sem cursor de clique — nada para tentar. */
+                      <div
+                        aria-disabled="true"
+                        className="flex w-full items-stretch gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-3 sm:p-4 opacity-70"
+                      >
+                        {marker}
+                        {body}
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setActiveVideoId(row.video_id)}
+                        className={`flex w-full items-stretch gap-3 rounded-2xl border bg-[var(--surface)] p-3 sm:p-4 text-left transition-colors hover:border-[var(--accent)]/40 ${
+                          isActive ? "border-[var(--accent)]/60" : "border-[var(--border)]"
+                        }`}
+                      >
+                        {marker}
+                        {body}
+                        <Play
+                          className="mt-1 h-4 w-4 shrink-0 self-start text-[var(--accent)]"
+                          fill="currentColor"
+                        />
+                      </button>
+                    )}
+                  </li>
+                );
+              })}
+            </ol>
+
+            {/* ══════════════════════════════════════════════════════════
+                RECOMPENSA — só com as 5 concluídas
+                A condição é `trailComplete`, que é a coluna trail_complete
+                de uptube_my_trail(): o SERVIDOR decide. Não é
+                completedCount === 5 nem nenhuma outra conta feita aqui.
+                ══════════════════════════════════════════════════════════ */}
+            {trailComplete && (
+              <section className="mt-8 rounded-2xl border border-[var(--accent)]/30 bg-[var(--surface)] p-5 sm:p-6">
+                <div className="mb-5 flex items-center gap-3">
+                  <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[var(--accent)]">
+                    <Award className="h-6 w-6 text-white" />
+                  </div>
+                  <div className="min-w-0">
+                    <h2 className="text-lg sm:text-xl font-bold text-[var(--text)]">
+                      Trilha concluída!
+                    </h2>
+                    <p className="text-xs sm:text-sm text-[var(--muted)]">
+                      Baixe seu certificado e libere o acesso ao Gemini.
+                    </p>
+                  </div>
+                </div>
+
+                <UptubeCertificate name={studentName} completedAt={trailCompletedAt} />
+
+                <a
+                  href={REWARD_WHATSAPP_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-5 py-3 text-sm font-semibold text-emerald-700 dark:text-emerald-400 transition-colors hover:bg-emerald-500/20 sm:w-auto"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  Chamar no WhatsApp e liberar o Gemini
+                </a>
+              </section>
+            )}
+          </>
         )}
       </div>
 

@@ -8,7 +8,9 @@ import { BottomDock } from "./BottomDock";
 
 /* Identidade fixa pintada no header para contas admin. APENAS exibição —
    login, sessão, queries do Supabase e isAdmin continuam lendo o user real. */
-const ADMIN_DISPLAY_NAME = "Renan Santos";
+/* Exportado para o certificado da trilha Uptube resolver o nome do aluno com
+   EXATAMENTE o mesmo critério que o header pinta, sem repetir a string. */
+export const ADMIN_DISPLAY_NAME = "Renan Santos";
 const ADMIN_DISPLAY_EMAIL = "renan@gmail.com";
 
 type ShellProps = {
