@@ -18,6 +18,7 @@ import { Route as Ofertas8RouteImport } from './routes/ofertas8'
 import { Route as Ofertas7RouteImport } from './routes/ofertas7'
 import { Route as Ofertas6RouteImport } from './routes/ofertas6'
 import { Route as Ofertas5RouteImport } from './routes/ofertas5'
+import { Route as Ofertas10RouteImport } from './routes/ofertas10'
 import { Route as MercadolivrecombrRouteImport } from './routes/mercadolivrecombr'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DemoRouteImport } from './routes/demo'
@@ -88,6 +89,11 @@ const Ofertas6Route = Ofertas6RouteImport.update({
 const Ofertas5Route = Ofertas5RouteImport.update({
   id: '/ofertas5',
   path: '/ofertas5',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const Ofertas10Route = Ofertas10RouteImport.update({
+  id: '/ofertas10',
+  path: '/ofertas10',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MercadolivrecombrRoute = MercadolivrecombrRouteImport.update({
@@ -231,6 +237,7 @@ export interface FileRoutesByFullPath {
   '/demo': typeof DemoRouteWithChildren
   '/login': typeof LoginRoute
   '/mercadolivrecombr': typeof MercadolivrecombrRoute
+  '/ofertas10': typeof Ofertas10Route
   '/ofertas5': typeof Ofertas5Route
   '/ofertas6': typeof Ofertas6Route
   '/ofertas7': typeof Ofertas7Route
@@ -266,6 +273,7 @@ export interface FileRoutesByTo {
   '/conta-em-analise': typeof ContaEmAnaliseRoute
   '/login': typeof LoginRoute
   '/mercadolivrecombr': typeof MercadolivrecombrRoute
+  '/ofertas10': typeof Ofertas10Route
   '/ofertas5': typeof Ofertas5Route
   '/ofertas6': typeof Ofertas6Route
   '/ofertas7': typeof Ofertas7Route
@@ -304,6 +312,7 @@ export interface FileRoutesById {
   '/demo': typeof DemoRouteWithChildren
   '/login': typeof LoginRoute
   '/mercadolivrecombr': typeof MercadolivrecombrRoute
+  '/ofertas10': typeof Ofertas10Route
   '/ofertas5': typeof Ofertas5Route
   '/ofertas6': typeof Ofertas6Route
   '/ofertas7': typeof Ofertas7Route
@@ -343,6 +352,7 @@ export interface FileRouteTypes {
     | '/demo'
     | '/login'
     | '/mercadolivrecombr'
+    | '/ofertas10'
     | '/ofertas5'
     | '/ofertas6'
     | '/ofertas7'
@@ -378,6 +388,7 @@ export interface FileRouteTypes {
     | '/conta-em-analise'
     | '/login'
     | '/mercadolivrecombr'
+    | '/ofertas10'
     | '/ofertas5'
     | '/ofertas6'
     | '/ofertas7'
@@ -415,6 +426,7 @@ export interface FileRouteTypes {
     | '/demo'
     | '/login'
     | '/mercadolivrecombr'
+    | '/ofertas10'
     | '/ofertas5'
     | '/ofertas6'
     | '/ofertas7'
@@ -453,6 +465,7 @@ export interface RootRouteChildren {
   DemoRoute: typeof DemoRouteWithChildren
   LoginRoute: typeof LoginRoute
   MercadolivrecombrRoute: typeof MercadolivrecombrRoute
+  Ofertas10Route: typeof Ofertas10Route
   Ofertas5Route: typeof Ofertas5Route
   Ofertas6Route: typeof Ofertas6Route
   Ofertas7Route: typeof Ofertas7Route
@@ -527,6 +540,13 @@ declare module '@tanstack/react-router' {
       path: '/ofertas5'
       fullPath: '/ofertas5'
       preLoaderRoute: typeof Ofertas5RouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ofertas10': {
+      id: '/ofertas10'
+      path: '/ofertas10'
+      fullPath: '/ofertas10'
+      preLoaderRoute: typeof Ofertas10RouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mercadolivrecombr': {
@@ -792,6 +812,7 @@ const rootRouteChildren: RootRouteChildren = {
   DemoRoute: DemoRouteWithChildren,
   LoginRoute: LoginRoute,
   MercadolivrecombrRoute: MercadolivrecombrRoute,
+  Ofertas10Route: Ofertas10Route,
   Ofertas5Route: Ofertas5Route,
   Ofertas6Route: Ofertas6Route,
   Ofertas7Route: Ofertas7Route,
