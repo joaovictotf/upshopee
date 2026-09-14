@@ -39,8 +39,49 @@ import { catalogOrder } from "../components/products/ProductCard";
 import { spWindowIndex, msUntilNextSpWindow } from "../lib/timeWindow";
 import { generateCopy, type CopyTone } from "../lib/copy-engine";
 import { products as catalogProducts } from "../lib/mock/products";
+import { useGruposAccess } from "../hooks/use-grupos-access";
+import { GruposLocked } from "../components/grupos/GruposLocked";
 
-export const Route = createFileRoute("/dashboard/grupos")({ component: Grupos });
+export const Route = createFileRoute("/dashboard/grupos")({ component: GruposRoute });
+
+// ═══════════════════════════════════════════════════════════════════════
+// O PORTÃO — decide QUAL das duas páginas monta
+// ═══════════════════════════════════════════════════════════════════════
+// Os Grupos de Divulgação viraram add-on pago (R$ 49,90/mês). Quem tem
+// acesso vê `GruposPaid`, que é a página inteira de sempre, intocada. Quem
+// não tem vê `GruposLocked`, que mostra UM grupo de demonstração e um passo
+// a passo guiado.
+//
+// A troca é por MONTAGEM, não por CSS. `GruposPaid` nem é criado quando não
+// há acesso, então os outros 11 grupos não existem no DOM — não estão
+// escondidos, borrados ou fora da tela, estão ausentes. Esconder com
+// `display:none`, blur ou `overflow:hidden` seria trava de enfeite: o
+// conteúdo continuaria legível no inspetor, e bastaria um print para
+// entregar de graça o que está sendo vendido.
+//
+// ⚠️ NÃO EXISTE ATALHO DE ADMIN AQUI. grupos_has_access() lê a tabela e mais
+// nada. Resolver privilégio por e-mail no client é o bug crítico do §11 item
+// 1 do CLAUDE.md e não vai se espalhar para esta rota — admin que precisa da
+// página inteira ganha uma linha de verdade via admin_grant_grupos_access.
+function GruposRoute() {
+  const { hasAccess, isLoading } = useGruposAccess();
+
+  // Enquanto a resposta não chega, NENHUM dos dois lados monta. Renderizar a
+  // lista completa "só por um instante" e depois trancar entrega justamente
+  // o que está sendo vendido: um frame já é print suficiente. Na dúvida, não
+  // mostra nada.
+  if (isLoading) {
+    return (
+      <DashboardShell title="Grupos de Divulgação">
+        <div className="grid min-h-[40vh] place-items-center px-4 text-sm text-[var(--muted)]">
+          Carregando...
+        </div>
+      </DashboardShell>
+    );
+  }
+
+  return hasAccess ? <GruposPaid /> : <GruposLocked />;
+}
 
 // Groups reshuffle once a day, at America/Sao_Paulo local midnight —
 // see src/lib/timeWindow.ts.
@@ -88,10 +129,14 @@ function parseActiveNow(bestTime: string): boolean {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// MAIN PAGE
+// MAIN PAGE — a página paga, exatamente como sempre foi
 // ═══════════════════════════════════════════════════════════════════════
+// Só o NOME mudou (era `Grupos`), porque agora `GruposRoute` lá em cima
+// escolhe entre esta e a versão trancada. O corpo abaixo não foi tocado:
+// quem tem acesso vê o mesmo que via antes deste commit, comportamento
+// idêntico. Não refatorar daqui para baixo a pretexto de "já que estou aqui".
 
-function Grupos() {
+function GruposPaid() {
   const { data, isAdmin } = useApp();
   const meus = data.meusProdutos ?? [];
   const [productId, setProductId] = useState<string>("");
