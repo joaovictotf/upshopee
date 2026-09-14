@@ -238,6 +238,30 @@ export type Database = {
         }
         Relationships: []
       }
+      grupos_access: {
+        Row: {
+          expires_at: string | null
+          granted_at: string
+          granted_by: string | null
+          note: string | null
+          user_id: string
+        }
+        Insert: {
+          expires_at?: string | null
+          granted_at?: string
+          granted_by?: string | null
+          note?: string | null
+          user_id: string
+        }
+        Update: {
+          expires_at?: string | null
+          granted_at?: string
+          granted_by?: string | null
+          note?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       panel_daily_records: {
         Row: {
           clicks: number
@@ -1035,6 +1059,26 @@ export type Database = {
         }
         Returns: string
       }
+      admin_grant_grupos_access: {
+        Args: { p_days?: number; p_note?: string; p_user_id: string }
+        Returns: {
+          expires_at: string | null
+          granted_at: string
+          granted_by: string | null
+          note: string | null
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "grupos_access"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      admin_revoke_grupos_access: {
+        Args: { p_user_id: string }
+        Returns: boolean
+      }
       approve_all_pending_accounts: { Args: never; Returns: number }
       approve_user: { Args: { _user_id: string }; Returns: undefined }
       block_user_payment: { Args: { _user_id: string }; Returns: undefined }
@@ -1072,6 +1116,7 @@ export type Database = {
         Args: { _user_id: string }
         Returns: undefined
       }
+      grupos_has_access: { Args: never; Returns: boolean }
       has_lightning_access: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
         Args: {
