@@ -18,6 +18,7 @@ import { Route as Ofertas8RouteImport } from './routes/ofertas8'
 import { Route as Ofertas7RouteImport } from './routes/ofertas7'
 import { Route as Ofertas6RouteImport } from './routes/ofertas6'
 import { Route as Ofertas5RouteImport } from './routes/ofertas5'
+import { Route as Ofertas11RouteImport } from './routes/ofertas11'
 import { Route as Ofertas10RouteImport } from './routes/ofertas10'
 import { Route as MercadolivrecombrRouteImport } from './routes/mercadolivrecombr'
 import { Route as LoginRouteImport } from './routes/login'
@@ -89,6 +90,11 @@ const Ofertas6Route = Ofertas6RouteImport.update({
 const Ofertas5Route = Ofertas5RouteImport.update({
   id: '/ofertas5',
   path: '/ofertas5',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const Ofertas11Route = Ofertas11RouteImport.update({
+  id: '/ofertas11',
+  path: '/ofertas11',
   getParentRoute: () => rootRouteImport,
 } as any)
 const Ofertas10Route = Ofertas10RouteImport.update({
@@ -238,6 +244,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/mercadolivrecombr': typeof MercadolivrecombrRoute
   '/ofertas10': typeof Ofertas10Route
+  '/ofertas11': typeof Ofertas11Route
   '/ofertas5': typeof Ofertas5Route
   '/ofertas6': typeof Ofertas6Route
   '/ofertas7': typeof Ofertas7Route
@@ -274,6 +281,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/mercadolivrecombr': typeof MercadolivrecombrRoute
   '/ofertas10': typeof Ofertas10Route
+  '/ofertas11': typeof Ofertas11Route
   '/ofertas5': typeof Ofertas5Route
   '/ofertas6': typeof Ofertas6Route
   '/ofertas7': typeof Ofertas7Route
@@ -313,6 +321,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/mercadolivrecombr': typeof MercadolivrecombrRoute
   '/ofertas10': typeof Ofertas10Route
+  '/ofertas11': typeof Ofertas11Route
   '/ofertas5': typeof Ofertas5Route
   '/ofertas6': typeof Ofertas6Route
   '/ofertas7': typeof Ofertas7Route
@@ -353,6 +362,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/mercadolivrecombr'
     | '/ofertas10'
+    | '/ofertas11'
     | '/ofertas5'
     | '/ofertas6'
     | '/ofertas7'
@@ -389,6 +399,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/mercadolivrecombr'
     | '/ofertas10'
+    | '/ofertas11'
     | '/ofertas5'
     | '/ofertas6'
     | '/ofertas7'
@@ -427,6 +438,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/mercadolivrecombr'
     | '/ofertas10'
+    | '/ofertas11'
     | '/ofertas5'
     | '/ofertas6'
     | '/ofertas7'
@@ -466,6 +478,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   MercadolivrecombrRoute: typeof MercadolivrecombrRoute
   Ofertas10Route: typeof Ofertas10Route
+  Ofertas11Route: typeof Ofertas11Route
   Ofertas5Route: typeof Ofertas5Route
   Ofertas6Route: typeof Ofertas6Route
   Ofertas7Route: typeof Ofertas7Route
@@ -540,6 +553,13 @@ declare module '@tanstack/react-router' {
       path: '/ofertas5'
       fullPath: '/ofertas5'
       preLoaderRoute: typeof Ofertas5RouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ofertas11': {
+      id: '/ofertas11'
+      path: '/ofertas11'
+      fullPath: '/ofertas11'
+      preLoaderRoute: typeof Ofertas11RouteImport
       parentRoute: typeof rootRouteImport
     }
     '/ofertas10': {
@@ -813,6 +833,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   MercadolivrecombrRoute: MercadolivrecombrRoute,
   Ofertas10Route: Ofertas10Route,
+  Ofertas11Route: Ofertas11Route,
   Ofertas5Route: Ofertas5Route,
   Ofertas6Route: Ofertas6Route,
   Ofertas7Route: Ofertas7Route,
