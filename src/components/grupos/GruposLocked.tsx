@@ -126,6 +126,33 @@ function writeStored(state: DemoState) {
   }
 }
 
+/* Onde a demonstração deve abrir, decidido de uma vez antes do primeiro
+   render — passo e produto juntos, porque um depende do outro.
+
+   O produto sai de `affiliateProducts`, que é import estático: ele já está
+   em memória, não precisa esperar a lista do usuário chegar do banco. Um `n`
+   guardado resolve tanto um produto afiliado quanto um do catálogo, porque os
+   dois saem desse mesmo array.
+
+   As duas correções existem para não abrir uma etapa sem saída:
+     • passo 4+ sem produto → não há o que gerar nem o que publicar;
+     • passo 5 sempre volta para o 4, porque o TEXTO não é guardado. Retomar
+       em "Publique no grupo" sem texto deixaria o botão de copiar desligado
+       sem explicação. Gerar de novo custa um clique. */
+function bootstrap(): { step: number; product: AffiliateProduct | null } {
+  const stored = readStored();
+  const product =
+    stored.productN == null
+      ? null
+      : (affiliateProducts.find((p) => p.n === stored.productN) ?? null);
+
+  let step = stored.step;
+  if (step >= 4 && !product) step = 3;
+  if (step === 5) step = 4;
+
+  return { step, product };
+}
+
 /* ═══════════════════════════════════════════════════════════════════
    Cartão do grupo de demonstração
    ═══════════════════════════════════════════════════════════════════ */
@@ -290,9 +317,17 @@ function PrimaryButton({
 export function GruposLocked() {
   const { currentUserId } = useApp();
 
-  const initial = useRef<DemoState>(readStored());
-  const [step, setStep] = useState<number>(initial.current.step);
-  const [product, setProduct] = useState<AffiliateProduct | null>(null);
+  /* Estado inicial resolvido DE UMA VEZ, antes do primeiro render.
+     Já foi um par de efeitos (um restaurava o produto, outro corrigia o
+     passo) e os dois rodavam no mesmo commit: o que corrigia lia o `product`
+     antes do setState do que restaurava chegar, concluía "não tem produto" e
+     jogava de volta para o passo 3. Recarregar no passo 6 caía no 3.
+     Resolver aqui elimina a ordem entre efeitos — não há ordem nenhuma. */
+  const bootRef = useRef<{ step: number; product: AffiliateProduct | null } | null>(null);
+  if (bootRef.current === null) bootRef.current = bootstrap();
+
+  const [step, setStep] = useState<number>(bootRef.current.step);
+  const [product, setProduct] = useState<AffiliateProduct | null>(bootRef.current.product);
   const [myProducts, setMyProducts] = useState<AffiliateProduct[] | null>(null);
   const [text, setText] = useState("");
   const [generating, setGenerating] = useState(false);
@@ -317,27 +352,6 @@ export function GruposLocked() {
       cancelled = true;
     };
   }, [currentUserId]);
-
-  /* Restaura o produto guardado. Roda uma vez, quando a lista do usuário
-     chega: o `n` pode apontar tanto para um produto afiliado quanto para um
-     do catálogo, e os dois saem do mesmo array `affiliateProducts`. */
-  const restored = useRef(false);
-  useEffect(() => {
-    if (restored.current || myProducts === null) return;
-    restored.current = true;
-    const n = initial.current.productN;
-    if (n == null) return;
-    const found = affiliateProducts.find((p) => p.n === n);
-    if (found) setProduct(found);
-  }, [myProducts]);
-
-  /* Sem produto não há o que gerar nem o que publicar. Se o passo guardado
-     for 4 ou mais e o produto não tiver sido restaurado, volta para o 3 em
-     vez de abrir uma etapa vazia sem saída. */
-  useEffect(() => {
-    if (myProducts === null) return;
-    if (step >= 4 && !product) setStep(3);
-  }, [myProducts, step, product]);
 
   useEffect(() => {
     writeStored({ step, productN: product?.n ?? null });
