@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
+import { Route as Painel2RouteImport } from './routes/painel2'
 import { Route as PainelRouteImport } from './routes/painel'
 import { Route as PagamentoBloqueadoRouteImport } from './routes/pagamento-bloqueado'
 import { Route as Ofertas9RouteImport } from './routes/ofertas9'
@@ -55,6 +56,11 @@ const RegisterRoute = RegisterRouteImport.update({
 const RedefinirSenhaRoute = RedefinirSenhaRouteImport.update({
   id: '/redefinir-senha',
   path: '/redefinir-senha',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const Painel2Route = Painel2RouteImport.update({
+  id: '/painel2',
+  path: '/painel2',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PainelRoute = PainelRouteImport.update({
@@ -252,6 +258,7 @@ export interface FileRoutesByFullPath {
   '/ofertas9': typeof Ofertas9Route
   '/pagamento-bloqueado': typeof PagamentoBloqueadoRoute
   '/painel': typeof PainelRoute
+  '/painel2': typeof Painel2Route
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/register': typeof RegisterRoute
   '/dashboard/aulas': typeof DashboardAulasRoute
@@ -289,6 +296,7 @@ export interface FileRoutesByTo {
   '/ofertas9': typeof Ofertas9Route
   '/pagamento-bloqueado': typeof PagamentoBloqueadoRoute
   '/painel': typeof PainelRoute
+  '/painel2': typeof Painel2Route
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/register': typeof RegisterRoute
   '/dashboard/aulas': typeof DashboardAulasRoute
@@ -329,6 +337,7 @@ export interface FileRoutesById {
   '/ofertas9': typeof Ofertas9Route
   '/pagamento-bloqueado': typeof PagamentoBloqueadoRoute
   '/painel': typeof PainelRoute
+  '/painel2': typeof Painel2Route
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/register': typeof RegisterRoute
   '/dashboard/aulas': typeof DashboardAulasRoute
@@ -370,6 +379,7 @@ export interface FileRouteTypes {
     | '/ofertas9'
     | '/pagamento-bloqueado'
     | '/painel'
+    | '/painel2'
     | '/redefinir-senha'
     | '/register'
     | '/dashboard/aulas'
@@ -407,6 +417,7 @@ export interface FileRouteTypes {
     | '/ofertas9'
     | '/pagamento-bloqueado'
     | '/painel'
+    | '/painel2'
     | '/redefinir-senha'
     | '/register'
     | '/dashboard/aulas'
@@ -446,6 +457,7 @@ export interface FileRouteTypes {
     | '/ofertas9'
     | '/pagamento-bloqueado'
     | '/painel'
+    | '/painel2'
     | '/redefinir-senha'
     | '/register'
     | '/dashboard/aulas'
@@ -486,6 +498,7 @@ export interface RootRouteChildren {
   Ofertas9Route: typeof Ofertas9Route
   PagamentoBloqueadoRoute: typeof PagamentoBloqueadoRoute
   PainelRoute: typeof PainelRoute
+  Painel2Route: typeof Painel2Route
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
   RegisterRoute: typeof RegisterRoute
 }
@@ -504,6 +517,13 @@ declare module '@tanstack/react-router' {
       path: '/redefinir-senha'
       fullPath: '/redefinir-senha'
       preLoaderRoute: typeof RedefinirSenhaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/painel2': {
+      id: '/painel2'
+      path: '/painel2'
+      fullPath: '/painel2'
+      preLoaderRoute: typeof Painel2RouteImport
       parentRoute: typeof rootRouteImport
     }
     '/painel': {
@@ -841,6 +861,7 @@ const rootRouteChildren: RootRouteChildren = {
   Ofertas9Route: Ofertas9Route,
   PagamentoBloqueadoRoute: PagamentoBloqueadoRoute,
   PainelRoute: PainelRoute,
+  Painel2Route: Painel2Route,
   RedefinirSenhaRoute: RedefinirSenhaRoute,
   RegisterRoute: RegisterRoute,
 }
