@@ -43,6 +43,7 @@ import {
   type DailyRecord,
   type DemoStore,
   type MetricKey,
+  type ProductDailyStat,
 } from "./demo-store";
 import "./painel.css";
 
@@ -833,6 +834,76 @@ function EditableAccountName({
   );
 }
 
+/**
+ * Soma todos os dias de `dates` num único registro agregado. Alimenta os
+ * seis cards, o detalhamento (Breakdown) e o Top 5 — os três já liam de
+ * uma única variável `record`, então trocar o que ela representa aqui é
+ * suficiente; nenhum desses três componentes precisou mudar.
+ *
+ * Dia sem entrada em `store.days` entra como `EMPTY_DAILY_RECORD` (zero
+ * em tudo) — `recordFor` já resolve isso, então somar não pula nem trata
+ * o dia como ausente, só soma zero.
+ *
+ * `products` NÃO é cortado para 5 aqui: junta por productId em TODOS os
+ * dias do intervalo, por mais que sejam ao todo. Quem ordena e corta para
+ * as 5 linhas exibidas é `sortedTopProducts`, a mesma função que já existe
+ * — ela roda de novo em cima do agregado sem precisar de nenhuma mudança.
+ */
+function aggregateRecords(store: DemoStore, dates: string[]): DailyRecord {
+  let clicks = 0;
+  let socialClicks = 0;
+  let orders = 0;
+  let commissionCents = 0;
+  let itemsSold = 0;
+  let orderValueCents = 0;
+  let newBuyers = 0;
+  const productTotals = new Map<string, ProductDailyStat>();
+
+  dates.forEach((date) => {
+    const day = recordFor(store, date);
+    clicks += day.clicks;
+    socialClicks += day.socialClicks;
+    orders += day.orders;
+    commissionCents += day.commissionCents;
+    itemsSold += day.itemsSold;
+    orderValueCents += day.orderValueCents;
+    newBuyers += day.newBuyers;
+    day.products.forEach((stat) => {
+      const existing = productTotals.get(stat.productId);
+      if (existing) {
+        existing.itemsSold += stat.itemsSold;
+        existing.commissionCents += stat.commissionCents;
+      } else {
+        productTotals.set(stat.productId, { ...stat });
+      }
+    });
+  });
+
+  return {
+    clicks,
+    socialClicks,
+    orders,
+    commissionCents,
+    itemsSold,
+    orderValueCents,
+    newBuyers,
+    products: [...productTotals.values()],
+  };
+}
+
+/**
+ * N dias terminando no dia anterior a `start`, onde N = `length` — um
+ * período do MESMO tamanho do intervalo escolhido. Sem isso, o percentual
+ * compararia 15 dias somados contra um único dia anterior e todo card
+ * exibiria algo como "+1.400%".
+ *
+ * Intervalo de 1 dia (`length === 1`) devolve só o dia anterior a `start`,
+ * exatamente o comportamento de antes da agregação.
+ */
+function previousPeriodDates(start: string, length: number): string[] {
+  return datesInRange(addDays(start, -length), addDays(start, -1));
+}
+
 export default function ShopeePanel({
   catalogSource,
   accountName = "Gisely Lojas",
@@ -848,8 +919,12 @@ export default function ShopeePanel({
   const catalog = useMemo(() => normalizeCatalog(catalogSource), [catalogSource]);
   const dates = useMemo(() => datesInRange(startDate, endDate), [startDate, endDate]);
   const activeMetric = METRICS.find((metric) => metric.key === selectedMetric) ?? METRICS[0];
-  const record = recordFor(store, endDate);
-  const previousRecord = recordFor(store, addDays(endDate, -1));
+  // Cards, detalhamento e Top 5 somam o intervalo inteiro (dates), não só
+  // endDate. O percentual compara com um período anterior do MESMO
+  // tamanho — nunca um dia único contra vários somados.
+  const record = aggregateRecords(store, dates);
+  const previousDates = previousPeriodDates(startDate, dates.length);
+  const previousRecord = aggregateRecords(store, previousDates);
   // Precedência: nome salvo no store → prop accountName → "Gisely Lojas"
   // (o padrão da prop). Antes do load em useEffect, `store` é o valor
   // inicial sem `accountName`, então cai direto na prop — sem flash.
