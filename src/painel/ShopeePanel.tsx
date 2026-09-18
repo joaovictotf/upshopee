@@ -758,6 +758,81 @@ function PerformanceTable({ dates, store }: { dates: string[]; store: DemoStore 
   );
 }
 
+/**
+ * Nome do cabeçalho. Dois cliques no texto trocam para <input>; Enter e
+ * blur confirmam, Escape cancela e volta ao valor anterior. Mesmo
+ * comportamento de `EditableUserName` em src/routes/painel.tsx — as duas
+ * páginas são independentes, então o componente é reproduzido aqui, não
+ * importado de lá.
+ *
+ * O rascunho (`draft`) é local: o pai só fica sabendo do nome quando ele
+ * é CONFIRMADO. `canceledRef` existe porque o Escape desmonta o input
+ * (tira o foco) e isso pode disparar `onBlur` por cima do próprio
+ * cancelamento — a flag garante que esse blur tardio não commite o
+ * rascunho por engano, não importa a ordem em que os eventos cheguem.
+ */
+function EditableAccountName({
+  value,
+  onCommit,
+}: {
+  value: string;
+  onCommit: (next: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const canceledRef = useRef(false);
+
+  const startEdit = () => {
+    canceledRef.current = false;
+    setDraft(value);
+    setEditing(true);
+    setTimeout(() => inputRef.current?.focus(), 10);
+  };
+
+  const commit = () => {
+    if (canceledRef.current) {
+      canceledRef.current = false;
+      return;
+    }
+    setEditing(false);
+    const trimmed = draft.trim();
+    if (trimmed && trimmed !== value) onCommit(trimmed);
+  };
+
+  const cancel = () => {
+    canceledRef.current = true;
+    setEditing(false);
+  };
+
+  if (editing) {
+    return (
+      <input
+        ref={inputRef}
+        className="sp-account-name"
+        aria-label="Nome de exibição"
+        value={draft}
+        onChange={(event) => setDraft(event.currentTarget.value)}
+        onBlur={commit}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            commit();
+          } else if (event.key === "Escape") {
+            event.preventDefault();
+            cancel();
+          }
+        }}
+      />
+    );
+  }
+  return (
+    <span className="sp-account-name" onDoubleClick={startEdit}>
+      {value}
+    </span>
+  );
+}
+
 export default function ShopeePanel({
   catalogSource,
   accountName = "Gisely Lojas",
@@ -775,6 +850,10 @@ export default function ShopeePanel({
   const activeMetric = METRICS.find((metric) => metric.key === selectedMetric) ?? METRICS[0];
   const record = recordFor(store, endDate);
   const previousRecord = recordFor(store, addDays(endDate, -1));
+  // Precedência: nome salvo no store → prop accountName → "Gisely Lojas"
+  // (o padrão da prop). Antes do load em useEffect, `store` é o valor
+  // inicial sem `accountName`, então cai direto na prop — sem flash.
+  const displayName = store.accountName ?? accountName;
   const trendPoints = dates.map((date) => ({
     date,
     value: metricValue(recordFor(store, date), selectedMetric),
@@ -796,6 +875,15 @@ export default function ShopeePanel({
   const chooseRange = (start: string, end: string) => {
     setStartDate(start);
     setEndDate(end);
+  };
+
+  const commitAccountName = (next: string) => {
+    // Spread preserva `days` (e `version`) tal como estavam — o nome nunca
+    // encosta nos números do painel.
+    const nextStore: DemoStore = { ...storeRef.current, accountName: next };
+    storeRef.current = nextStore;
+    saveDemoStore(nextStore);
+    setStore(nextStore);
   };
 
   const registerSale = () => {
@@ -830,7 +918,7 @@ export default function ShopeePanel({
             <ChevronDown size={14} />
           </span>
           <span className="sp-header-item">
-            {accountName}
+            <EditableAccountName value={displayName} onCommit={commitAccountName} />
             <ChevronDown size={14} />
           </span>
           <span className="sp-header-divider" />

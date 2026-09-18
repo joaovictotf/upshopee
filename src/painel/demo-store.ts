@@ -36,6 +36,9 @@ export type DailyRecord = {
 export type DemoStore = {
   version: 1;
   days: Record<string, DailyRecord>;
+  /** Nome exibido no cabeçalho (dois cliques para editar). Independente de
+   *  `days`: trocar o nome nunca deve encostar nos números do painel. */
+  accountName?: string;
 };
 
 export type AppliedSale = {
@@ -70,6 +73,16 @@ const integer = (value: unknown) => {
 };
 
 const validDateKey = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value);
+
+const MAX_ACCOUNT_NAME_LENGTH = 60;
+
+/** Ausente ou inválido → `undefined`, nunca string vazia: o chamador cai
+ *  no padrão (prop `accountName` do componente) em vez de exibir "". */
+function sanitizeAccountName(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim().slice(0, MAX_ACCOUNT_NAME_LENGTH).trim();
+  return trimmed || undefined;
+}
 
 function sanitizeProductStat(value: unknown): ProductDailyStat | null {
   if (!value || typeof value !== "object") return null;
@@ -107,15 +120,16 @@ function sanitizeDailyRecord(value: unknown): DailyRecord {
 
 export function sanitizeStore(value: unknown): DemoStore {
   if (!value || typeof value !== "object") return { version: 1, days: {} };
-  const candidate = value as { days?: unknown };
+  const candidate = value as { days?: unknown; accountName?: unknown };
+  const accountName = sanitizeAccountName(candidate.accountName);
   if (!candidate.days || typeof candidate.days !== "object") {
-    return { version: 1, days: {} };
+    return accountName ? { version: 1, days: {}, accountName } : { version: 1, days: {} };
   }
   const days: Record<string, DailyRecord> = {};
   Object.entries(candidate.days as Record<string, unknown>).forEach(([date, record]) => {
     if (validDateKey(date)) days[date] = sanitizeDailyRecord(record);
   });
-  return { version: 1, days };
+  return accountName ? { version: 1, days, accountName } : { version: 1, days };
 }
 
 export function loadDemoStore(): DemoStore {
@@ -245,6 +259,7 @@ export function applyDemoSale(
   };
 
   const nextStore: DemoStore = {
+    ...store,
     version: 1,
     days: { ...store.days, [dateKey]: nextRecord },
   };

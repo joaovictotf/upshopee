@@ -103,6 +103,25 @@
   font-size: 13px;
 }
 
+/* Nome da conta: largura fixa para o <input> não mudar o tamanho nem
+   deslocar o "Central de Ajuda" ao lado ao entrar em edição. */
+.sp-account-name {
+  display: inline-block;
+  width: 96px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+input.sp-account-name {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  outline: none;
+}
+
 .sp-header-divider {
   width: 1px;
   height: 30px;
