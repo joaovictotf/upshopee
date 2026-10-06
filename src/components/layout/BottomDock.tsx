@@ -15,6 +15,7 @@ import {
   Moon,
   ShieldCheck,
   Headset,
+  TrendingUp,
 } from "lucide-react";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -36,6 +37,7 @@ type DockItem = {
    devolver a entrada abaixo (icon LayoutDashboard, exact: true). */
 const DOCK_ITEMS: DockItem[] = [
   { to: "/dashboard/produtos", tooltip: "Produtos", icon: ShoppingBag },
+  { to: "/dashboard/impulsionar-vendas", tooltip: "Subir Anúncios", icon: TrendingUp },
   { to: "/dashboard/grupos", tooltip: "Grupos de Divulgação", icon: Megaphone },
   { to: "/dashboard/video-ia", tooltip: "Vídeo IA", icon: Clapperboard },
   { to: "/dashboard/conectar-contas", tooltip: "Integrações", icon: Link2 },
