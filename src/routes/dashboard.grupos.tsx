@@ -22,7 +22,6 @@ import {
   Loader2,
   RefreshCw,
   ArrowDown,
-  RefreshCcw,
   CheckCircle2,
   MessageCircle,
   Users,
@@ -137,7 +136,7 @@ function parseActiveNow(bestTime: string): boolean {
 // idêntico. Não refatorar daqui para baixo a pretexto de "já que estou aqui".
 
 function GruposPaid() {
-  const { data, isAdmin } = useApp();
+  const { data } = useApp();
   const meus = data.meusProdutos ?? [];
   const [productId, setProductId] = useState<string>("");
   const [tone, setTone] = useState<CopyTone>("Oferta urgente");
@@ -962,23 +961,6 @@ function GruposPaid() {
             </div>
           )}
 
-          {/* Admin updating banner */}
-          {!isAdmin && (
-            <div className="mb-3 flex items-center gap-3 rounded-xl border border-[var(--accent)]/20 bg-[var(--accent-soft)] px-4 py-3">
-              <RefreshCcw
-                className="h-4 w-4 shrink-0 animate-spin text-[var(--accent)]"
-                style={{ animationDuration: "2s" }}
-              />
-              <div>
-                <div className="text-sm font-semibold text-[var(--accent)]">Grupos atualizando</div>
-                <div className="text-xs text-[var(--muted)]">
-                  Nossa equipe está verificando e adicionando novos grupos de divulgação. Em breve
-                  estarão disponíveis.
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* Dismissible info strip */}
           {!infoDismissed && (
             <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-[var(--accent-soft)] px-3 py-1.5 text-[11px] text-[var(--muted)]">
@@ -1077,38 +1059,24 @@ function GruposPaid() {
 
                   {/* Action buttons */}
                   <div className="mt-auto flex gap-2 pt-3">
-                    {isAdmin ? (
-                      <a
-                        href={g.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex-1"
-                        onClick={() => setSelectedGroupId(g.id)}
-                      >
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="w-full rounded-xl border-[var(--border)] bg-[var(--surface)] text-xs font-medium text-[var(--muted)] transition-all hover:border-[var(--accent)]/30 hover:text-[var(--accent)]"
-                          style={{ boxShadow: "var(--shadow-card)" }}
-                        >
-                          <ExternalLink className="mr-1 h-3 w-3" /> Abrir grupo
-                        </Button>
-                      </a>
-                    ) : (
+                    {/* Quem chega aqui já passou pelo portão pago (useGruposAccess),
+                        então todo mundo com acesso abre o grupo. */}
+                    <a
+                      href={g.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1"
+                      onClick={() => setSelectedGroupId(g.id)}
+                    >
                       <Button
                         variant="outline"
                         size="sm"
-                        className="flex-1 rounded-xl border-[var(--border)] bg-[var(--surface)] text-xs font-medium text-[var(--muted)]"
+                        className="w-full rounded-xl border-[var(--border)] bg-[var(--surface)] text-xs font-medium text-[var(--muted)] transition-all hover:border-[var(--accent)]/30 hover:text-[var(--accent)]"
                         style={{ boxShadow: "var(--shadow-card)" }}
-                        disabled
                       >
-                        <RefreshCcw
-                          className="mr-1 h-3 w-3 animate-spin"
-                          style={{ animationDuration: "2s" }}
-                        />{" "}
-                        Atualizando...
+                        <ExternalLink className="mr-1 h-3 w-3" /> Abrir grupo
                       </Button>
-                    )}
+                    </a>
                     <Button
                       size="sm"
                       className={`flex-1 rounded-xl text-xs font-semibold text-white transition-all active:scale-[0.98] disabled:opacity-50 ${
